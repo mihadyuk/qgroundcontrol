@@ -856,6 +856,25 @@ void UASWaypointManager::goToWaypoint(Waypoint *wp)
         uas->sendMessage(message);
         QGC::SLEEP::msleep(PROTOCOL_DELAY_MS);
     }
+    else
+    {
+        mavlink_message_t msg;
+        mavlink_command_long_t cmd;
+        cmd.command = MAV_CMD_OVERRIDE_GOTO;
+        cmd.confirmation = 0;
+        cmd.param1 = MAV_GOTO_DO_HOLD;
+        cmd.param2 = MAV_GOTO_HOLD_AT_SPECIFIED_POSITION;
+        cmd.param3 = MAV_FRAME_GLOBAL;
+        cmd.param4 = 0.0f; // yaw angle
+        cmd.param5 = wp->getX();
+        cmd.param6 = wp->getY();
+        cmd.param7 = wp->getAltitude();
+        cmd.target_system = uas->getUASID();
+        cmd.target_component = 0;
+        mavlink_msg_command_long_encode(uas->mavlink->getSystemId(), uas->mavlink->getComponentId(), &msg, &cmd);
+        uas->sendMessage(msg);
+        QGC::SLEEP::msleep(PROTOCOL_DELAY_MS);
+    }
 }
 
 void UASWaypointManager::writeWaypoints()
