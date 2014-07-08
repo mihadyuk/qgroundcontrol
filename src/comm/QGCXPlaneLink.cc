@@ -154,6 +154,11 @@ void QGCXPlaneLink::run()
     if (!mav) return;
     if (connectState) return;
 
+    if (socket) {
+        socket->close();
+        delete socket;
+    }
+
     socket = new QUdpSocket(this);
     socket->moveToThread(this);
     connectState = socket->bind(localHost, localPort);
