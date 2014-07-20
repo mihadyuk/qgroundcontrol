@@ -401,7 +401,10 @@ FORMS += \
     src/ui/px4_configuration/QGCPX4MulticopterConfig.ui \
     src/ui/px4_configuration/QGCPX4SensorCalibration.ui \
     src/ui/designer/QGCXYPlot.ui \
-    src/ui/QGCUASFileView.ui
+    src/ui/QGCUASFileView.ui \
+    src/ui/px4_configuration/QGCPX4FlightModeConfig.ui \
+    src/ui/px4_configuration/QGCPX4SafetyConfig.ui \
+    src/ui/px4_configuration/QGCPX4TuningConfig.ui
 
 HEADERS += \
     src/MG.h \
@@ -600,7 +603,10 @@ HEADERS += \
     src/ui/QGCUASFileView.h \
     src/uas/QGCUASWorker.h \
     src/CmdLineOptParser.h \
-    src/uas/QGXPX4UAS.h
+    src/uas/QGXPX4UAS.h \
+    src/ui/px4_configuration/QGCPX4FlightModeConfig.h \
+    src/ui/px4_configuration/QGCPX4SafetyConfig.h \
+    src/ui/px4_configuration/QGCPX4TuningConfig.h
 
 SOURCES += \
     src/main.cc \
@@ -789,4 +795,7 @@ SOURCES += \
     src/ui/QGCUASFileView.cc \
     src/uas/QGCUASWorker.cc \
     src/CmdLineOptParser.cc \
-    src/uas/QGXPX4UAS.cc
+    src/uas/QGXPX4UAS.cc \
+    src/ui/px4_configuration/QGCPX4FlightModeConfig.cc \
+    src/ui/px4_configuration/QGCPX4SafetyConfig.cc \
+    src/ui/px4_configuration/QGCPX4TuningConfig.cc

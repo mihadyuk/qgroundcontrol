@@ -13,6 +13,9 @@
 #include "QGCToolWidget.h"
 #include "UASInterface.h"
 #include "px4_configuration/QGCPX4AirframeConfig.h"
+#include "px4_configuration/QGCPX4FlightModeConfig.h"
+#include "px4_configuration/QGCPX4TuningConfig.h"
+#include "px4_configuration/QGCPX4SafetyConfig.h"
 
 class UASParameterCommsMgr;
 class QGCPX4SensorCalibration;
@@ -329,6 +332,9 @@ protected:
     QMap<QString,QString> paramTooltips;                                ///< Tooltips for the ? button next to a parameter.
 
     QGCPX4AirframeConfig* px4AirframeConfig;
+    QGCPX4SafetyConfig* px4SafetyConfig;
+    QGCPX4FlightModeConfig* px4FlightModeConfig;
+    QGCPX4TuningConfig* px4TuningConfig;
     QPixmap planeBack;
     QPixmap planeSide;
     QGCPX4SensorCalibration* px4SensorCalibration;
