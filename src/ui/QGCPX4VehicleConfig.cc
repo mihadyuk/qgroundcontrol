@@ -91,6 +91,9 @@ QGCPX4VehicleConfig::QGCPX4VehicleConfig(QWidget *parent) :
     ui->airframeMenuButton->setEnabled(false);
     ui->sensorMenuButton->setEnabled(false);
     ui->rcMenuButton->setEnabled(false);
+    ui->flightModeMenuButton->setEnabled(false);
+    ui->tuningMenuButton->setEnabled(false);
+    ui->safetyConfigButton->setEnabled(false);
 
     px4AirframeConfig = new QGCPX4AirframeConfig(this);
     ui->airframeLayout->addWidget(px4AirframeConfig);
@@ -1310,6 +1313,9 @@ void QGCPX4VehicleConfig::setActiveUAS(UASInterface* active)
     ui->airframeMenuButton->setEnabled(true);
     ui->sensorMenuButton->setEnabled(true);
     ui->rcMenuButton->setEnabled(true);
+    ui->flightModeMenuButton->setEnabled(true);
+    ui->tuningMenuButton->setEnabled(true);
+    ui->safetyConfigButton->setEnabled(true);
 
     ui->rcCalibrationButton->setEnabled(true);
     ui->spektrumPairButton->setEnabled(true);
