@@ -97,6 +97,7 @@ void MockMavlinkFileServer::_openCommand(QGCUASFileManager::Request* request)
     
     size_t cchPath = strnlen((char *)request->data, sizeof(request->data));
     Q_ASSERT(cchPath != sizeof(request->data));
+    Q_UNUSED(cchPath); // Fix initialized-but-not-referenced warning on release builds
     path = (char *)request->data;
     
     // Check path against one of our known test cases
@@ -280,7 +281,7 @@ void MockMavlinkFileServer::_emitResponse(QGCUASFileManager::Request* request)
     
     request->hdr.crc32 = QGCUASFileManager::crc32(request);
     
-    mavlink_msg_encapsulated_data_pack(250, 0, &mavlinkMessage, 0 /*_encdata_seq*/, (uint8_t*)request);
+    mavlink_msg_encapsulated_data_pack(250, MAV_COMP_ID_IMU, &mavlinkMessage, 0 /*_encdata_seq*/, (uint8_t*)request);
     
     emit messageReceived(NULL, mavlinkMessage);
 }
