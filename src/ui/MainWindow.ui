@@ -51,7 +51,7 @@
      <x>0</x>
      <y>0</y>
      <width>1024</width>
-     <height>22</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuMGround">
@@ -95,19 +95,16 @@
     <property name="title">
      <string>Perspectives</string>
     </property>
-    <addaction name="actionFlightView"/>
     <addaction name="actionMissionView"/>
+    <addaction name="actionFlightView"/>
     <addaction name="actionHardwareConfig"/>
-    <addaction name="actionSoftwareConfig"/>
-    <addaction name="actionTerminalView"/>
-    <addaction name="actionSimulationView"/>
     <addaction name="actionEngineersView"/>
     <addaction name="actionGoogleEarthView"/>
     <addaction name="actionLocal3DView"/>
-    <addaction name="separator"/>
+    <addaction name="actionSoftwareConfig"/>
+    <addaction name="actionTerminalView"/>
+    <addaction name="actionSimulationView"/>
     <addaction name="actionFirmwareUpdateView"/>
-    <addaction name="actionMavlinkView"/>
-    <addaction name="actionUnconnectedView"/>
     <addaction name="separator"/>
     <addaction name="actionFullscreen"/>
     <addaction name="actionNormal"/>

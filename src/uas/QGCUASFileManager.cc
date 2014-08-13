@@ -70,7 +70,7 @@ QGCUASFileManager::QGCUASFileManager(QObject* parent, UASInterface* uas) :
     QObject(parent),
     _currentOperation(kCOIdle),
     _mav(uas),
-    _encdata_seq(0),
+    _lastOutgoingSeqNumber(0),
     _activeSession(0)
 {
     bool connected = connect(&_ackTimer, SIGNAL(timeout()), this, SLOT(_ackTimeout()));
@@ -104,12 +104,17 @@ void QGCUASFileManager::_openAckResponse(Request* openAck)
 {
     _currentOperation = kCORead;
     _activeSession = openAck->hdr.session;
+    
+    // File length comes back in data
+    Q_ASSERT(openAck->hdr.size == sizeof(uint32_t));
+    emit downloadFileLength(openAck->openFileLength);
+    
+    // Start the sequence of read commands
 
     _readOffset = 0;                // Start reading at beginning of file
     _readFileAccumulator.clear();   // Start with an empty file
 
     Request request;
-    request.hdr.magic = 'f';
     request.hdr.session = _activeSession;
     request.hdr.opcode = kCmdRead;
     request.hdr.offset = _readOffset;
@@ -139,7 +144,7 @@ void QGCUASFileManager::_closeReadSession(bool success)
         }
         file.close();
 
-        _emitStatusMessage(tr("Download complete '%1'").arg(downloadFilePath));
+        emit downloadFileComplete();
     }
 
     // Close the open session
@@ -164,6 +169,7 @@ void QGCUASFileManager::_readAckResponse(Request* readAck)
     }
 
     _readFileAccumulator.append((const char*)readAck->data, readAck->hdr.size);
+    emit downloadFileProgress(_readFileAccumulator.length());
 
     if (readAck->hdr.size == sizeof(readAck->data)) {
         // Possibly still more data to read, send next read request
@@ -173,7 +179,6 @@ void QGCUASFileManager::_readAckResponse(Request* readAck)
         _readOffset += readAck->hdr.size;
 
         Request request;
-        request.hdr.magic = 'f';
         request.hdr.session = _activeSession;
         request.hdr.opcode = kCmdRead;
         request.hdr.offset = _readOffset;
@@ -219,7 +224,9 @@ void QGCUASFileManager::_listAckResponse(Request* listAck)
         // Returned names are prepended with D for directory, F for file, U for unknown
         if (*ptr == 'F' || *ptr == 'D') {
             // put it in the view
-            _emitStatusMessage(ptr);
+            _emitListEntry(ptr);
+        } else {
+            qDebug() << "unknown entry" << ptr;
         }
 
         // account for the name + NUL
@@ -251,17 +258,42 @@ void QGCUASFileManager::receiveMessage(LinkInterface* link, mavlink_message_t me
     }
 
     // XXX: hack to prevent files from videostream to interfere
-    if (message.compid != MAV_COMP_ID_IMU) {
+    // FIXME: magic number
+    if (message.compid != 50) {
         return;
     }
-
-    _clearAckTimeout();
 
     mavlink_encapsulated_data_t data;
     mavlink_msg_encapsulated_data_decode(&message, &data);
     Request* request = (Request*)&data.data[0];
+    
+    if (request->hdr.magic != kProtocolMagic) {
+        return;
+    }
 
-    // FIXME: Check CRC
+    _clearAckTimeout();
+    
+    uint16_t incomingSeqNumber = data.seqnr;
+    
+    // Make sure we have a good CRC
+    quint32 expectedCRC = crc32(request);
+    quint32 receivedCRC = request->hdr.crc32;
+    if (receivedCRC != expectedCRC) {
+        _currentOperation = kCOIdle;
+        _emitErrorMessage(tr("Bad CRC on received message: expected(%1) received(%2)").arg(expectedCRC).arg(receivedCRC));
+        return;
+    }
+    
+    // Make sure we have a good sequence number
+    uint16_t expectedSeqNumber = _lastOutgoingSeqNumber + 1;
+    if (incomingSeqNumber != expectedSeqNumber) {
+        _currentOperation = kCOIdle;
+        _emitErrorMessage(tr("Bad sequence number on received message: expected(%1) received(%2)").arg(expectedSeqNumber).arg(incomingSeqNumber));
+        return;
+    }
+    
+    // Move past the incoming sequence number for next request
+    _lastOutgoingSeqNumber = incomingSeqNumber;
 
     if (request->hdr.opcode == kRspAck) {
 
@@ -289,7 +321,7 @@ void QGCUASFileManager::receiveMessage(LinkInterface* link, mavlink_message_t me
                 break;
 
             default:
-                _emitErrorMessage("Ack received in unexpected state");
+                _emitErrorMessage(tr("Ack received in unexpected state"));
                 break;
         }
     } else if (request->hdr.opcode == kRspNak) {
@@ -329,9 +361,6 @@ void QGCUASFileManager::listDirectory(const QString& dirPath)
         _emitErrorMessage(tr("Command not sent. Waiting for previous command to complete."));
         return;
     }
-
-    // clear the text widget
-    emit resetStatusMessages();
 
     // initialise the lister
     _listPath = dirPath;
@@ -383,8 +412,6 @@ void QGCUASFileManager::downloadPath(const QString& from, const QDir& downloadDi
     }
     i++; // move past slash
     _readFileDownloadFilename = from.right(from.size() - i);
-
-    emit resetStatusMessages();
 
     _currentOperation = kCOOpen;
 
@@ -462,14 +489,12 @@ void QGCUASFileManager::_setupAckTimeout(void)
     Q_ASSERT(!_ackTimer.isActive());
 
     _ackTimer.setSingleShot(true);
-    _ackTimer.start(_ackTimerTimeoutMsecs);
+    _ackTimer.start(ackTimerTimeoutMsecs);
 }
 
 /// @brief Clears the ack timeout timer
 void QGCUASFileManager::_clearAckTimeout(void)
 {
-    Q_ASSERT(_ackTimer.isActive());
-
     _ackTimer.stop();
 }
 
@@ -496,7 +521,6 @@ void QGCUASFileManager::_ackTimeout(void)
 void QGCUASFileManager::_sendTerminateCommand(void)
 {
     Request request;
-    request.hdr.magic = 'f';
     request.hdr.session = _activeSession;
     request.hdr.opcode = kCmdTerminate;
     _sendRequest(&request);
@@ -508,10 +532,10 @@ void QGCUASFileManager::_emitErrorMessage(const QString& msg)
     emit errorMessage(msg);
 }
 
-void QGCUASFileManager::_emitStatusMessage(const QString& msg)
+void QGCUASFileManager::_emitListEntry(const QString& entry)
 {
-    qDebug() << "QGCUASFileManager: Status" << msg;
-    emit statusMessage(msg);
+    qDebug() << "QGCUASFileManager: list entry" << entry;
+    emit listEntry(entry);
 }
 
 /// @brief Sends the specified Request out to the UAS.
@@ -520,9 +544,13 @@ void QGCUASFileManager::_sendRequest(Request* request)
     mavlink_message_t message;
 
     _setupAckTimeout();
+    
+    _lastOutgoingSeqNumber++;
 
+    request->hdr.magic = kProtocolMagic;
     request->hdr.crc32 = crc32(request);
     // FIXME: Send correct system id instead of harcoded 250
-    mavlink_msg_encapsulated_data_pack(250, 0, &message, _encdata_seq, (uint8_t*)request);
+    // FIXME: What about the component id? Should it be set to something specific.
+    mavlink_msg_encapsulated_data_pack(250, 0, &message, _lastOutgoingSeqNumber, (uint8_t*)request);
     _mav->sendMessage(message);
 }

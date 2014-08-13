@@ -436,6 +436,8 @@ MAVLinkSimulationWaypointPlanner::MAVLinkSimulationWaypointPlanner(MAVLinkSimula
     link(parent),
     idle(false),
     current_active_wp_id(-1),
+    yawReached(false),
+    posReached(false),
     timestamp_lastoutside_orbit(0),
     timestamp_firstinside_orbit(0),
     waypoints(&waypoints1),
@@ -520,33 +522,7 @@ void MAVLinkSimulationWaypointPlanner::send_waypoint_current(uint16_t seq)
 */
 void MAVLinkSimulationWaypointPlanner::send_setpoint(uint16_t seq)
 {
-    if(seq < waypoints->size()) {
-        mavlink_mission_item_t *cur = waypoints->at(seq);
-
-        // send new set point to local IMU
-        if (cur->frame == MAV_FRAME_LOCAL_NED || cur->frame == MAV_FRAME_LOCAL_ENU) {
-            mavlink_message_t msg;
-            mavlink_set_local_position_setpoint_t PControlSetPoint;
-
-            PControlSetPoint.target_system = systemid;
-            PControlSetPoint.target_component = MAV_COMP_ID_IMU;
-            PControlSetPoint.x = cur->x;
-            PControlSetPoint.y = cur->y;
-            PControlSetPoint.z = cur->z;
-            PControlSetPoint.yaw = cur->param4;
-            PControlSetPoint.coordinate_frame = cur->frame;
-            
-            mavlink_msg_set_local_position_setpoint_encode(systemid, compid, &msg, &PControlSetPoint);
-            link->sendMAVLinkMessage(&msg);
-            emit messageSent(msg);
-
-            uint64_t now = QGC::groundTimeMilliseconds();
-            timestamp_last_send_setpoint = now;
-        } else if (verbose) {
-            qDebug("No new set point sent to IMU because the new waypoint %u had no local coordinates\n", cur->seq);
-        }
-
-    }
+    Q_UNUSED(seq);
 }
 
 void MAVLinkSimulationWaypointPlanner::send_waypoint_count(uint8_t target_systemid, uint8_t target_compid, uint16_t count)

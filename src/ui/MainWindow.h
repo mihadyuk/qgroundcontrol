@@ -224,8 +224,6 @@ public slots:
     /** @brief Load configuration views */
     void loadHardwareConfigView();
     void loadSoftwareConfigView();
-    /** @brief Load default view when no MAV is connected */
-    void loadUnconnectedView();
     /** @brief Load view for pilot */
     void loadPilotView();
     /** @brief Load view for simulation */
@@ -234,8 +232,6 @@ public slots:
     void loadEngineerView();
     /** @brief Load view for operator */
     void loadOperatorView();
-    /** @brief Load MAVLink XML generator view */
-    void loadMAVLinkView();
     /** @brief Load Terminal Console views */
     void loadTerminalView();
     /** @brief Load Google Earth View */
@@ -339,15 +335,13 @@ protected:
         VIEW_MISSION,
         VIEW_FLIGHT,
         VIEW_SIMULATION,
-        VIEW_MAVLINK,
         VIEW_FIRMWAREUPDATE,
         VIEW_HARDWARE_CONFIG,
         VIEW_SOFTWARE_CONFIG,
         VIEW_TERMINAL,
         VIEW_LOCAL3D,
         VIEW_GOOGLEEARTH,
-        VIEW_UNCONNECTED,    ///< View in unconnected mode, when no UAS is available
-        VIEW_FULL            ///< All widgets shown at once
+        VIEW_DEFAULT
     } VIEW_SECTIONS;
 
     /**
@@ -413,7 +407,6 @@ protected:
     QPointer<SubMainWindow> pilotView;
     QPointer<SubMainWindow> configView;
     QPointer<SubMainWindow> softwareConfigView;
-    QPointer<SubMainWindow> mavlinkView;
     QPointer<SubMainWindow> engineeringView;
     QPointer<SubMainWindow> simView;
     QPointer<SubMainWindow> terminalView;
@@ -422,11 +415,6 @@ protected:
 
     // Center widgets
     QPointer<Linecharts> linechartWidget;
-    //QPointer<HUD> hudWidget;
-    //QPointer<QGCVehicleConfig> configWidget;
-    //QPointer<QGCMapTool> mapWidget;
-    //QPointer<XMLCommProtocolWidget> protocolWidget;
-    //QPointer<QGCDataPlot2D> dataplotWidget;
 #ifdef QGC_OSG_ENABLED
     QPointer<QWidget> q3DWidget;
 #endif
