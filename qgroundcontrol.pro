@@ -124,8 +124,9 @@ MacBuild {
     QMAKE_INFO_PLIST = Custom-Info.plist
     CONFIG += x86_64
     CONFIG -= x86
-	QMAKE_MACOSX_DEPLOYMENT_TARGET = 10.6
-	ICON = $$BASEDIR/files/images/icons/macx.icns
+    QMAKE_MACOSX_DEPLOYMENT_TARGET = 10.6
+    ICON = $$BASEDIR/files/images/icons/macx.icns
+    QT += quickwidgets
 }
 
 LinuxBuild {
@@ -139,13 +140,6 @@ WindowsBuild {
 	# (drastically improves compilation times for multi-core computers)
 	QMAKE_CXXFLAGS_DEBUG += -MP
 	QMAKE_CXXFLAGS_RELEASE += -MP
-
-	# Specify that the Unicode versions of string functions should be used in the Windows API.
-	# Without this the utils and qserialport libraries crash.
-	DEFINES += UNICODE
-
-	# QWebkit is not needed on MS-Windows compilation environment
-	CONFIG -= webkit
 
 	RC_FILE = $$BASEDIR/qgroundcontrol.rc
 }
@@ -176,7 +170,7 @@ WindowsBuild {
 }
 
 #
-# Build flavor specific settings
+# Build-specific settings
 #
 
 DebugBuild {
@@ -187,47 +181,10 @@ ReleaseBuild {
     DEFINES += QT_NO_DEBUG
 
 	WindowsBuild {
-		# Use link time code generation for beteer optimization (I believe this is supported in msvc express, but not 100% sure)
+		# Use link time code generation for better optimization (I believe this is supported in MSVC Express, but not 100% sure)
 		QMAKE_LFLAGS_LTCG = /LTCG
 		QMAKE_CFLAGS_LTCG = -GL
     }
-}
-
-#
-# Unit Test specific configuration goes here (debug only)
-#
-
-DebugBuild {
-    INCLUDEPATH += \
-        src/qgcunittest
-
-    HEADERS += \
-        src/qgcunittest/AutoTest.h \
-        src/qgcunittest/UASUnitTest.h \
-        src/qgcunittest/MockUASManager.h \
-        src/qgcunittest/MockUAS.h \
-        src/qgcunittest/MockQGCUASParamManager.h \
-        src/qgcunittest/MockMavlinkInterface.h \
-        src/qgcunittest/MockMavlinkFileServer.h \
-        src/qgcunittest/MultiSignalSpy.h \
-        src/qgcunittest/FlightModeConfigTest.h \
-        src/qgcunittest/FlightGearTest.h \
-        src/qgcunittest/TCPLinkTest.h \
-        src/qgcunittest/TCPLoopBackServer.h \
-        src/qgcunittest/QGCUASFileManagerTest.h
-
-    SOURCES += \
-        src/qgcunittest/UASUnitTest.cc \
-        src/qgcunittest/MockUASManager.cc \
-        src/qgcunittest/MockUAS.cc \
-        src/qgcunittest/MockQGCUASParamManager.cc \
-        src/qgcunittest/MockMavlinkFileServer.cc \
-        src/qgcunittest/MultiSignalSpy.cc \
-        src/qgcunittest/FlightModeConfigTest.cc \
-        src/qgcunittest/FlightGearTest.cc \
-        src/qgcunittest/TCPLinkTest.cc \
-        src/qgcunittest/TCPLoopBackServer.cc \
-        src/qgcunittest/QGCUASFileManagerTest.cc
 }
 
 #
@@ -312,9 +269,6 @@ FORMS += \
     src/ui/QMap3D.ui \
     src/ui/QGCWebView.ui \
     src/ui/map3D/QGCGoogleEarthView.ui \
-    src/ui/SlugsDataSensorView.ui \
-    src/ui/SlugsHilSim.ui \
-    src/ui/SlugsPadCameraControl.ui \
     src/ui/uas/QGCUnconnectedInfoWidget.ui \
     src/ui/designer/QGCToolWidget.ui \
     src/ui/designer/QGCParamSlider.ui \
@@ -400,6 +354,7 @@ FORMS += \
     src/ui/px4_configuration/QGCPX4AirframeConfig.ui \
     src/ui/px4_configuration/QGCPX4MulticopterConfig.ui \
     src/ui/px4_configuration/QGCPX4SensorCalibration.ui \
+    src/ui/px4_configuration/PX4RCCalibration.ui \
     src/ui/designer/QGCXYPlot.ui \
     src/ui/QGCUASFileView.ui \
     src/ui/px4_configuration/QGCPX4FlightModeConfig.ui \
@@ -453,7 +408,6 @@ HEADERS += \
     src/ui/QGCParamWidget.h \
     src/ui/QGCSensorSettingsWidget.h \
     src/ui/linechart/Linecharts.h \
-    src/uas/SlugsMAV.h \
     src/uas/PxQuadMAV.h \
     src/uas/ArduPilotMegaMAV.h \
     src/uas/senseSoarMAV.h \
@@ -477,9 +431,6 @@ HEADERS += \
     src/comm/QGCMAVLink.h \
     src/ui/QGCWebView.h \
     src/ui/map3D/QGCWebPage.h \
-    src/ui/SlugsDataSensorView.h \
-    src/ui/SlugsHilSim.h \
-    src/ui/SlugsPadCameraControl.h \
     src/ui/QGCMainWindowAPConfigurator.h \
     src/comm/MAVLinkSwarmSimulationLink.h \
     src/ui/uas/QGCUnconnectedInfoWidget.h \
@@ -595,6 +546,7 @@ HEADERS += \
     src/ui/QGCBaseParamWidget.h \
     src/ui/px4_configuration/QGCPX4MulticopterConfig.h \
     src/ui/px4_configuration/QGCPX4SensorCalibration.h \
+    src/ui/px4_configuration/PX4RCCalibration.h \
     src/ui/designer/QGCXYPlot.h \
     src/ui/menuactionhelper.h \
     src/uas/UASManagerInterface.h \
@@ -650,7 +602,6 @@ SOURCES += \
     src/ui/QGCParamWidget.cc \
     src/ui/QGCSensorSettingsWidget.cc \
     src/ui/linechart/Linecharts.cc \
-    src/uas/SlugsMAV.cc \
     src/uas/PxQuadMAV.cc \
     src/uas/ArduPilotMegaMAV.cc \
     src/uas/senseSoarMAV.cpp \
@@ -673,9 +624,6 @@ SOURCES += \
     src/ui/RadioCalibration/RadioCalibrationData.cc \
     src/ui/QGCWebView.cc \
     src/ui/map3D/QGCWebPage.cc \
-    src/ui/SlugsDataSensorView.cc \
-    src/ui/SlugsHilSim.cc \
-    src/ui/SlugsPadCameraControl.cpp \
     src/ui/QGCMainWindowAPConfigurator.cc \
     src/comm/MAVLinkSwarmSimulationLink.cc \
     src/ui/uas/QGCUnconnectedInfoWidget.cc \
@@ -789,6 +737,7 @@ SOURCES += \
     src/ui/QGCBaseParamWidget.cc \
     src/ui/px4_configuration/QGCPX4MulticopterConfig.cc \
     src/ui/px4_configuration/QGCPX4SensorCalibration.cc \
+    src/ui/px4_configuration/PX4RCCalibration.cc \
     src/ui/designer/QGCXYPlot.cc \
     src/ui/menuactionhelper.cpp \
     src/uas/QGCUASFileManager.cc \
@@ -799,3 +748,40 @@ SOURCES += \
     src/ui/px4_configuration/QGCPX4FlightModeConfig.cc \
     src/ui/px4_configuration/QGCPX4SafetyConfig.cc \
     src/ui/px4_configuration/QGCPX4TuningConfig.cc
+
+#
+# Unit Test specific configuration goes here
+# We'd ideally only build this code as part of a Debug build, but qmake doesn't allow
+# for Debug-only files when generating Visual Studio projects [QTBUG-40351]
+INCLUDEPATH += \
+	src/qgcunittest
+
+HEADERS += \
+	src/qgcunittest/AutoTest.h \
+	src/qgcunittest/UASUnitTest.h \
+	src/qgcunittest/MockUASManager.h \
+	src/qgcunittest/MockUAS.h \
+	src/qgcunittest/MockQGCUASParamManager.h \
+	src/qgcunittest/MockMavlinkInterface.h \
+	src/qgcunittest/MockMavlinkFileServer.h \
+	src/qgcunittest/MultiSignalSpy.h \
+	src/qgcunittest/FlightModeConfigTest.h \
+	src/qgcunittest/FlightGearTest.h \
+	src/qgcunittest/TCPLinkTest.h \
+	src/qgcunittest/TCPLoopBackServer.h \
+	src/qgcunittest/QGCUASFileManagerTest.h \
+    src/qgcunittest/PX4RCCalibrationTest.h
+
+SOURCES += \
+	src/qgcunittest/UASUnitTest.cc \
+	src/qgcunittest/MockUASManager.cc \
+	src/qgcunittest/MockUAS.cc \
+	src/qgcunittest/MockQGCUASParamManager.cc \
+	src/qgcunittest/MockMavlinkFileServer.cc \
+	src/qgcunittest/MultiSignalSpy.cc \
+	src/qgcunittest/FlightModeConfigTest.cc \
+	src/qgcunittest/FlightGearTest.cc \
+	src/qgcunittest/TCPLinkTest.cc \
+	src/qgcunittest/TCPLoopBackServer.cc \
+	src/qgcunittest/QGCUASFileManagerTest.cc \
+    src/qgcunittest/PX4RCCalibrationTest.cc

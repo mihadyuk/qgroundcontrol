@@ -104,8 +104,13 @@ QGCVehicleConfig::QGCVehicleConfig(QWidget *parent) :
     connect(&updateTimer, SIGNAL(timeout()), this, SLOT(updateView()));
     updateTimer.start();
 
-    ui->advancedGroupBox->hide();
-    connect(ui->advancedCheckBox,SIGNAL(toggled(bool)),ui->advancedGroupBox,SLOT(setShown(bool)));
+    // Make sure the advanced features match what the checkbox indicates on startup and listen for
+    // future changes.
+    if (!ui->advancedCheckBox->isChecked())
+    {
+        ui->advancedGroupBox->hide();
+    }
+    connect(ui->advancedCheckBox, SIGNAL(toggled(bool)), ui->advancedGroupBox,SLOT(setVisible(bool)));
 }
 void QGCVehicleConfig::rcMenuButtonClicked()
 {
@@ -246,12 +251,12 @@ void QGCVehicleConfig::loadQgcConfig(bool primary)
     if (!autopilotdir.exists("general"))
     {
      //TODO: Throw some kind of error here. There is no general configuration directory
-        qWarning() << "Invalid general dir. no general configuration will be loaded.";
+        qDebug() << "Invalid general dir. no general configuration will be loaded.";
     }
     if (!autopilotdir.exists(mav->getAutopilotTypeName().toLower()))
     {
         //TODO: Throw an error here too, no autopilot specific configuration
-        qWarning() << "Invalid vehicle dir, no vehicle specific configuration will be loaded.";
+        qDebug() << "Invalid vehicle dir, no vehicle specific configuration will be loaded.";
     }
 
     // Generate widgets for the General tab.
@@ -470,12 +475,12 @@ void QGCVehicleConfig::loadConfig()
     if (!autopilotdir.exists("general"))
     {
      //TODO: Throw some kind of error here. There is no general configuration directory
-        qWarning() << "Invalid general dir. no general configuration will be loaded.";
+        qDebug() << "Invalid general dir. no general configuration will be loaded.";
     }
     if (!autopilotdir.exists(mav->getAutopilotTypeName().toLower()))
     {
         //TODO: Throw an error here too, no autopilot specific configuration
-        qWarning() << "Invalid vehicle dir, no vehicle specific configuration will be loaded.";
+        qDebug() << "Invalid vehicle dir, no vehicle specific configuration will be loaded.";
     }
     qDebug() << autopilotdir.absolutePath();
     qDebug() << generaldir.absolutePath();

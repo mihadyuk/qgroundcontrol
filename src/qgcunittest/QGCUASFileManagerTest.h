@@ -56,28 +56,30 @@ private slots:
     void _noAckTest(void);
     void _resetTest(void);
     void _listTest(void);
-    void _openTest(void);
+    void _downloadTest(void);
     
-    // Connected to QGCUASFileManager statusMessage signal
-    void statusMessage(const QString&);
+    // Connected to QGCUASFileManager listEntry signal
+    void listEntry(const QString& entry);
     
 private:
     void _validateFileContents(const QString& filePath, uint8_t length);
 
     enum {
-        statusMessageSignalIndex = 0,
+        listEntrySignalIndex = 0,
+        listCompleteSignalIndex,
+        downloadFileLengthSignalIndex,
+        downloadFileCompleteSignalIndex,
         errorMessageSignalIndex,
-        resetStatusMessagesSignalIndex,
-
         maxSignalIndex
     };
     
     enum {
-        statusMessageSignalMask =           1 << statusMessageSignalIndex,
+        listEntrySignalMask =               1 << listEntrySignalIndex,
+        listCompleteSignalMask =            1 << listCompleteSignalIndex,
+        downloadFileLengthSignalMask =      1 << downloadFileLengthSignalIndex,
+        downloadFileCompleteSignalMask =    1 << downloadFileCompleteSignalIndex,
         errorMessageSignalMask =            1 << errorMessageSignalIndex,
-        resetStatusMessagesSignalMask =     1 << resetStatusMessagesSignalIndex,
     };
-    
     MockUAS                 _mockUAS;
     MockMavlinkFileServer   _mockFileServer;
     
@@ -86,6 +88,10 @@ private:
     MultiSignalSpy*     _multiSpy;
     static const size_t _cSignals = maxSignalIndex;
     const char*         _rgSignals[_cSignals];
+    
+    /// @brief This is the amount of time to wait to allow the FileManager enough time to timeout waiting for an Ack.
+    /// As such it must be larger than the Ack Timeout used by the FileManager.
+    static const int _ackTimerTimeoutMsecs = QGCUASFileManager::ackTimerTimeoutMsecs * 2;
     
     QStringList _fileListReceived;
 };

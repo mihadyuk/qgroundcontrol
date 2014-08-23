@@ -39,12 +39,34 @@ public:
     bool _sendCmdTestAck(void) { return _sendOpcodeOnlyCmd(kCmdNone, kCOAck); };
     bool _sendCmdTestNoAck(void) { return _sendOpcodeOnlyCmd(kCmdTestNoAck, kCOAck); };
     bool _sendCmdReset(void) { return _sendOpcodeOnlyCmd(kCmdReset, kCOAck); };
+    
+    /// @brief Timeout in msecs to wait for an Ack time come back. This is public so we can write unit tests which wait long enough
+    /// for the FileManager to timeout.
+    static const int ackTimerTimeoutMsecs = 1000;
 
 signals:
-    void statusMessage(const QString& msg);
-    void resetStatusMessages();
+    /// @brief Signalled whenever an error occurs during the listDirectory or downloadPath methods.
     void errorMessage(const QString& msg);
+    
+    // Signals associated with the listDirectory method
+    
+    /// @brief Signalled to indicate a new directory entry was received.
+    void listEntry(const QString& entry);
+    
+    /// @brief Signalled after listDirectory completes. If an error occurs during directory listing this signal will not be emitted.
     void listComplete(void);
+    
+    // Signals associated with the downloadPath method
+    
+    /// @brief Signalled after downloadPath is called to indicate length of file being downloaded
+    void downloadFileLength(unsigned int length);
+    
+    /// @brief Signalled during file download to indicate download progress
+    ///     @param bytesReceived Number of bytes currently received from file
+    void downloadFileProgress(unsigned int bytesReceived);
+    
+    /// @brief Signaled to indicate completion of file download. If an error occurs during download this signal will not be emitted.
+    void downloadFileComplete(void);
 
 public slots:
     void receiveMessage(LinkInterface* link, mavlink_message_t message);
@@ -52,6 +74,7 @@ public slots:
     void downloadPath(const QString& from, const QDir& downloadDir);
 
 protected:
+    static const uint8_t kProtocolMagic = 'f';
     struct RequestHeader
         {
             uint8_t		magic;      ///> Magic byte 'f' to idenitfy FTP protocol
@@ -65,9 +88,16 @@ protected:
     struct Request
     {
         struct RequestHeader hdr;
-        // The entire Request must fit into the data member of the mavlink_encapsulated_data_t structure. We use as many leftover bytes
-        // after we use up space for the RequestHeader for the data portion of the Request.
-        uint8_t data[sizeof(((mavlink_encapsulated_data_t*)0)->data) - sizeof(RequestHeader)];
+
+        // We use a union here instead of just casting (uint32_t)&data[0] to not break strict aliasing rules
+        union {
+            // The entire Request must fit into the data member of the mavlink_encapsulated_data_t structure. We use as many leftover bytes
+            // after we use up space for the RequestHeader for the data portion of the Request.
+            uint8_t data[sizeof(((mavlink_encapsulated_data_t*)0)->data) - sizeof(RequestHeader)];
+
+            // File length returned by Open command
+            uint32_t openFileLength;
+        };
     };
 
     enum Opcode
@@ -127,7 +157,7 @@ protected:
     void _setupAckTimeout(void);
     void _clearAckTimeout(void);
     void _emitErrorMessage(const QString& msg);
-    void _emitStatusMessage(const QString& msg);
+    void _emitListEntry(const QString& entry);
     void _sendRequest(Request* request);
     void _fillRequestWithString(Request* request, const QString& str);
     void _openAckResponse(Request* openAck);
@@ -140,12 +170,12 @@ protected:
     static quint32 crc32(Request* request, unsigned state = 0);
     static QString errorString(uint8_t errorCode);
 
-    OperationState      _currentOperation;              ///> Current operation of state machine
-    QTimer              _ackTimer;                      ///> Used to signal a timeout waiting for an ack
-    static const int    _ackTimerTimeoutMsecs = 1000;   ///> Timeout in msecs for ack timer
+    OperationState  _currentOperation;              ///> Current operation of state machine
+    QTimer          _ackTimer;                      ///> Used to signal a timeout waiting for an ack
     
     UASInterface* _mav;
-    quint16 _encdata_seq;
+    
+    uint16_t _lastOutgoingSeqNumber; ///< Sequence number sent in last outgoing packet
 
     unsigned    _listOffset;    ///> offset for the current List operation
     QString     _listPath;      ///> path for the current List operation
