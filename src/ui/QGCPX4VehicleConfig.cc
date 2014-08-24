@@ -57,6 +57,9 @@ QGCPX4VehicleConfig::QGCPX4VehicleConfig(QWidget *parent) :
     ui->airframeMenuButton->setEnabled(false);
     ui->sensorMenuButton->setEnabled(false);
     ui->rcMenuButton->setEnabled(false);
+    ui->flightModeMenuButton->setEnabled(false);
+    ui->tuningMenuButton->setEnabled(false);
+    ui->safetyConfigButton->setEnabled(false);
 
     px4AirframeConfig = new QGCPX4AirframeConfig(this);
     ui->airframeLayout->addWidget(px4AirframeConfig);
