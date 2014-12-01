@@ -13,7 +13,7 @@ namespace Ui {
 class UASQuickTabView;
 }
 
-class UASQuickTabView : public QTableWidget
+class UASQuickTabView : public QWidget
 {
     Q_OBJECT
 

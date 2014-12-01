@@ -59,6 +59,7 @@ This file is part of the QGROUNDCONTROL project
 #include "QGCRGBDView.h"
 #include "QGCStatusBar.h"
 #include "UASQuickView.h"
+#include "UASQuickTabView.h"
 #include "QGCDataPlot2D.h"
 #include "Linecharts.h"
 #include "QGCTabbedInfoView.h"
@@ -78,6 +79,8 @@ This file is part of the QGROUNDCONTROL project
 #endif
 
 #include "LogCompressor.h"
+
+#include <QTextCodec>
 
 static MainWindow* _instance = NULL;   ///< @brief MainWindow singleton
 
@@ -130,6 +133,9 @@ MainWindow::MainWindow(QSplashScreen* splashScreen, enum MainWindow::CUSTOM_MODE
     if (splashScreen) {
         connect(this, &MainWindow::initStatusChanged, splashScreen, &QSplashScreen::showMessage);
     }
+
+    QTextCodec *cyr = QTextCodec::codecForName("UTF-8");
+    QTextCodec::setCodecForLocale(cyr);
     
     this->setAttribute(Qt::WA_DeleteOnClose);
     connect(menuActionHelper, SIGNAL(needToShowDockWidget(QString,bool)),SLOT(showDockWidget(QString,bool)));
@@ -605,9 +611,14 @@ void MainWindow::buildCommonWidgets()
     createDockWidget(simView,new PrimaryFlightDisplay(this),tr("Primary Flight Display"),"PRIMARY_FLIGHT_DISPLAY_DOCKWIDGET",VIEW_SIMULATION,Qt::RightDockWidgetArea);
     createDockWidget(plannerView,new PrimaryFlightDisplay(this),tr("Primary Flight Display"),"PRIMARY_FLIGHT_DISPLAY_DOCKWIDGET",VIEW_FLIGHT,Qt::LeftDockWidgetArea);
 
-    QGCTabbedInfoView *infoview = new QGCTabbedInfoView(this);
-    infoview->addSource(mavlinkDecoder);
-    createDockWidget(pilotView,infoview,tr("Info View"),"UAS_INFO_INFOVIEW_DOCKWIDGET",VIEW_FLIGHT,Qt::LeftDockWidgetArea);
+//    QGCTabbedInfoView *infoview = new QGCTabbedInfoView(this);
+//    infoview->addSource(mavlinkDecoder);
+//    createDockWidget(pilotView,infoview,tr("Info View"),"UAS_INFO_INFOVIEW_DOCKWIDGET",VIEW_FLIGHT,Qt::LeftDockWidgetArea);
+
+    UASQuickTabView *uasquicktabview = new UASQuickTabView(this);
+    uasquicktabview->addSource(mavlinkDecoder);
+    createDockWidget(pilotView,uasquicktabview,"Параметры","UAS_QUICKTABVIEW_DOCKWIDGET",VIEW_FLIGHT,Qt::LeftDockWidgetArea);
+
 
     // Custom widgets, added last to all menus and layouts
     buildCustomWidget();

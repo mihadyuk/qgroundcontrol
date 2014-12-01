@@ -327,7 +327,8 @@ FORMS += \
     src/ui/px4_configuration/QGCPX4SensorCalibration.ui \
     src/ui/px4_configuration/PX4RCCalibration.ui \
     src/ui/px4_configuration/PX4FirmwareUpgrade.ui \
-    src/ui/QGCUASFileView.ui
+    src/ui/QGCUASFileView.ui \
+    src/ui/uas/UASQuickTabView.ui
 
 HEADERS += \
     src/MG.h \
@@ -477,7 +478,8 @@ HEADERS += \
     src/CmdLineOptParser.h \
     src/uas/QGXPX4UAS.h \
     src/QGCFileDialog.h \
-    src/QGCMessageBox.h
+    src/QGCMessageBox.h \
+    src/ui/uas/UASQuickTabView.h
 
 SOURCES += \
     src/main.cc \
@@ -616,7 +618,8 @@ SOURCES += \
     src/uas/QGCUASWorker.cc \
     src/CmdLineOptParser.cc \
     src/uas/QGXPX4UAS.cc \
-    src/QGCFileDialog.cc
+    src/QGCFileDialog.cc \
+    src/ui/uas/UASQuickTabView.cpp
 
 
 #
