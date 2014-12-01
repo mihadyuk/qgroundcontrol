@@ -353,13 +353,13 @@ void CommConfigurationWindow::setProtocol(int protocol)
 void CommConfigurationWindow::setConnection()
 {
     if(!link->isConnected()) {
-        link->connect();
+        LinkManager::instance()->connectLink(link);
         QGC::SLEEP::msleep(100);
         if (link->isConnected())
             // Auto-close window on connect
             this->window()->close();
     } else {
-        link->disconnect();
+        LinkManager::instance()->disconnectLink(link);
     }
 }
 
@@ -376,10 +376,7 @@ void CommConfigurationWindow::remove()
     action=NULL;
 
     if(link) {
-        LinkManager::instance()->removeLink(link); //remove link from LinkManager list
-        link->disconnect(); //disconnect port, and also calls terminate() to stop the thread
-        if (link->isRunning()) link->terminate(); // terminate() the serial thread just in case it is still running
-        link->wait(); // wait() until thread is stoped before deleting
+        LinkManager::instance()->disconnectLink(link);  // disconnect connection
         link->deleteLater();
     }
     link=NULL;

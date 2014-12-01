@@ -38,11 +38,11 @@ This file is part of the APM_PLANNER project
 #include "ui_terminalconsole.h"
 #include "console.h"
 #include "QGCConfig.h"
+#include "QGCMessageBox.h"
 
 #include <QDebug>
 #include <QSettings>
 #include <QStatusBar>
-#include <QMessageBox>
 #include <QVBoxLayout>
 #include <QComboBox>
 #include <QSerialPort>
@@ -66,7 +66,7 @@ TerminalConsole::TerminalConsole(QWidget *parent) :
     layout->addWidget(m_statusBar);
 
     m_serial = new QSerialPort(this);
-    m_settingsDialog = new SettingsDialog;
+    m_settingsDialog = new SerialSettingsDialog;
 
     ui->connectButton->setEnabled(true);
     ui->disconnectButton->setEnabled(false);
@@ -159,12 +159,12 @@ void TerminalConsole::openSerialPort(const SerialSettings &settings)
 
         } else {
             m_serial->close();
-            QMessageBox::critical(this, tr("Error"), m_serial->errorString());
+            QGCMessageBox::critical(tr("Error"), m_serial->errorString());
 
             m_statusBar->showMessage(tr("Open error"));
         }
     } else {
-        QMessageBox::critical(this, tr("Error"), m_serial->errorString());
+        QGCMessageBox::critical(tr("Error"), m_serial->errorString());
 
         m_statusBar->showMessage(tr("Configure error"));
     }
@@ -222,7 +222,7 @@ void TerminalConsole::readData()
 void TerminalConsole::handleError(QSerialPort::SerialPortError error)
 {
     if (error == QSerialPort::ResourceError) {
-        QMessageBox::critical(this, tr("Critical Error"), m_serial->errorString());
+        QGCMessageBox::critical(tr("Critical Error"), m_serial->errorString());
         closeSerialPort();
     }
 }

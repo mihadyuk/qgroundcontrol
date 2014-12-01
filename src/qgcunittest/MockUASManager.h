@@ -53,6 +53,9 @@ public:
     // MockUASManager methods
     MockUASManager(void);
     
+    // Does not support singleton deletion
+    virtual void deleteInstance(void) { Q_ASSERT(false); }
+    
     /// Sets the currently active mock UAS
     /// @param mockUAS new mock uas, NULL for no active UAS
     void setMockActiveUAS(MockUAS* mockUAS);
@@ -93,7 +96,6 @@ public slots:
     virtual bool returnActiveUAS() { Q_ASSERT(false); return false; }
     virtual bool stopActiveUAS() { Q_ASSERT(false); return false; }
     virtual bool killActiveUAS() { Q_ASSERT(false); return false; }
-    virtual void configureActiveUAS() { Q_ASSERT(false); }
     virtual bool shutdownActiveUAS() { Q_ASSERT(false); return false; }
     virtual bool setHomePosition(double lat, double lon, double alt)
         { Q_ASSERT(false); Q_UNUSED(lat); Q_UNUSED(lon); Q_UNUSED(alt); return false; }

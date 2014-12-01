@@ -15,7 +15,6 @@
 #include <QSerialPort>
 #include <QSerialPortInfo>
 #include "SerialLink.h"
-#include "LinkManager.h"
 #include "QGC.h"
 #include <MG.h>
 
@@ -72,9 +71,6 @@ SerialLink::SerialLink(QString portname, int baudRate, bool hardwareFlowControl,
     qDebug() << "create SerialLink " << portname << baudRate << hardwareFlowControl
              << parity << dataBits << stopBits;
     qDebug() << "m_portName " << m_portName;
-
-    LinkManager::instance()->add(this);
-    qDebug() << "link added to link manager";
 }
 
 void SerialLink::requestReset()
@@ -85,7 +81,7 @@ void SerialLink::requestReset()
 
 SerialLink::~SerialLink()
 {
-    disconnect();
+    _disconnect();
     if(m_port) delete m_port;
     m_port = NULL;
 
@@ -395,7 +391,7 @@ void SerialLink::readBytes()
  *
  * @return True if connection has been disconnected, false if connection couldn't be disconnected.
  **/
-bool SerialLink::disconnect()
+bool SerialLink::_disconnect(void)
 {
     if (isRunning())
     {
@@ -405,8 +401,6 @@ bool SerialLink::disconnect()
         }
         wait(); // This will terminate the thread and close the serial port
 
-        emit connected(false);
-        emit disconnected();
         return true;
     }
 
@@ -421,11 +415,11 @@ bool SerialLink::disconnect()
  *
  * @return True if connection has been established, false if connection couldn't be established.
  **/
-bool SerialLink::connect()
+bool SerialLink::_connect(void)
 {   
     qDebug() << "CONNECT CALLED";
     if (isRunning())
-        disconnect();
+        _disconnect();
     {
         QMutexLocker locker(&this->m_stoppMutex);
         m_stopp = false;
@@ -436,12 +430,12 @@ bool SerialLink::connect()
 }
 
 /**
- * @brief This function is called indirectly by the connect() call.
+ * @brief This function is called indirectly by the _connect() call.
  *
- * The connect() function starts the thread and indirectly calls this method.
+ * The _connect() function starts the thread and indirectly calls this method.
  *
  * @return True if the connection could be established, false otherwise
- * @see connect() For the right function to establish the connection.
+ * @see _connect() For the right function to establish the connection.
  **/
 bool SerialLink::hardwareConnect(QString &type)
 {
