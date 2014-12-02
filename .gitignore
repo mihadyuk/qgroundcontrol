@@ -38,14 +38,10 @@ user_config.pri
 *.ipch
 *.pdb
 *.sln
-*.sln
-*.vcproj
 *.user
-*.ncb
 *.idb
 *.project
 *.cproject
-*.sln
 *.suo
 *.uhf.txt
 *.opensdf
@@ -66,3 +62,4 @@ ui_*
 *.so*
 *.moc
 *.prl
+*.gitattributes
