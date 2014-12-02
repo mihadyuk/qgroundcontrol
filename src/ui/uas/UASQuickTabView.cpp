@@ -9,6 +9,7 @@ UASQuickTabView::UASQuickTabView(QWidget *parent) :
     ui(new Ui::UASQuickTabView)
 {
     ui->setupUi(this);
+    this->setLayout(ui->gridLayout);
 	
 	QStringList nameList;// = new QStringList();
 	nameList.append("Широта:");
@@ -82,12 +83,15 @@ void UASQuickTabView::valueChanged(const int uasId, const QString& name, const Q
 }
 
 void UASQuickTabView::setTableGeometry(){
-    ui->tableWidget->setColumnWidth(0, (ui->tableWidget->width()-ui->tableWidget->verticalHeader()->width())/2);
-    ui->tableWidget->setColumnWidth(1, (ui->tableWidget->width()-ui->tableWidget->verticalHeader()->width())/2);
-    for(int i = 0; i < ui->tableWidget->rowCount(); i++) {
-        ui->tableWidget->setRowHeight(i, (ui->tableWidget->width()/*-this->horizontalHeader()->width()*/)/6);
-    }
+    ui->gridLayout->setColumnMinimumWidth(0, (this->width() - 2));
+    ui->gridLayout->setRowMinimumHeight(0, (this->height() - 2));
+   // ui->gridLayout->setColumnStretch(0,);
+    ui->tableWidget->setColumnWidth(0, (ui->gridLayout->columnMinimumWidth(0)/2));
+    ui->tableWidget->setColumnWidth(1, (ui->gridLayout->columnMinimumWidth(0)/2));
 
+    for(int i = 0; i < ui->tableWidget->rowCount(); i++) {
+        ui->tableWidget->setRowHeight(i, (ui->gridLayout->rowMinimumHeight(0))/6);
+    }
 }
 
 void UASQuickTabView::setItemText(int row, int column, QString text){
