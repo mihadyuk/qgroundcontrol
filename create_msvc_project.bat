@@ -1,0 +1,1 @@
+d:\qt\qt5.3.1_msvc2013\5.3\msvc2013_opengl\bin\qmake -tp vc qgroundcontrol.pro
