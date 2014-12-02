@@ -63,3 +63,4 @@ ui_*
 *.moc
 *.prl
 *.gitattributes
+/create_msvc_project.bat
