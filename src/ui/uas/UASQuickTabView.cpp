@@ -126,16 +126,27 @@ void UASQuickTabView::updateTimerTick()
 }
 
 void UASQuickTabView::setTableGeometry(){
-    ui->gridLayout->setColumnMinimumWidth(0, (this->width() - 2));
-    ui->gridLayout->setRowMinimumHeight(0, (this->height() - 9));
-   // ui->gridLayout->setColumnStretch(0,);
-    ui->tableWidget->setColumnWidth(0, (ui->gridLayout->columnMinimumWidth(0)/2));
-    ui->tableWidget->setColumnWidth(1, (ui->gridLayout->columnMinimumWidth(0)/2));
+//    ui->gridLayout->setColumnMinimumWidth(0, (this->width() - 2));
+//    ui->gridLayout->setRowMinimumHeight(0, (this->height() - 10));
+//   // ui->gridLayout->setColumnStretch(0,);
+//    ui->tableWidget->setColumnWidth(0, (ui->gridLayout->columnMinimumWidth(0)/2));
+//    ui->tableWidget->setColumnWidth(1, (ui->gridLayout->columnMinimumWidth(0)/2));
+
+//    for(int i = 0; i < ui->tableWidget->rowCount(); i++) {
+//        ui->tableWidget->setRowHeight(i, (ui->gridLayout->rowMinimumHeight(0))/6);
+//        qDebug()<<"qgridrowminimumheight: "<<ui->gridLayout->rowMinimumHeight(0);
+//    }
+
+
+    ui->tableWidget->setColumnWidth(0, ((this->width() - 5)/2));
+    ui->tableWidget->setColumnWidth(1, ((this->width())/2));
 
     for(int i = 0; i < ui->tableWidget->rowCount(); i++) {
-        ui->tableWidget->setRowHeight(i, (ui->gridLayout->rowMinimumHeight(0))/6);
-        qDebug()<<"qgridrowminimumheight: "<<ui->gridLayout->rowMinimumHeight(0);
+        ui->tableWidget->setRowHeight(i, (this->height() - 2)/6);
+        //qDebug()<<"qgridrowminimumheight: "<<ui->gridLayout->rowMinimumHeight(0);
     }
+
+
 }
 
 QString UASQuickTabView::setItemText(){
