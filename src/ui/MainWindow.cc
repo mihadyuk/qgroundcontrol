@@ -59,7 +59,7 @@ This file is part of the QGROUNDCONTROL project
 #include "QGCRGBDView.h"
 #include "QGCStatusBar.h"
 #include "UASQuickView.h"
-#include "UASQuickTabView.h"
+//#include "UASQuickTabView.h"
 #include "QGCDataPlot2D.h"
 #include "Linecharts.h"
 #include "QGCTabbedInfoView.h"
@@ -1116,14 +1116,12 @@ void MainWindow::showStatusMessage(const QString& status)
 
 void MainWindow::showCriticalMessage(const QString& title, const QString& message)
 {
-    _hideSplashScreen();
     qDebug() << "Critical" << title << message;
     QGCMessageBox::critical(title, message);
 }
 
 void MainWindow::showInfoMessage(const QString& title, const QString& message)
 {
-    _hideSplashScreen();
     qDebug() << "Information" << title << message;
     QGCMessageBox::information(title, message);
 }
@@ -1631,8 +1629,6 @@ void MainWindow::handleMisconfiguration(UASInterface* uas)
         }
     }
     
-    _hideSplashScreen();
-    
     // Ask user if he wants to handle this now
     QMessageBox::StandardButton button = QGCMessageBox::question(tr("Missing or Invalid Onboard Configuration"),
                                                                     tr("The onboard system configuration is missing or incomplete. Do you want to resolve this now?"),
@@ -1747,7 +1743,6 @@ bool MainWindow::dockWidgetTitleBarsEnabled() const
 void MainWindow::_saveTempFlightDataLog(QString tempLogfile)
 {
     if (qgcApp()->promptFlightDataSave()) {
-        _hideSplashScreen();
         QString saveFilename = QGCFileDialog::getSaveFileName(this,
                                                             tr("Select file to save Flight Data Log"),
                                                             qgcApp()->mavlinkLogFilesLocation(),
@@ -1760,7 +1755,7 @@ void MainWindow::_saveTempFlightDataLog(QString tempLogfile)
 }
 
 /// @brief Hides the spash screen if it is currently being shown
-void MainWindow::_hideSplashScreen(void)
+void MainWindow::hideSplashScreen(void)
 {
     if (_splashScreen) {
         _splashScreen->hide();
