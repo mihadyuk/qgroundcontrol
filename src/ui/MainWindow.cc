@@ -607,9 +607,9 @@ void MainWindow::buildCommonWidgets()
     menuActionHelper->createToolAction(tr("Flight Display"), "HEAD_DOWN_DISPLAY_1_DOCKWIDGET");
     menuActionHelper->createToolAction(tr("Actuator Status"), "HEAD_DOWN_DISPLAY_2_DOCKWIDGET");
 
-    UASQuickTabView *uasquicktabview = new UASQuickTabView(this);
-    uasquicktabview->addSource(mavlinkDecoder);
-    createDockWidget(pilotView,uasquicktabview,"Параметры","UAS_QUICKTABVIEW_DOCKWIDGET",VIEW_FLIGHT,Qt::LeftDockWidgetArea);
+//    UASQuickTabView *uasquicktabview = new UASQuickTabView(this);
+//    uasquicktabview->addSource(mavlinkDecoder);
+//    createDockWidget(pilotView,uasquicktabview,"Параметры","UAS_QUICKTABVIEW_DOCKWIDGET",VIEW_FLIGHT,Qt::LeftDockWidgetArea);
 
     // Add any custom widgets last to all menus and layouts
     buildCustomWidget();
