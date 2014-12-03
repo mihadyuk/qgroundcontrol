@@ -59,7 +59,6 @@ This file is part of the QGROUNDCONTROL project
 #include "QGCRGBDView.h"
 #include "QGCStatusBar.h"
 #include "UASQuickView.h"
-//#include "UASQuickTabView.h"
 #include "QGCDataPlot2D.h"
 #include "Linecharts.h"
 #include "QGCTabbedInfoView.h"

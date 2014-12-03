@@ -10,8 +10,7 @@ UASQuickTabView::UASQuickTabView(QWidget *parent) :
 {
     ui->setupUi(this);
     this->setLayout(ui->gridLayout);
-    //ui->gridLayout->setRowStretch(0, -1);
-	
+
 	QStringList nameList;// = new QStringList();
 	nameList.append("Широта:");
 	nameList.append("Долгота:");
@@ -20,12 +19,12 @@ UASQuickTabView::UASQuickTabView(QWidget *parent) :
 	nameList.append("Крен:");
 	nameList.append("Тангаж:");
 
-    fieldNameList <<"M24:GLOBAL_POSITION_INT.lat"
-                 <<"M24:GLOBAL_POSITION_INT.lon"
-                <<"M24:GLOBAL_POSITION_INT.alt"
-               <<"M24:ATTITUDE.roll"
-              <<"M24:ATTITUDE.pitch"
-             <<"M24:ATTITUDE.yaw";
+    fieldNameList << "M24:GLOBAL_POSITION_INT.lat"
+                  << "M24:GLOBAL_POSITION_INT.lon"
+                  << "M24:GLOBAL_POSITION_INT.alt"
+                  << "M24:ATTITUDE.roll"
+                  << "M24:ATTITUDE.pitch"
+                  << "M24:ATTITUDE.yaw";
 
     foreach(QString str, fieldNameList){
         uasPropertyValueMap.insert(str, 0.0);
@@ -44,26 +43,26 @@ UASQuickTabView::UASQuickTabView(QWidget *parent) :
     tableFont.setBold(3);
 
     for(int i = 0; i < nameList.count(); i++) {
+        /* Add first column that shows lable names.*/
         QTableWidgetItem* item = new QTableWidgetItem();
-        QTableWidgetItem* item2 = new QTableWidgetItem();
-        Q_ASSERT(item && item2);
-        //Q_ASSERT(item2);
-        if (item && item2) {
-			item->setText(nameList.at(i));
-            //qDebug()<<"Text in item: "<<item->text();
-			tableNameList.append(item);
-			item->setFont(tableFont);
+        Q_ASSERT(item);
+        if (item) {
+            item->setText(nameList.at(i));
+            tableNameList.append(item);
+            item->setFont(tableFont);
             ui->tableWidget->setItem(i, 0, item);
+        }
 
-            tableValueList.append(item2);
-            //item2->setText("0.0");
-            item2->setFont(tableFont);
-            ui->tableWidget->setItem(i, 1, item2);
-            qDebug()<<"Text in item in table: "<<ui->tableWidget->itemAt(i,0)->text();
+        /* Add column with values.*/
+        item = new QTableWidgetItem();
+        Q_ASSERT(item);
+        if (item) {
+            tableValueList.append(item);
+            item->setFont(tableFont);
+            item->setText("0.0");
+            ui->tableWidget->setItem(i, 1, item);
         }
     }
-
-    //setTableGeometry();
 
     updateTimer = new QTimer(this);
     connect(updateTimer,SIGNAL(timeout()),this,SLOT(updateTimerTick()));
