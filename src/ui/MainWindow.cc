@@ -611,9 +611,9 @@ void MainWindow::buildCommonWidgets()
 //    infoview->addSource(mavlinkDecoder);
 //    createDockWidget(pilotView,infoview,tr("Info View"),"UAS_INFO_INFOVIEW_DOCKWIDGET",VIEW_FLIGHT,Qt::LeftDockWidgetArea);
 
-    UASQuickTabView *uasquicktabview = new UASQuickTabView(this);
-    uasquicktabview->addSource(mavlinkDecoder);
-    createDockWidget(pilotView,uasquicktabview,"Параметры","UAS_QUICKTABVIEW_DOCKWIDGET",VIEW_FLIGHT,Qt::LeftDockWidgetArea);
+//    UASQuickTabView *uasquicktabview = new UASQuickTabView(this);
+//    uasquicktabview->addSource(mavlinkDecoder);
+//    createDockWidget(pilotView,uasquicktabview,"Параметры","UAS_QUICKTABVIEW_DOCKWIDGET",VIEW_FLIGHT,Qt::LeftDockWidgetArea);
 
 
     // Custom widgets, added last to all menus and layouts

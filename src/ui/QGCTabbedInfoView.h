@@ -7,6 +7,7 @@
 #include "QGCMessageView.h"
 #include "UASActionsWidget.h"
 #include "UASQuickView.h"
+#include "UASQuickTabView.h"
 #include "UASRawStatusView.h"
 class QGCTabbedInfoView : public QWidget
 {
@@ -22,6 +23,7 @@ private:
     QGCMessageView *messageView;
     UASActionsWidget *actionsWidget;
     UASQuickView *quickView;
+    UASQuickTabView *quicktabView;
     UASRawStatusView *rawView;
 };
 

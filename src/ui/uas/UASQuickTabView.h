@@ -32,15 +32,19 @@ private:
     //QTableWidget* tableWidget;
     void setTableGeometry();
     void resizeEvent(QResizeEvent *event);
-    void setItemText(int row, int column, QString text);
+    QString setItemText();
 
 //    QStandardItemModel* model;
     QList<QTableWidgetItem*> tableNameList;
     QList<QTableWidgetItem*> tableValueList;
+    QStringList fieldNameList;
+
+    /** Maps from the property name to the current value */
+    QMap<QString,double> uasPropertyValueMap;
 
 public slots:
     void valueChanged(const int uasid, const QString& name, const QString& unit, const QVariant& value,const quint64 msecs);
-    //void updateTimerTick();
+    void updateTimerTick();
 };
 
 #endif // UASQUICKTABVIEW_H
