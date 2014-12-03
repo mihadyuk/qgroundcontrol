@@ -223,7 +223,8 @@ RESOURCES += qgroundcontrol.qrc
 
 TRANSLATIONS += \
     es-MX.ts \
-    en-US.ts
+    en-US.ts \
+    en-ru.ts
     
 DEPENDPATH += \
     . \
