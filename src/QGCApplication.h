@@ -33,6 +33,7 @@
 #define QGCAPPLICATION_H
 
 #include <QApplication>
+#include <QTranslator>
 
 #ifdef QGC_RTLAB_ENABLED
 #include "OpalLink.h"
@@ -52,7 +53,7 @@ class MainWindow;
 class QGCApplication : public QApplication
 {
     Q_OBJECT
-    
+    QTranslator translator;
 public:
     QGCApplication(int &argc, char* argv[], bool unitTesting);
     ~QGCApplication();
