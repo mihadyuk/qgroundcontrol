@@ -358,19 +358,141 @@
     </message>
 </context>
 <context>
+    <name>FlightModeConfig</name>
+    <message>
+        <location filename="src/AutoPilotPlugins/PX4/FlightModeConfig.ui" line="20"/>
+        <source>Form</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="src/AutoPilotPlugins/PX4/FlightModeConfig.ui" line="31"/>
+        <source>This implementation is a work in progress. Visuals are meant to be functional only. Active display of switch positions is not yet implemented. If this entire screen is disabled, you must do a Radio Calibration before settings Flight Modes.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="src/AutoPilotPlugins/PX4/FlightModeConfig.ui" line="43"/>
+        <source>Flight Modes on multiple channels</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="src/AutoPilotPlugins/PX4/FlightModeConfig.ui" line="59"/>
+        <source>Flight Modes on single channel (coming soon)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="src/AutoPilotPlugins/PX4/FlightModeConfig.ui" line="100"/>
+        <source>Main Mode Switch</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="src/AutoPilotPlugins/PX4/FlightModeConfig.ui" line="110"/>
+        <location filename="src/AutoPilotPlugins/PX4/FlightModeConfig.ui" line="174"/>
+        <source>Current switch position:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="src/AutoPilotPlugins/PX4/FlightModeConfig.ui" line="117"/>
+        <source>Manual Mode</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="src/AutoPilotPlugins/PX4/FlightModeConfig.ui" line="127"/>
+        <source>Assist Mode</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="src/AutoPilotPlugins/PX4/FlightModeConfig.ui" line="137"/>
+        <source>Mission Mode</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="src/AutoPilotPlugins/PX4/FlightModeConfig.ui" line="164"/>
+        <source>Manual Mode Switch</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="src/AutoPilotPlugins/PX4/FlightModeConfig.ui" line="181"/>
+        <source>Acro</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="src/AutoPilotPlugins/PX4/FlightModeConfig.ui" line="191"/>
+        <source>Manual</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="src/AutoPilotPlugins/PX4/FlightModeConfig.ui" line="201"/>
+        <source>Stabilize</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="src/AutoPilotPlugins/PX4/FlightModeConfig.ui" line="228"/>
+        <source>Assist Mode Switch</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="src/AutoPilotPlugins/PX4/FlightModeConfig.ui" line="238"/>
+        <source>Altitude Control</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="src/AutoPilotPlugins/PX4/FlightModeConfig.ui" line="248"/>
+        <source>Position Control</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="src/AutoPilotPlugins/PX4/FlightModeConfig.ui" line="281"/>
+        <source>Loiter Switch</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="src/AutoPilotPlugins/PX4/FlightModeConfig.ui" line="291"/>
+        <location filename="src/AutoPilotPlugins/PX4/FlightModeConfig.ui" line="332"/>
+        <source>Current switch position</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="src/AutoPilotPlugins/PX4/FlightModeConfig.ui" line="298"/>
+        <source>Loiter</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="src/AutoPilotPlugins/PX4/FlightModeConfig.ui" line="308"/>
+        <location filename="src/AutoPilotPlugins/PX4/FlightModeConfig.ui" line="349"/>
+        <source>Off</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="src/AutoPilotPlugins/PX4/FlightModeConfig.ui" line="322"/>
+        <source>Return to Home Switch</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="src/AutoPilotPlugins/PX4/FlightModeConfig.ui" line="339"/>
+        <source>Return to Home</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="src/AutoPilotPlugins/PX4/FlightModeConfig.cc" line="212"/>
+        <location filename="src/AutoPilotPlugins/PX4/FlightModeConfig.cc" line="222"/>
+        <source>Flight Mode</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
     <name>FlightModesComponent</name>
     <message>
-        <location filename="src/AutoPilotPlugins/PX4/FlightModesComponent.cc" line="51"/>
+        <location filename="src/AutoPilotPlugins/PX4/FlightModesComponent.cc" line="49"/>
         <source>Flight Modes</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/AutoPilotPlugins/PX4/FlightModesComponent.cc" line="63"/>
+        <location filename="src/AutoPilotPlugins/PX4/FlightModesComponent.cc" line="61"/>
         <source>The Flight Modes Component is used to set the switches associated with Flight Modes. At a minimum the Main Mode Switch must be assigned prior to flight.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/AutoPilotPlugins/PX4/FlightModesComponent.cc" line="152"/>
+        <location filename="src/AutoPilotPlugins/PX4/FlightModesComponent.cc" line="144"/>
         <source>Chan %1</source>
         <translation type="unfinished"></translation>
     </message>
@@ -2181,7 +2303,7 @@ This firmware has NOT BEEN FLIGHT TESTED. It is only intended for DEVELOPERS. Ru
     </message>
     <message>
         <location filename="src/ui/px4_configuration/PX4RCCalibration.ui" line="47"/>
-        <location filename="src/ui/px4_configuration/PX4RCCalibration.cc" line="300"/>
+        <location filename="src/ui/px4_configuration/PX4RCCalibration.cc" line="308"/>
         <source>Receiver</source>
         <translation type="unfinished"></translation>
     </message>
@@ -2192,7 +2314,7 @@ This firmware has NOT BEEN FLIGHT TESTED. It is only intended for DEVELOPERS. Ru
     </message>
     <message>
         <location filename="src/ui/px4_configuration/PX4RCCalibration.ui" line="92"/>
-        <location filename="src/ui/px4_configuration/PX4RCCalibration.cc" line="796"/>
+        <location filename="src/ui/px4_configuration/PX4RCCalibration.cc" line="802"/>
         <source>Spektrum Bind</source>
         <translation type="unfinished"></translation>
     </message>
@@ -2365,53 +2487,53 @@ This firmware has NOT BEEN FLIGHT TESTED. It is only intended for DEVELOPERS. Ru
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/ui/px4_configuration/PX4RCCalibration.cc" line="274"/>
+        <location filename="src/ui/px4_configuration/PX4RCCalibration.cc" line="282"/>
         <source>%1 channel receiver</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/ui/px4_configuration/PX4RCCalibration.cc" line="276"/>
-        <location filename="src/ui/px4_configuration/PX4RCCalibration.cc" line="300"/>
+        <location filename="src/ui/px4_configuration/PX4RCCalibration.cc" line="284"/>
+        <location filename="src/ui/px4_configuration/PX4RCCalibration.cc" line="308"/>
         <source>Detected %1 radio channels. To operate PX4, you need at least %2 channels.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/ui/px4_configuration/PX4RCCalibration.cc" line="325"/>
+        <location filename="src/ui/px4_configuration/PX4RCCalibration.cc" line="333"/>
         <source>Set Trim</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/ui/px4_configuration/PX4RCCalibration.cc" line="325"/>
+        <location filename="src/ui/px4_configuration/PX4RCCalibration.cc" line="333"/>
         <source>Setting individual trims is not yet implemented. You will need to go through full calibration to set trims.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/ui/px4_configuration/PX4RCCalibration.cc" line="562"/>
+        <location filename="src/ui/px4_configuration/PX4RCCalibration.cc" line="570"/>
         <source>Flaps switch</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/ui/px4_configuration/PX4RCCalibration.cc" line="562"/>
+        <location filename="src/ui/px4_configuration/PX4RCCalibration.cc" line="570"/>
         <source>Flaps switch has not yet been detected.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/ui/px4_configuration/PX4RCCalibration.cc" line="797"/>
+        <location filename="src/ui/px4_configuration/PX4RCCalibration.cc" line="803"/>
         <source>Place Spektrum satellite receiver in bind mode. Select which mode below.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/ui/px4_configuration/PX4RCCalibration.cc" line="982"/>
+        <location filename="src/ui/px4_configuration/PX4RCCalibration.cc" line="956"/>
         <source>Next</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/ui/px4_configuration/PX4RCCalibration.cc" line="1003"/>
+        <location filename="src/ui/px4_configuration/PX4RCCalibration.cc" line="977"/>
         <source>Calibrate</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/ui/px4_configuration/PX4RCCalibration.cc" line="1025"/>
+        <location filename="src/ui/px4_configuration/PX4RCCalibration.cc" line="999"/>
         <source>The current calibration settings are now displayed for each channel on screen.
 
 Click the Next button to upload calibration to board. Click Cancel if you don&apos;t want to save these values.</source>
@@ -2562,115 +2684,6 @@ Click the Next button to upload calibration to board. Click Cancel if you don&ap
     <message>
         <location filename="src/ui/QGCBaseParamWidget.cc" line="119"/>
         <source>Parameter file (*.txt)</source>
-        <translation type="unfinished"></translation>
-    </message>
-</context>
-<context>
-    <name>QGCComboBox</name>
-    <message>
-        <location filename="src/ui/designer/QGCComboBox.ui" line="14"/>
-        <source>Form</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="src/ui/designer/QGCComboBox.ui" line="47"/>
-        <location filename="src/ui/designer/QGCComboBox.ui" line="95"/>
-        <source>Name</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="src/ui/designer/QGCComboBox.ui" line="60"/>
-        <source>?</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="src/ui/designer/QGCComboBox.ui" line="79"/>
-        <source>Parameter Name</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="src/ui/designer/QGCComboBox.ui" line="108"/>
-        <location filename="src/ui/designer/QGCComboBox.ui" line="111"/>
-        <source>Select component</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="src/ui/designer/QGCComboBox.ui" line="118"/>
-        <source>Add Item</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="src/ui/designer/QGCComboBox.ui" line="125"/>
-        <source>Delete Item</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="src/ui/designer/QGCComboBox.ui" line="132"/>
-        <source>Value</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="src/ui/designer/QGCComboBox.ui" line="145"/>
-        <location filename="src/ui/designer/QGCComboBox.ui" line="148"/>
-        <source>Select parameter</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="src/ui/designer/QGCComboBox.ui" line="174"/>
-        <location filename="src/ui/designer/QGCComboBox.ui" line="177"/>
-        <source>Read the current parameter value on the system</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="src/ui/designer/QGCComboBox.ui" line="180"/>
-        <source>Get</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="src/ui/designer/QGCComboBox.ui" line="187"/>
-        <source>Done</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="src/ui/designer/QGCComboBox.ui" line="206"/>
-        <location filename="src/ui/designer/QGCComboBox.ui" line="209"/>
-        <source>Transmit the current slider value to the system</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="src/ui/designer/QGCComboBox.ui" line="212"/>
-        <source>Set</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="src/ui/designer/QGCComboBox.ui" line="219"/>
-        <source>Show Info</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="src/ui/designer/QGCComboBox.ui" line="268"/>
-        <source>Please click first on refresh to update selection menus..</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="src/ui/designer/QGCComboBox.ui" line="278"/>
-        <source>Refresh</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="src/ui/designer/QGCComboBox.cc" line="89"/>
-        <source>Requesting refresh...</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="src/ui/designer/QGCComboBox.cc" line="238"/>
-        <location filename="src/ui/designer/QGCComboBox.cc" line="343"/>
-        <source>Component #%1</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="src/ui/designer/QGCComboBox.cc" line="300"/>
-        <source>Complete parameter list received.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -6614,6 +6627,115 @@ Config</source>
     <message>
         <location filename="src/ui/designer/QGCToolWidget.cc" line="603"/>
         <source>Widget title:</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>QGCToolWidgetComboBox</name>
+    <message>
+        <location filename="src/ui/designer/QGCToolWidgetComboBox.ui" line="14"/>
+        <source>Form</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="src/ui/designer/QGCToolWidgetComboBox.ui" line="47"/>
+        <location filename="src/ui/designer/QGCToolWidgetComboBox.ui" line="95"/>
+        <source>Name</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="src/ui/designer/QGCToolWidgetComboBox.ui" line="60"/>
+        <source>?</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="src/ui/designer/QGCToolWidgetComboBox.ui" line="79"/>
+        <source>Parameter Name</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="src/ui/designer/QGCToolWidgetComboBox.ui" line="108"/>
+        <location filename="src/ui/designer/QGCToolWidgetComboBox.ui" line="111"/>
+        <source>Select component</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="src/ui/designer/QGCToolWidgetComboBox.ui" line="118"/>
+        <source>Add Item</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="src/ui/designer/QGCToolWidgetComboBox.ui" line="125"/>
+        <source>Delete Item</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="src/ui/designer/QGCToolWidgetComboBox.ui" line="132"/>
+        <source>Value</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="src/ui/designer/QGCToolWidgetComboBox.ui" line="145"/>
+        <location filename="src/ui/designer/QGCToolWidgetComboBox.ui" line="148"/>
+        <source>Select parameter</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="src/ui/designer/QGCToolWidgetComboBox.ui" line="174"/>
+        <location filename="src/ui/designer/QGCToolWidgetComboBox.ui" line="177"/>
+        <source>Read the current parameter value on the system</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="src/ui/designer/QGCToolWidgetComboBox.ui" line="180"/>
+        <source>Get</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="src/ui/designer/QGCToolWidgetComboBox.ui" line="187"/>
+        <source>Done</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="src/ui/designer/QGCToolWidgetComboBox.ui" line="206"/>
+        <location filename="src/ui/designer/QGCToolWidgetComboBox.ui" line="209"/>
+        <source>Transmit the current slider value to the system</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="src/ui/designer/QGCToolWidgetComboBox.ui" line="212"/>
+        <source>Set</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="src/ui/designer/QGCToolWidgetComboBox.ui" line="219"/>
+        <source>Show Info</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="src/ui/designer/QGCToolWidgetComboBox.ui" line="268"/>
+        <source>Please click first on refresh to update selection menus..</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="src/ui/designer/QGCToolWidgetComboBox.ui" line="278"/>
+        <source>Refresh</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="src/ui/designer/QGCToolWidgetComboBox.cc" line="89"/>
+        <source>Requesting refresh...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="src/ui/designer/QGCToolWidgetComboBox.cc" line="238"/>
+        <location filename="src/ui/designer/QGCToolWidgetComboBox.cc" line="343"/>
+        <source>Component #%1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="src/ui/designer/QGCToolWidgetComboBox.cc" line="300"/>
+        <source>Complete parameter list received.</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
