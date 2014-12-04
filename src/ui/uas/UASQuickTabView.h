@@ -27,12 +27,15 @@ private:
     /** Timer for updating the UI */
     QTimer *updateTimer;
 
+//    QTimer *testTimer;
+//    bool testTimerValue;
+
     QFont tableFont;
 
     //QTableWidget* tableWidget;
     void setTableGeometry();
     void resizeEvent(QResizeEvent *event);
-    QString setItemText();
+    QString formText(QString name, double value);
 
 //    QStandardItemModel* model;
     QList<QTableWidgetItem*> tableNameList;
@@ -45,6 +48,7 @@ private:
 public slots:
     void valueChanged(const int uasid, const QString& name, const QString& unit, const QVariant& value,const quint64 msecs);
     void updateTimerTick();
+    //void testTimerExpired();
 };
 
 #endif // UASQUICKTABVIEW_H

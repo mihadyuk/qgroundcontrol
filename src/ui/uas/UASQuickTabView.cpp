@@ -68,6 +68,12 @@ UASQuickTabView::UASQuickTabView(QWidget *parent) :
     connect(updateTimer,SIGNAL(timeout()),this,SLOT(updateTimerTick()));
     updateTimer->start(1000);
 
+//    testTimerValue = true;
+//    testTimer = new QTimer(this);
+//    testTimer->setSingleShot(false);
+//    connect(testTimer,SIGNAL(timeout()),this,SLOT(testTimerExpired()));
+//    testTimer->start(750);
+
 }
 
 UASQuickTabView::~UASQuickTabView()
@@ -118,24 +124,34 @@ void UASQuickTabView::valueChanged(const int uasId, const QString& name, const Q
 void UASQuickTabView::updateTimerTick()
 {
     for(int i = 0; i < fieldNameList.size(); i++){
-        QString str = QString::number(uasPropertyValueMap[fieldNameList.at(i)]);
-        //qDebug()<<"i="<<i<<" "<<str;
+        //QString str = QString::number(uasPropertyValueMap[fieldNameList.at(i)]);
+        QString str = formText(fieldNameList.at(i), uasPropertyValueMap[fieldNameList.at(i)]);
         ui->tableWidget->item(i,1)->setText(str);
     }
 }
 
-void UASQuickTabView::setTableGeometry(){
-//    ui->gridLayout->setColumnMinimumWidth(0, (this->width() - 2));
-//    ui->gridLayout->setRowMinimumHeight(0, (this->height() - 10));
-//   // ui->gridLayout->setColumnStretch(0,);
-//    ui->tableWidget->setColumnWidth(0, (ui->gridLayout->columnMinimumWidth(0)/2));
-//    ui->tableWidget->setColumnWidth(1, (ui->gridLayout->columnMinimumWidth(0)/2));
-
-//    for(int i = 0; i < ui->tableWidget->rowCount(); i++) {
-//        ui->tableWidget->setRowHeight(i, (ui->gridLayout->rowMinimumHeight(0))/6);
-//        qDebug()<<"qgridrowminimumheight: "<<ui->gridLayout->rowMinimumHeight(0);
+//void UASQuickTabView::testTimerExpired(){
+//    if(testTimerValue == true){
+//        valueChanged(0,"M24:GLOBAL_POSITION_INT.lat","unit",538893530,0);
+//        valueChanged(0,"M24:GLOBAL_POSITION_INT.lon","unit",275296780,0);
+//        valueChanged(0,"M24:GLOBAL_POSITION_INT.alt","unit",272000,0);
+//        valueChanged(0,"M24:ATTITUDE.roll","unit",0.36814,0);
+//        valueChanged(0,"M24:ATTITUDE.pitch","unit",0.56715,0);
+//        valueChanged(0,"M24:ATTITUDE.yaw","unit",0.24715,0);
+//        testTimerValue = false;
 //    }
+//    else{
+//        valueChanged(0,"M24:GLOBAL_POSITION_INT.lat","unit",549993530,0);
+//        valueChanged(0,"M24:GLOBAL_POSITION_INT.lon","unit",277796780,0);
+//        valueChanged(0,"M24:GLOBAL_POSITION_INT.alt","unit",284000,0);
+//        valueChanged(0,"M24:ATTITUDE.roll","unit",0.35614,0);
+//        valueChanged(0,"M24:ATTITUDE.pitch","unit",0.46815,0);
+//        valueChanged(0,"M24:ATTITUDE.yaw","unit",0.67895,0);
+//        testTimerValue = true;
+//    }
+//}
 
+void UASQuickTabView::setTableGeometry(){
 
     ui->tableWidget->setColumnWidth(0, ((this->width() - 5)/2));
     ui->tableWidget->setColumnWidth(1, ((this->width())/2));
@@ -145,13 +161,31 @@ void UASQuickTabView::setTableGeometry(){
         //qDebug()<<"qgridrowminimumheight: "<<ui->gridLayout->rowMinimumHeight(0);
     }
 
-
 }
 
-QString UASQuickTabView::setItemText(){
-//    QTableWidgetItem* item = new QTableWidgetItem(text);
-//    item->setText(text);
-//    this->setItem(row, column, item);
+QString UASQuickTabView::formText(QString name, double value){
+
+    QString str;
+
+    if(name == "M24:GLOBAL_POSITION_INT.lat"){
+        str = QString::number(value,'f',5);
+        str += 0x00B0;
+        str +="с.ш.";
+    }
+    else if(name == "M24:GLOBAL_POSITION_INT.lon"){
+        str = QString::number(value,'f',5);
+        str += 0x00B0;
+        str +="в.д.";
+    }
+    else if(name == "M24:GLOBAL_POSITION_INT.alt"){
+        str = QString::number(value,'f',1);
+        str +="м.";
+    }
+    else if((name == "M24:ATTITUDE.roll")||(name == "M24:ATTITUDE.pitch")||(name == "M24:ATTITUDE.yaw")){
+        str = QString::number(value,'f',2);
+        str += 0x00B0;
+    }
+    return str;
 }
 
 void UASQuickTabView::resizeEvent(QResizeEvent *event){
