@@ -21,37 +21,28 @@
  
  ======================================================================*/
 
-#include "MockUASManager.h"
+/// @file
+///     @brief Subclass of QComboBox. Mainly used for unit test so you can simulate a user selection
+///             with correct signalling.
+///
+///     @author Don Gagne <don@thegagnes.com>
 
-MockUASManager::MockUASManager(void) :
-    UASManagerInterface(NULL, false /* do not register singleton with QGCApplication */),
-    _mockUAS(NULL)
+#include "QGCComboBox.h"
+
+QGCComboBox::QGCComboBox(QWidget* parent) :
+    QComboBox(parent)
 {
+
+}
+
+void QGCComboBox::simulateUserSetCurrentIndex(int index)
+{
+    Q_ASSERT(index >=0 && index < count());
     
-}
-
-UASInterface* MockUASManager::getActiveUAS(void)
-{
-    return _mockUAS;
-}
-
-void MockUASManager::setMockActiveUAS(MockUAS* mockUAS)
-{
-    // Signal components that the last UAS is no longer active.
-    if (_mockUAS != NULL) {
-        emit activeUASStatusChanged(_mockUAS, false);
-        emit activeUASStatusChanged(_mockUAS->getUASID(), false);
-    }
-    _mockUAS = mockUAS;
+    // This will signal currentIndexChanged
+    setCurrentIndex(index);
     
-    // And signal that a new UAS is.
-    emit activeUASSet(_mockUAS);
-    if (_mockUAS)
-    {
-        // We don't support swiching between different UAS
-        //_mockUAS->setSelected();
-        emit activeUASStatusChanged(_mockUAS, true);
-        emit activeUASStatusChanged(_mockUAS->getUASID(), true);
-    }
+    // We have to manually signal activated
+    emit activated(index);
+    emit activated(itemText(index));
 }
-

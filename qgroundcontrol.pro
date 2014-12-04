@@ -124,7 +124,6 @@ QT += testlib
 # Turn off serial port warnings
 DEFINES += _TTY_NOWARN_
 
-
 #
 # OS Specific settings
 #
@@ -284,7 +283,7 @@ FORMS += \
     src/ui/designer/QGCParamSlider.ui \
     src/ui/designer/QGCActionButton.ui \
     src/ui/designer/QGCCommandButton.ui \
-    src/ui/designer/QGCComboBox.ui \
+    src/ui/designer/QGCToolWidgetComboBox.ui \
     src/ui/designer/QGCTextLabel.ui \
     src/ui/designer/QGCXYPlot.ui \
     src/ui/QGCMAVLinkLogPlayer.ui \
@@ -394,7 +393,7 @@ HEADERS += \
     src/ui/designer/QGCParamSlider.h \
     src/ui/designer/QGCCommandButton.h \
     src/ui/designer/QGCToolWidgetItem.h \
-    src/ui/designer/QGCComboBox.h \
+    src/ui/designer/QGCToolWidgetComboBox.h \
     src/ui/designer/QGCTextLabel.h \
     src/ui/designer/QGCRadioChannelDisplay.h \
     src/ui/designer/QGCXYPlot.h \
@@ -481,7 +480,8 @@ HEADERS += \
     src/uas/QGXPX4UAS.h \
     src/QGCFileDialog.h \
     src/QGCMessageBox.h \
-    src/ui/uas/UASQuickTabView.h
+    src/ui/uas/UASQuickTabView.h \
+    src/QGCComboBox.h
 
 SOURCES += \
     src/main.cc \
@@ -537,7 +537,7 @@ SOURCES += \
     src/ui/designer/QGCParamSlider.cc \
     src/ui/designer/QGCCommandButton.cc \
     src/ui/designer/QGCToolWidgetItem.cc \
-    src/ui/designer/QGCComboBox.cc \
+    src/ui/designer/QGCToolWidgetComboBox.cc \
     src/ui/designer/QGCTextLabel.cc \
     src/ui/designer/QGCRadioChannelDisplay.cpp \
     src/ui/designer/QGCXYPlot.cc \
@@ -619,8 +619,8 @@ SOURCES += \
     src/CmdLineOptParser.cc \
     src/uas/QGXPX4UAS.cc \
     src/QGCFileDialog.cc \
-    src/ui/uas/UASQuickTabView.cpp
-
+    src/ui/uas/UASQuickTabView.cpp \
+    src/QGCComboBox.cc
 
 #
 # Unit Test specific configuration goes here
@@ -657,7 +657,8 @@ HEADERS += \
 	src/qgcunittest/QGCUASFileManagerTest.h \
     src/qgcunittest/PX4RCCalibrationTest.h \
     src/qgcunittest/LinkManagerTest.h \
-    src/qgcunittest/MainWindowTest.h
+    src/qgcunittest/MainWindowTest.h \
+    src/AutoPilotPlugins/PX4/Tests/FlightModeConfigTest.h
 
 SOURCES += \
     src/qgcunittest/UnitTest.cc \
@@ -677,7 +678,8 @@ SOURCES += \
 	src/qgcunittest/QGCUASFileManagerTest.cc \
     src/qgcunittest/PX4RCCalibrationTest.cc \
     src/qgcunittest/LinkManagerTest.cc \
-    src/qgcunittest/MainWindowTest.cc
+    src/qgcunittest/MainWindowTest.cc \
+    src/AutoPilotPlugins/PX4/Tests/FlightModeConfigTest.cc
 }
 
 #
@@ -687,7 +689,8 @@ FORMS += \
     src/VehicleSetup/SetupView.ui \
     src/VehicleSetup/SummaryPage.ui \
     src/VehicleSetup/ParameterEditor.ui \
-    src/ui/QGCPX4VehicleConfig.ui
+    src/ui/QGCPX4VehicleConfig.ui \
+    src/AutoPilotPlugins/PX4/FlightModeConfig.ui
 
 HEADERS+= \
     src/VehicleSetup/SetupView.h \
@@ -703,6 +706,7 @@ HEADERS+= \
     src/AutoPilotPlugins/PX4/PX4Component.h \
     src/AutoPilotPlugins/PX4/RadioComponent.h \
     src/AutoPilotPlugins/PX4/FlightModesComponent.h \
+    src/AutoPilotPlugins/PX4/FlightModeConfig.h \
     src/AutoPilotPlugins/PX4/AirframeComponent.h \
     src/AutoPilotPlugins/PX4/SensorsComponent.h
 
@@ -717,5 +721,6 @@ SOURCES += \
     src/AutoPilotPlugins/PX4/PX4Component.cc \
     src/AutoPilotPlugins/PX4/RadioComponent.cc \
     src/AutoPilotPlugins/PX4/FlightModesComponent.cc \
+    src/AutoPilotPlugins/PX4/FlightModeConfig.cc \
     src/AutoPilotPlugins/PX4/AirframeComponent.cc \
     src/AutoPilotPlugins/PX4/SensorsComponent.cc
