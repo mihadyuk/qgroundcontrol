@@ -21,37 +21,26 @@
  
  ======================================================================*/
 
-#include "MockUASManager.h"
+#ifndef QGCComboBox_H
+#define QGCComboBox_H
 
-MockUASManager::MockUASManager(void) :
-    UASManagerInterface(NULL, false /* do not register singleton with QGCApplication */),
-    _mockUAS(NULL)
-{
+#include <QComboBox>
+
+/// @file
+///     @brief Subclass of QComboBox. Mainly used for unit test so you can simulate a user selection
+///             with correct signalling.
+///
+///     @author Don Gagne <don@thegagnes.com>
+
+class QGCComboBox : public QComboBox {
+    Q_OBJECT
     
-}
-
-UASInterface* MockUASManager::getActiveUAS(void)
-{
-    return _mockUAS;
-}
-
-void MockUASManager::setMockActiveUAS(MockUAS* mockUAS)
-{
-    // Signal components that the last UAS is no longer active.
-    if (_mockUAS != NULL) {
-        emit activeUASStatusChanged(_mockUAS, false);
-        emit activeUASStatusChanged(_mockUAS->getUASID(), false);
-    }
-    _mockUAS = mockUAS;
+public:
+    QGCComboBox(QWidget* parent = NULL);
     
-    // And signal that a new UAS is.
-    emit activeUASSet(_mockUAS);
-    if (_mockUAS)
-    {
-        // We don't support swiching between different UAS
-        //_mockUAS->setSelected();
-        emit activeUASStatusChanged(_mockUAS, true);
-        emit activeUASStatusChanged(_mockUAS->getUASID(), true);
-    }
-}
+	/// @brief Sets the current index on the combo. Signals activated, as well as currentIndexChanged.
+	void simulateUserSetCurrentIndex(int index);
+};
 
+
+#endif
