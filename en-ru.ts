@@ -2624,42 +2624,42 @@ Click the Next button to upload calibration to board. Click Cancel if you don&ap
 <context>
     <name>QGCApplication</name>
     <message>
-        <location filename="src/QGCApplication.cc" line="167"/>
+        <location filename="src/QGCApplication.cc" line="179"/>
         <source>Settings Cleared</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/QGCApplication.cc" line="168"/>
+        <location filename="src/QGCApplication.cc" line="180"/>
         <source>The format for QGroundControl saved settings has been modified. Your saved settings have been reset to defaults.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/QGCApplication.cc" line="222"/>
+        <location filename="src/QGCApplication.cc" line="234"/>
         <source>Loading application fonts</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/QGCApplication.cc" line="228"/>
+        <location filename="src/QGCApplication.cc" line="240"/>
         <source>Starting user interface</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/QGCApplication.cc" line="237"/>
+        <location filename="src/QGCApplication.cc" line="249"/>
         <source>Bad save location</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/QGCApplication.cc" line="238"/>
+        <location filename="src/QGCApplication.cc" line="250"/>
         <source>The location to save files to is invalid, or cannot be written to. Please provide a new one.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/QGCApplication.cc" line="271"/>
+        <location filename="src/QGCApplication.cc" line="283"/>
         <source>Could not connect UDP port. Is an instance of %1 already running?</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="src/QGCApplication.cc" line="272"/>
+        <location filename="src/QGCApplication.cc" line="284"/>
         <source>It is recommended to close the application and stop all instances. Click Yes to close.</source>
         <translation type="unfinished"></translation>
     </message>
@@ -8197,7 +8197,7 @@ Summary</source>
     <message>
         <location filename="src/ui/uas/UASQuickTabView.cpp" line="198"/>
         <source> E</source>
-        <translation>в. д.</translation>
+        <translation> в. д.</translation>
     </message>
     <message>
         <location filename="src/ui/uas/UASQuickTabView.cpp" line="204"/>
