@@ -12,12 +12,19 @@ UASQuickTabView::UASQuickTabView(QWidget *parent) :
     this->setLayout(ui->gridLayout);
 
 	QStringList nameList;// = new QStringList();
-	nameList.append("Широта:");
-	nameList.append("Долгота:");
-	nameList.append("Высота:");
-	nameList.append("Курс:");
-	nameList.append("Крен:");
-	nameList.append("Тангаж:");
+//	nameList.append("Широта:");
+//	nameList.append("Долгота:");
+//	nameList.append("Высота:");
+//	nameList.append("Курс:");
+//	nameList.append("Крен:");
+//	nameList.append("Тангаж:");
+
+    nameList.append(tr("Latitude:"));
+    nameList.append(tr("Longitude:"));
+    nameList.append(tr("Altitude:"));
+    nameList.append(tr("Roll:"));
+    nameList.append(tr("Pitch:"));
+    nameList.append(tr("Yaw:"));
 
     fieldNameList << "M24:GLOBAL_POSITION_INT.lat"
                   << "M24:GLOBAL_POSITION_INT.lon"
@@ -38,7 +45,7 @@ UASQuickTabView::UASQuickTabView(QWidget *parent) :
     ui->tableWidget->setStyleSheet("gridline-color : gray");
 
     //tableFont = new QFont("Times New Roman", 14, 3);
-    tableFont.setFamily("Times New Roman");
+//    tableFont.setFamily("Times New Roman");
     tableFont.setPixelSize(14);
     tableFont.setBold(3);
 
@@ -50,6 +57,7 @@ UASQuickTabView::UASQuickTabView(QWidget *parent) :
             item->setText(nameList.at(i));
             tableNameList.append(item);
             item->setFont(tableFont);
+            item->setFlags(item->flags() ^ Qt::ItemIsEditable ^ Qt::ItemIsSelectable);
             ui->tableWidget->setItem(i, 0, item);
         }
 
@@ -60,9 +68,11 @@ UASQuickTabView::UASQuickTabView(QWidget *parent) :
             tableValueList.append(item);
             item->setFont(tableFont);
             item->setText("0.0");
+            item->setFlags(item->flags() ^ Qt::ItemIsEditable ^ Qt::ItemIsSelectable);
             ui->tableWidget->setItem(i, 1, item);
         }
     }
+
 
     updateTimer = new QTimer(this);
     connect(updateTimer,SIGNAL(timeout()),this,SLOT(updateTimerTick()));
@@ -141,8 +151,8 @@ void UASQuickTabView::updateTimerTick()
 //        testTimerValue = false;
 //    }
 //    else{
-//        valueChanged(0,"M24:GLOBAL_POSITION_INT.lat","unit",549993530,0);
-//        valueChanged(0,"M24:GLOBAL_POSITION_INT.lon","unit",277796780,0);
+//        valueChanged(0,"M24:GLOBAL_POSITION_INT.lat","unit",-549993530,0);
+//        valueChanged(0,"M24:GLOBAL_POSITION_INT.lon","unit",-277796780,0);
 //        valueChanged(0,"M24:GLOBAL_POSITION_INT.alt","unit",284000,0);
 //        valueChanged(0,"M24:ATTITUDE.roll","unit",0.35614,0);
 //        valueChanged(0,"M24:ATTITUDE.pitch","unit",0.46815,0);
@@ -168,18 +178,36 @@ QString UASQuickTabView::formText(QString name, double value){
     QString str;
 
     if(name == "M24:GLOBAL_POSITION_INT.lat"){
-        str = QString::number(value,'f',5);
-        str += 0x00B0;
-        str +="с.ш.";
+        if(value >= 0){
+            str = QString::number(value,'f',5);
+            str += 0x00B0;
+             str += tr("n.l.");
+        }
+        else if(value < 0){
+            value *=-1;
+            str = QString::number(value,'f',5);
+            str += 0x00B0;
+            str += tr("s.l.");
+        }
     }
+
     else if(name == "M24:GLOBAL_POSITION_INT.lon"){
-        str = QString::number(value,'f',5);
-        str += 0x00B0;
-        str +="в.д.";
+        if(value >= 0){
+            str = QString::number(value,'f',5);
+            str += 0x00B0;
+             str += tr("e.l.");
+        }
+        else if(value < 0){
+            value *=-1;
+            str = QString::number(value,'f',5);
+            str += 0x00B0;
+            str += tr("w.l.");
+        }
     }
+
     else if(name == "M24:GLOBAL_POSITION_INT.alt"){
         str = QString::number(value,'f',1);
-        str +="м.";
+        str +=tr("m.");
     }
     else if((name == "M24:ATTITUDE.roll")||(name == "M24:ATTITUDE.pitch")||(name == "M24:ATTITUDE.yaw")){
         str = QString::number(value,'f',2);
