@@ -39,7 +39,7 @@ UASQuickTabView::UASQuickTabView(QWidget *parent) :
 
 	QTextCodec::setCodecForLocale(QTextCodec::codecForName("UTF-8"));
 	ui->tableWidget->setColumnCount(2);
-    ui->tableWidget->setRowCount(6);
+    ui->tableWidget->setRowCount(nameList.count());
     ui->tableWidget->setLineWidth(1);
     ui->tableWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     ui->tableWidget->setStyleSheet("gridline-color : gray");
