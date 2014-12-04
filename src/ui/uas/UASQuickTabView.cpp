@@ -181,13 +181,13 @@ QString UASQuickTabView::formText(QString name, double value){
         if(value >= 0){
             str = QString::number(value,'f',5);
             str += 0x00B0;
-             str += tr("n.l.");
+             str += tr(" N");
         }
         else if(value < 0){
             value *=-1;
             str = QString::number(value,'f',5);
             str += 0x00B0;
-            str += tr("s.l.");
+            str += tr(" S");
         }
     }
 
@@ -195,19 +195,19 @@ QString UASQuickTabView::formText(QString name, double value){
         if(value >= 0){
             str = QString::number(value,'f',5);
             str += 0x00B0;
-             str += tr("e.l.");
+             str += tr(" E");
         }
         else if(value < 0){
             value *=-1;
             str = QString::number(value,'f',5);
             str += 0x00B0;
-            str += tr("w.l.");
+            str += tr(" W");
         }
     }
 
     else if(name == "M24:GLOBAL_POSITION_INT.alt"){
         str = QString::number(value,'f',1);
-        str +=tr("m.");
+        str +=tr(" m.");
     }
     else if((name == "M24:ATTITUDE.roll")||(name == "M24:ATTITUDE.pitch")||(name == "M24:ATTITUDE.yaw")){
         str = QString::number(value,'f',2);
