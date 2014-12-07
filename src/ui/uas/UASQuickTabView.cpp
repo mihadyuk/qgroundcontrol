@@ -181,28 +181,18 @@ void UASQuickTabView::updateTimerTick()
 
 void UASQuickTabView::setTableGeometry(){
 
-    int rowCount = ui->tableWidget->rowCount();
-
-    //ui->tableWidget->setWi
-
-    //ui->tableWidget->verticalHeader()->sectionResized();
-
     ui->tableWidget->resize(this->width(), this->height());
-
-//    ui->tableWidget->setColumnWidth(0, (int)((double)(ui->tableWidget->width())/2.0));
-//    ui->tableWidget->setColumnWidth(1, (int)((double)(ui->tableWidget->width())/2.0));
-
 
     ui->tableWidget->setColumnWidth(0, ((ui->tableWidget->width())/2));
     ui->tableWidget->setColumnWidth(1, ((ui->tableWidget->width())/2 + (ui->tableWidget->width())%2));
 
-    for(int i = 0; i < ui->tableWidget->rowCount() - 1; i++) {
+    int rowCount = ui->tableWidget->rowCount();
+    for(int i = 0; i < rowCount - 1; i++) {
 
-        ui->tableWidget->setRowHeight(i, (ui->tableWidget->height())/rowCount);
+        ui->tableWidget->setRowHeight(i, (ui->tableWidget->height()) / rowCount);
         //ui->tableWidget->setRowHeight(i, (ui->tableWidget->height())/6);
     }
-    ui->tableWidget->setRowHeight(ui->tableWidget->rowCount() - 1, ((ui->tableWidget->height())/rowCount) + ((ui->tableWidget->height())%rowCount));
-
+    ui->tableWidget->setRowHeight(rowCount - 1, ((ui->tableWidget->height()) / rowCount) + ((ui->tableWidget->height()) % rowCount));
 }
 
 QString UASQuickTabView::formText(QString name, double value){
