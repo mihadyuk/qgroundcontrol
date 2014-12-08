@@ -3,13 +3,24 @@
 #include <QTextCodec>
 #include <QDebug>
 #include <QTableWidget>
+#include <QtGui>
 
 
 UASQuickTabView::UASQuickTabView(QWidget *parent) :
     ui(new Ui::UASQuickTabView)
 {
     ui->setupUi(this);
-    this->setLayout(ui->gridLayout);
+//    this->setLayout(ui->gridLayout);
+//    ui->gridLayout->setContentsMargins(0,0,0,0);
+//    ui->gridLayout->setHorizontalSpacing(0);
+//    ui->gridLayout->setVerticalSpacing(0);
+//    ui->gridLayout->setSpacing(0);
+//    ui->gridLayout->setMargin(0);
+
+
+
+
+
 
 	QStringList nameList;// = new QStringList();
 //	nameList.append("Широта:");
@@ -41,8 +52,13 @@ UASQuickTabView::UASQuickTabView(QWidget *parent) :
 	ui->tableWidget->setColumnCount(2);
     ui->tableWidget->setRowCount(nameList.count());
     ui->tableWidget->setLineWidth(1);
-    ui->tableWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    ui->tableWidget->setStyleSheet("gridline-color : gray");
+    ui->tableWidget->setFrameStyle(QFrame::NoFrame);
+    //ui->tableWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    ui->tableWidget->setStyleSheet("gridline-color : dimgray");
+    ui->tableWidget->setWindowFlags(/*ui->tableWidget->windowFlags()*/Qt::Widget | Qt::FramelessWindowHint);
+
+
+
 
     //tableFont = new QFont("Times New Roman", 14, 3);
 //    tableFont.setFamily("Times New Roman");
@@ -73,10 +89,12 @@ UASQuickTabView::UASQuickTabView(QWidget *parent) :
         }
     }
 
+    setTableGeometry();
 
     updateTimer = new QTimer(this);
     connect(updateTimer,SIGNAL(timeout()),this,SLOT(updateTimerTick()));
     updateTimer->start(1000);
+
 
 //    testTimerValue = true;
 //    testTimer = new QTimer(this);
@@ -163,13 +181,25 @@ void UASQuickTabView::updateTimerTick()
 
 void UASQuickTabView::setTableGeometry(){
 
-    ui->tableWidget->setColumnWidth(0, ((this->width() - 5)/2));
-    ui->tableWidget->setColumnWidth(1, ((this->width())/2));
+    //ui->tableWidget->setWi
 
-    for(int i = 0; i < ui->tableWidget->rowCount(); i++) {
-        ui->tableWidget->setRowHeight(i, (this->height() - 2)/6);
-        //qDebug()<<"qgridrowminimumheight: "<<ui->gridLayout->rowMinimumHeight(0);
+    //ui->tableWidget->verticalHeader()->sectionResized();
+
+    ui->tableWidget->resize(this->width(), this->height());
+
+//    ui->tableWidget->setColumnWidth(0, (int)((double)(ui->tableWidget->width())/2.0));
+//    ui->tableWidget->setColumnWidth(1, (int)((double)(ui->tableWidget->width())/2.0));
+
+
+    ui->tableWidget->setColumnWidth(0, ((ui->tableWidget->width())/2));
+    ui->tableWidget->setColumnWidth(1, ((ui->tableWidget->width())/2 + (ui->tableWidget->width())%2));
+
+    for(int i = 0; i < ui->tableWidget->rowCount() - 1; i++) {
+
+        ui->tableWidget->setRowHeight(i, (ui->tableWidget->height())/6);
+        //ui->tableWidget->setRowHeight(i, (ui->tableWidget->height())/6);
     }
+    ui->tableWidget->setRowHeight(ui->tableWidget->rowCount() - 1, ((ui->tableWidget->height())/6) + ((ui->tableWidget->height())%6));
 
 }
 
