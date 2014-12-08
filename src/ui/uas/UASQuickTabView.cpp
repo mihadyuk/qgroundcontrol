@@ -181,6 +181,8 @@ void UASQuickTabView::updateTimerTick()
 
 void UASQuickTabView::setTableGeometry(){
 
+    int rowCount = ui->tableWidget->rowCount();
+
     //ui->tableWidget->setWi
 
     //ui->tableWidget->verticalHeader()->sectionResized();
@@ -196,10 +198,10 @@ void UASQuickTabView::setTableGeometry(){
 
     for(int i = 0; i < ui->tableWidget->rowCount() - 1; i++) {
 
-        ui->tableWidget->setRowHeight(i, (ui->tableWidget->height())/6);
+        ui->tableWidget->setRowHeight(i, (ui->tableWidget->height())/rowCount);
         //ui->tableWidget->setRowHeight(i, (ui->tableWidget->height())/6);
     }
-    ui->tableWidget->setRowHeight(ui->tableWidget->rowCount() - 1, ((ui->tableWidget->height())/6) + ((ui->tableWidget->height())%6));
+    ui->tableWidget->setRowHeight(ui->tableWidget->rowCount() - 1, ((ui->tableWidget->height())/rowCount) + ((ui->tableWidget->height())%rowCount));
 
 }
 
