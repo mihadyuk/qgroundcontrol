@@ -106,6 +106,22 @@ _ui(new Ui::SettingsDialog)
         _ui->localeComboBox->addItem(str.left(str.indexOf(".")));
 
     }
+    _ui->localeComboBox->setCurrentIndex(0);
+
+    QSettings settings;
+
+    if(settings.contains("LANG_FILE_NAME"))
+    {
+
+        QString filename = settings.value("LANG_FILE_NAME").toString();
+        filename = filename.left(filename.indexOf("."));
+        for(int i = 0; i <_ui->localeComboBox->count(); i++){
+            if(_ui->localeComboBox->itemText(i) == filename){
+                _ui->localeComboBox->setCurrentIndex(i);
+            }
+        }
+
+    }
 
     //_ui->localeComboBox->addItems(dir.entryList(entry, QDir::Files));
 

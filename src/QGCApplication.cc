@@ -172,9 +172,9 @@ QGCApplication::QGCApplication(int &argc, char* argv[], bool unitTesting) :
     
     QSettings settings;
 
-    if(settings.contains("LOCALE_FILE_NAME")){
+    if(settings.contains("LANG_FILE_NAME")){
 
-        QString filename = settings.value("LOCALE_FILE_NAME").toString();
+        QString filename = settings.value("LANG_FILE_NAME").toString();
         /* Initialize translator.*/
         QString pathToLngFile = QCoreApplication::applicationDirPath();
         /* @TODO: add language to main menu.
@@ -376,7 +376,7 @@ void QGCApplication::setSavedFilesLocation(QString& location)
 void QGCApplication::setLocaleFileName(QString filename)
 {
     QSettings settings;
-    settings.setValue("LOCALE_FILE_NAME", filename);
+    settings.setValue("LANG_FILE_NAME", filename);
 }
 
 bool QGCApplication::validatePossibleSavedFilesLocation(QString& location)
