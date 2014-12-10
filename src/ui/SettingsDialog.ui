@@ -269,14 +269,14 @@
           </size>
          </property>
          <property name="title">
-          <string>Select locale</string>
+          <string>Language settings</string>
          </property>
          <widget class="QComboBox" name="localeComboBox">
           <property name="geometry">
            <rect>
-            <x>210</x>
+            <x>230</x>
             <y>20</y>
-            <width>85</width>
+            <width>111</width>
             <height>27</height>
            </rect>
           </property>
@@ -291,7 +291,7 @@
            </rect>
           </property>
           <property name="text">
-           <string>Select locale for further use:</string>
+           <string>Select language for further use:</string>
           </property>
          </widget>
         </widget>

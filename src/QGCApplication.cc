@@ -182,8 +182,7 @@ QGCApplication::QGCApplication(int &argc, char* argv[], bool unitTesting) :
             /* @TODO: add language to main menu.
              * Now the en-ru.qm must be placed into the same dir as executable file.*/
         #if defined(Q_OS_WIN32) || defined(Q_OS_WIN64)
-            //pathToLngFile += "\en-ru";
-            pathToLngFile += "\";
+            pathToLngFile += "\\";
         #else
             pathToLngFile += "/";
         #endif
