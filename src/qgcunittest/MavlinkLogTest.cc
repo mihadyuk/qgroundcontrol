@@ -59,12 +59,12 @@ void MavlinkLogTest::init(void)
 
 void MavlinkLogTest::cleanup(void)
 {
-    UnitTest::cleanup();
-
     // Make sure no left over logs in temp directory
     QDir tmpDir(QStandardPaths::writableLocation(QStandardPaths::TempLocation));
     QStringList logFiles(tmpDir.entryList(QStringList(QString("*.%1").arg(_logFileExtension)), QDir::Files));
     QCOMPARE(logFiles.count(), 0);
+    
+    UnitTest::cleanup();
 }
 
 void MavlinkLogTest::_createTempLogFile(bool zeroLength)
@@ -147,8 +147,7 @@ void MavlinkLogTest::_connectLog_test(void)
     
     MockLink* link = new MockLink();
     Q_CHECK_PTR(link);
-    // FIXME: LinkManager/MainWindow needs to be re-architected so that you don't have to addLink to MainWindow to get things to work
-    mainWindow->addLink(link);
+    LinkManager::instance()->addLink(link);
     linkMgr->connectLink(link);
     QTest::qWait(5000); // Give enough time for UI to settle and heartbeats to go through
     

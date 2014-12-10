@@ -19,6 +19,12 @@
 
 message(Qt version $$[QT_VERSION])
 
+# Load additional config flags from user_config.pri
+exists(user_config.pri):infile(user_config.pri, CONFIG) {
+    CONFIG += $$fromfile(user_config.pri, CONFIG)
+    message($$sprintf("Using user-supplied additional config: '%1' specified in user_config.pri", $$fromfile(user_config.pri, CONFIG)))
+}
+
 # Setup our supported build types. We do this once here and then use the defined config scopes
 # to allow us to easily modify suported build types in one place instead of duplicated throughout
 # the project file.
@@ -652,7 +658,6 @@ HEADERS += \
     src/qgcunittest/UnitTest.h \
     src/qgcunittest/MessageBoxTest.h \
     src/qgcunittest/FileDialogTest.h \
-	src/qgcunittest/UASUnitTest.h \
     src/qgcunittest/MockLink.h \
     src/qgcunittest/MockLinkMissionItemHandler.h \
 	src/qgcunittest/MockUASManager.h \
@@ -675,7 +680,6 @@ SOURCES += \
     src/qgcunittest/UnitTest.cc \
     src/qgcunittest/MessageBoxTest.cc \
     src/qgcunittest/FileDialogTest.cc \
-	src/qgcunittest/UASUnitTest.cc \
     src/qgcunittest/MockLink.cc \
     src/qgcunittest/MockLinkMissionItemHandler.cc \
 	src/qgcunittest/MockUASManager.cc \

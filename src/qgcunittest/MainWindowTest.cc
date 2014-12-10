@@ -76,13 +76,12 @@ void MainWindowTest::_connectWindowClose_test(void)
     
     MockLink* link = new MockLink();
     Q_CHECK_PTR(link);
-    // FIXME: LinkManager/MainWindow needs to be re-architected so that you don't have to addLink to MainWindow to get things to work
-    _mainWindow->addLink(link);
+    LinkManager::instance()->addLink(link);
     linkMgr->connectLink(link);
     QTest::qWait(5000); // Give enough time for UI to settle and heartbeats to go through
     
-    // On MainWindow close we should get a message box telling the user to disconnect first
-    setExpectedMessageBox(QGCMessageBox::Ok);
+    // On MainWindow close we should get a message box telling the user to disconnect first. Cancel should do nothing.
+    setExpectedMessageBox(QGCMessageBox::Cancel);
     _mainWindow->close();
     QTest::qWait(1000); // Need to allow signals to move between threads    
     checkExpectedMessageBox();
