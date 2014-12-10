@@ -103,7 +103,7 @@ _ui(new Ui::SettingsDialog)
     _ui->localeComboBox->addItem("Default");
     foreach(QString str, trList){
 
-        _ui->localeComboBox->addItem(str.mid(0,str.length()-3));
+        _ui->localeComboBox->addItem(str.left(str.indexOf(".")));
 
     }
 
