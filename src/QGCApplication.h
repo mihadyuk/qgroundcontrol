@@ -59,6 +59,9 @@ public:
     ~QGCApplication();
     
     /// @brief Sets the persistent flag to delete all settings the next time QGroundControl is started.
+    void setLocaleFileName(QString filename);
+
+    /// @brief Sets the persistent flag to delete all settings the next time QGroundControl is started.
     void deleteAllSettingsNextBoot(void);
     
     /// @brief Clears the persistent flag to delete all settings the next time QGroundControl is started.

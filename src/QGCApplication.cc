@@ -171,6 +171,25 @@ QGCApplication::QGCApplication(int &argc, char* argv[], bool unitTesting) :
     ParseCmdLineOptions(argc, argv, rgCmdLineOptions, sizeof(rgCmdLineOptions)/sizeof(rgCmdLineOptions[0]), false);
     
     QSettings settings;
+
+    if(settings.contains("LOCALE_FILE_NAME")){
+
+        QString filename = settings.value("LOCALE_FILE_NAME").toString();
+        /* Initialize translator.*/
+        QString pathToLngFile = QCoreApplication::applicationDirPath();
+        /* @TODO: add language to main menu.
+         * Now the en-ru.qm must be placed into the same dir as executable file.*/
+    #if defined(Q_OS_WIN32) || defined(Q_OS_WIN64)
+        //pathToLngFile += "\en-ru";
+        pathToLngFile += "\";
+    #else
+        pathToLngFile += "/";
+    #endif
+        pathToLngFile += filename;
+        translator.load(pathToLngFile);
+        this->installTranslator(&translator);
+
+    }
     
     // The setting will delete all settings on this boot
     fClearSettingsOptions |= settings.contains(_deleteAllSettingsKey);
@@ -352,6 +371,12 @@ void QGCApplication::setSavedFilesLocation(QString& location)
 {
     QSettings settings;
     settings.setValue(_savedFilesLocationKey, location);
+}
+
+void QGCApplication::setLocaleFileName(QString filename)
+{
+    QSettings settings;
+    settings.setValue("LOCALE_FILE_NAME", filename);
 }
 
 bool QGCApplication::validatePossibleSavedFilesLocation(QString& location)

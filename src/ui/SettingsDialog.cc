@@ -174,6 +174,12 @@ void SettingsDialog::_validateBeforeClose(void)
     
     qgcApp()->setPromptFlightDataSave(_ui->promptFlightDataSave->checkState() == Qt::Checked);
 
+    if(_ui->localeComboBox->currentText() != "Default"){
+
+            qgcApp()->setLocaleFileName(_ui->localeComboBox->currentText() + ".qm");
+
+    }
+
     
     // Close dialog
     accept();
