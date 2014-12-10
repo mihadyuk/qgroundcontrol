@@ -24,6 +24,8 @@
 #include <QSettings>
 #include <QDesktopWidget>
 
+#include <QDir>
+
 #include "SettingsDialog.h"
 #include "MainWindow.h"
 #include "ui_SettingsDialog.h"
@@ -91,6 +93,22 @@ _ui(new Ui::SettingsDialog)
     
     _ui->customModeComboBox->setCurrentIndex(_ui->customModeComboBox->findData(_mainWindow->getCustomMode()));
     connect(_ui->customModeComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(selectCustomMode(int)));
+
+
+    QDir dir;
+    QStringList entry;
+    entry.append("*.qm");
+    QStringList trList = dir.entryList(entry, QDir::Files);
+    qDebug()<<"Current path:"<<dir.currentPath();
+    _ui->localeComboBox->addItem("Default");
+    foreach(QString str, trList){
+
+        _ui->localeComboBox->addItem(str.mid(0,str.length()-3));
+
+    }
+
+    //_ui->localeComboBox->addItems(dir.entryList(entry, QDir::Files));
+
     
     // Application color style
     MainWindow::QGC_MAINWINDOW_STYLE style = _mainWindow->getStyle();
@@ -155,6 +173,7 @@ void SettingsDialog::_validateBeforeClose(void)
     app->setSavedFilesLocation(saveLocation);
     
     qgcApp()->setPromptFlightDataSave(_ui->promptFlightDataSave->checkState() == Qt::Checked);
+
     
     // Close dialog
     accept();

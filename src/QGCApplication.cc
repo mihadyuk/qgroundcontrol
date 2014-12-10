@@ -93,16 +93,18 @@ QGCApplication::QGCApplication(int &argc, char* argv[], bool unitTesting) :
     _app = this;
     
     /* Initialize translator.*/
-    QString pathToLngFile = QCoreApplication::applicationDirPath();
-    /* @TODO: add language to main menu.
-     * Now the en-ru.qm must be placed into the same dir as executable file.*/
-#if defined(Q_OS_WIN32) || defined(Q_OS_WIN64)
-    pathToLngFile += "\en-ru";
-#else
-    pathToLngFile += "/en-ru";
-#endif
-    translator.load(pathToLngFile);
-    this->installTranslator(&translator);
+//    QString pathToLngFile = QCoreApplication::applicationDirPath();
+//    /* @TODO: add language to main menu.
+//     * Now the en-ru.qm must be placed into the same dir as executable file.*/
+//#if defined(Q_OS_WIN32) || defined(Q_OS_WIN64)
+//    pathToLngFile += "\en-ru";
+//#else
+//    pathToLngFile += "/en-ru";
+//#endif
+//    translator.load(pathToLngFile);
+//    this->installTranslator(&translator);
+
+
 
     
 #ifdef QT_DEBUG
