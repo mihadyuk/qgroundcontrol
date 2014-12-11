@@ -107,16 +107,15 @@ _ui(new Ui::SettingsDialog)
     {
 
         QString filename = settings.value("LANG_FILE_NAME").toString();
-        filename = filename.left(filename.indexOf("."));
-        for(int i = 0; i <_ui->localeComboBox->count(); i++){
-            if(_ui->localeComboBox->itemText(i) == filename){
-                _ui->localeComboBox->setCurrentIndex(i);
+        if(filename.length() > 0){
+            filename = filename.left(filename.indexOf("."));
+            for(int i = 0; i <_ui->localeComboBox->count(); i++){
+                if(_ui->localeComboBox->itemText(i) == filename){
+                    _ui->localeComboBox->setCurrentIndex(i);
+                }
             }
         }
-
     }
-
-    //_ui->localeComboBox->addItems(dir.entryList(entry, QDir::Files));
 
     
     // Application color style
@@ -188,6 +187,8 @@ void SettingsDialog::_validateBeforeClose(void)
             qgcApp()->setLocaleFileName(_ui->localeComboBox->currentText() + ".qm");
 
     }
+    else
+        qgcApp()->setLocaleFileName("");
 
     
     // Close dialog

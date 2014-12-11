@@ -175,19 +175,22 @@ QGCApplication::QGCApplication(int &argc, char* argv[], bool unitTesting) :
     if(settings.contains("LANG_FILE_NAME")){
 
         QString filename = settings.value("LANG_FILE_NAME").toString();
-        /* Initialize translator.*/
-        QString pathToLngFile = QCoreApplication::applicationDirPath();
-        /* @TODO: add language to main menu.
-         * Now the en-ru.qm must be placed into the same dir as executable file.*/
-    #if defined(Q_OS_WIN32) || defined(Q_OS_WIN64)
-        //pathToLngFile += "\en-ru";
-        pathToLngFile += "\";
-    #else
-        pathToLngFile += "/";
-    #endif
-        pathToLngFile += filename;
-        translator.load(pathToLngFile);
-        this->installTranslator(&translator);
+
+        if(filename.length() != 0){
+            /* Initialize translator.*/
+            QString pathToLngFile = QCoreApplication::applicationDirPath();
+            /* @TODO: add language to main menu.
+             * Now the en-ru.qm must be placed into the same dir as executable file.*/
+        #if defined(Q_OS_WIN32) || defined(Q_OS_WIN64)
+            //pathToLngFile += "\en-ru";
+            pathToLngFile += "\";
+        #else
+            pathToLngFile += "/";
+        #endif
+            pathToLngFile += filename;
+            translator.load(pathToLngFile);
+            this->installTranslator(&translator);
+        }
 
     }
     
