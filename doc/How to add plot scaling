@@ -1,11 +1,33 @@
-For adding additional scaling:
-1. Add to timeScaleCmb a new item, file LinechartWidget.cc, strings 271-283.
-	Example:
-		timeScaleCmb->addItem("60 minutes", 60*60);
-and set new minimumContentsLength of timeScaleCmb:
-		timeScaleCmb->setMinimumContentsLength(14);
+How to add plot scaling?
 
-2. If needed, set timeScaleStep in LinechartWidget.cc, string 590.
-	Example:
-		if(plotInterval >= 30*60*1000)
-        	timeScaleStep = 4*60*1000;
+1. Navigate to file LinechartWidget.cc (LinechartWidget::createLayout, line 271 approximately) and add scale factor.
+
+    timeScaleCmb = new QComboBox(this);
+    timeScaleCmb->addItem("10 seconds", 10);//first param is label for user. Second param is the corresponding number in seconds.
+    timeScaleCmb->addItem("20 seconds", 20);
+    timeScaleCmb->addItem("30 seconds", 30);
+    timeScaleCmb->addItem("40 seconds", 40);
+    timeScaleCmb->addItem("50 seconds", 50);
+    timeScaleCmb->addItem("1 minute", 60);
+    timeScaleCmb->addItem("2 minutes", 60*2);
+    timeScaleCmb->addItem("3 minutes", 60*3);
+    timeScaleCmb->addItem("4 minutes", 60*4);
+    timeScaleCmb->addItem("5 minutes", 60*5);
+    timeScaleCmb->addItem("10 minutes", 60*10);
+    timeScaleCmb->addItem("30 minutes", 60*30);
+    timeScaleCmb->addItem("60 minutes", 60*60);
+    timeScaleCmb->setMinimumContentsLength(14); //the minimumContentsLength must be modified when adding or deleting scale factors are performed.
+
+2. If it is needed, set grid interval (LinechartPlot::setPlotInterval, line 590, file LinechartPlot.cc).
+
+    plotInterval = interval;
+    if(plotInterval >= 30*60*1000)
+        timeScaleStep = 4*60*1000;
+    else if(plotInterval >= 5*60*1000) //If the interval is longer than 4 minutes, change the time scale step to 2 minutes
+        timeScaleStep = 2*60*1000;
+    else if(plotInterval >= 4*60*1000) //If the interval is longer than 4 minutes, change the time scale step to 1 minutes
+        timeScaleStep = 1*60*1000;
+    else if(plotInterval >= 60*1000) //If the interval is longer than a minute, change the time scale step to 30 seconds
+        timeScaleStep = 30*1000;
+    else
+        timeScaleStep = DEFAULT_SCALE_INTERVAL;
