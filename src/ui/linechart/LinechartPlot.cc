@@ -588,7 +588,9 @@ void LinechartPlot::setPlotInterval(int interval)
         }
     }
     plotInterval = interval;
-    if(plotInterval > 5*60*1000) //If the interval is longer than 4 minutes, change the time scale step to 2 minutes
+    if(plotInterval >= 30*60*1000)
+        timeScaleStep = 4*60*1000;
+    else if(plotInterval >= 5*60*1000) //If the interval is longer than 4 minutes, change the time scale step to 2 minutes
         timeScaleStep = 2*60*1000;
     else if(plotInterval >= 4*60*1000) //If the interval is longer than 4 minutes, change the time scale step to 1 minutes
         timeScaleStep = 1*60*1000;

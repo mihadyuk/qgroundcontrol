@@ -282,8 +282,10 @@ void LinechartWidget::createLayout()
     timeScaleCmb->addItem("4 minutes", 60*4);
     timeScaleCmb->addItem("5 minutes", 60*5);
     timeScaleCmb->addItem("10 minutes", 60*10);
+    timeScaleCmb->addItem("30 minutes", 60*30);
+    timeScaleCmb->addItem("60 minutes", 60*60);
     //timeScaleCmb->setSizeAdjustPolicy(QComboBox::AdjustToContents);
-    timeScaleCmb->setMinimumContentsLength(12);
+    timeScaleCmb->setMinimumContentsLength(14);
 
     hlayout->addWidget(timeScaleCmb);
     connect(timeScaleCmb, SIGNAL(currentIndexChanged(int)), this, SLOT(timeScaleChanged(int)));
@@ -621,7 +623,7 @@ void LinechartWidget::addCurve(const QString& curve, const QString& unit)
     // Variance
     variance = new QLabel(this);
     variance->setNum(0.00);
-    variance->setStyleSheet(QString("QLabel {font-family:\"Courier\"; font-weight: bold;}"));
+    variance->setStyleSheet(QString("QLabel {font-familygroundTimeMilliseconds:\"Courier\"; font-weight: bold;}"));
     variance->setToolTip(tr("Variance of %1 in (%2)^2 units").arg(curve, unit));
     variance->setWhatsThis(tr("Variance of %1 in (%2)^2 units").arg(curve, unit));
     curveVariances->insert(curve+unit, variance);

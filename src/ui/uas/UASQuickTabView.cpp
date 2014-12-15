@@ -37,12 +37,12 @@ UASQuickTabView::UASQuickTabView(QWidget *parent) :
     nameList.append(tr("Pitch:"));
     nameList.append(tr("Yaw:"));
 
-    fieldNameList << "M24:GLOBAL_POSITION_INT.lat"
-                  << "M24:GLOBAL_POSITION_INT.lon"
-                  << "M24:GLOBAL_POSITION_INT.alt"
-                  << "M24:ATTITUDE.roll"
-                  << "M24:ATTITUDE.pitch"
-                  << "M24:ATTITUDE.yaw";
+    fieldNameList << "M20:GLOBAL_POSITION_INT.lat"
+                  << "M20:GLOBAL_POSITION_INT.lon"
+                  << "M20:GLOBAL_POSITION_INT.alt"
+                  << "M20:ATTITUDE.roll"
+                  << "M20:ATTITUDE.pitch"
+                  << "M20:ATTITUDE.yaw";
 
     foreach(QString str, fieldNameList){
         uasPropertyValueMap.insert(str, 0.0);
@@ -141,11 +141,11 @@ void UASQuickTabView::valueChanged(const int uasId, const QString& name, const Q
 //        }
 //    }
 
-    if((name == "M24:GLOBAL_POSITION_INT.lat")||(name == "M24:GLOBAL_POSITION_INT.lon"))
+    if((name == "M20:GLOBAL_POSITION_INT.lat")||(name == "M20:GLOBAL_POSITION_INT.lon"))
         uasPropertyValueMap[name] = value/10000000;
-    else if(name == "M24:GLOBAL_POSITION_INT.alt")
+    else if(name == "M20:GLOBAL_POSITION_INT.alt")
         uasPropertyValueMap[name] = value/1000;
-    else if((name == "M24:ATTITUDE.roll")||(name == "M24:ATTITUDE.pitch")||(name == "M24:ATTITUDE.yaw"))
+    else if((name == "M20:ATTITUDE.roll")||(name == "M20:ATTITUDE.pitch")||(name == "M20:ATTITUDE.yaw"))
         uasPropertyValueMap[name] = value/M_PI*180;
 }
 
@@ -199,7 +199,7 @@ QString UASQuickTabView::formText(QString name, double value){
 
     QString str;
 
-    if(name == "M24:GLOBAL_POSITION_INT.lat"){
+    if(name == "M20:GLOBAL_POSITION_INT.lat"){
         if(value >= 0){
             str = QString::number(value,'f',5);
             str += 0x00B0;
@@ -213,7 +213,7 @@ QString UASQuickTabView::formText(QString name, double value){
         }
     }
 
-    else if(name == "M24:GLOBAL_POSITION_INT.lon"){
+    else if(name == "M20:GLOBAL_POSITION_INT.lon"){
         if(value >= 0){
             str = QString::number(value,'f',5);
             str += 0x00B0;
@@ -227,11 +227,11 @@ QString UASQuickTabView::formText(QString name, double value){
         }
     }
 
-    else if(name == "M24:GLOBAL_POSITION_INT.alt"){
+    else if(name == "M20:GLOBAL_POSITION_INT.alt"){
         str = QString::number(value,'f',1);
         str +=tr(" m.");
     }
-    else if((name == "M24:ATTITUDE.roll")||(name == "M24:ATTITUDE.pitch")||(name == "M24:ATTITUDE.yaw")){
+    else if((name == "M20:ATTITUDE.roll")||(name == "M20:ATTITUDE.pitch")||(name == "M20:ATTITUDE.yaw")){
         str = QString::number(value,'f',2);
         str += 0x00B0;
     }
