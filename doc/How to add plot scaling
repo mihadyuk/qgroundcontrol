@@ -1,0 +1,3 @@
+For adding additional scaling:
+1. Add to timeScaleCmb a new item, file LinechartWidget.cc, strings 271-283.
+2. If needed, set timeScaleStep in LinechartWidget.cc, string 590.
