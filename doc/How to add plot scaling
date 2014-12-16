@@ -1,3 +1,11 @@
 For adding additional scaling:
 1. Add to timeScaleCmb a new item, file LinechartWidget.cc, strings 271-283.
+	Example:
+		timeScaleCmb->addItem("60 minutes", 60*60);
+and set new minimumContentsLength of timeScaleCmb:
+		timeScaleCmb->setMinimumContentsLength(14);
+
 2. If needed, set timeScaleStep in LinechartWidget.cc, string 590.
+	Example:
+		if(plotInterval >= 30*60*1000)
+        	timeScaleStep = 4*60*1000;
