@@ -705,3 +705,5 @@ SOURCES += \
     src/qgcunittest/PX4RCCalibrationTest.cc
 
 }
+
+CONFIG += c++11
