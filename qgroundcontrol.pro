@@ -759,3 +759,6 @@ SOURCES += \
     src/FactSystem/Fact.cc \
     src/FactSystem/FactMetaData.cc \
     src/FactSystem/FactValidator.cc \
+
+CONFIG += c++11
+
