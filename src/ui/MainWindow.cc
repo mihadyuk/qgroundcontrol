@@ -58,6 +58,7 @@ This file is part of the QGROUNDCONTROL project
 #include "QGCRGBDView.h"
 #include "QGCStatusBar.h"
 #include "UASQuickView.h"
+#include "UASQuickTabView.h"
 #include "QGCDataPlot2D.h"
 #include "Linecharts.h"
 #include "UASActionsWidget.h"
@@ -79,6 +80,7 @@ This file is part of the QGROUNDCONTROL project
 #include "PxQuadMAV.h"
 
 #include "LogCompressor.h"
+#include <QTextCodec>
 
 // Set up some constants
 const QString MainWindow::defaultDarkStyle = ":files/styles/style-dark.css";
@@ -605,9 +607,14 @@ void MainWindow::buildCommonWidgets()
     createDockWidget(simView,new PrimaryFlightDisplay(this),tr("Primary Flight Display"),"PRIMARY_FLIGHT_DISPLAY_DOCKWIDGET",VIEW_SIMULATION,Qt::RightDockWidgetArea);
     createDockWidget(plannerView,new PrimaryFlightDisplay(this),tr("Primary Flight Display"),"PRIMARY_FLIGHT_DISPLAY_DOCKWIDGET",VIEW_FLIGHT,Qt::LeftDockWidgetArea);
 
-    QGCTabbedInfoView *infoview = new QGCTabbedInfoView(this);
-    infoview->addSource(mavlinkDecoder);
-    createDockWidget(pilotView,infoview,tr("Info View"),"UAS_INFO_INFOVIEW_DOCKWIDGET",VIEW_FLIGHT,Qt::LeftDockWidgetArea);
+//    QGCTabbedInfoView *infoview = new QGCTabbedInfoView(this);
+//    infoview->addSource(mavlinkDecoder);
+//    createDockWidget(pilotView,infoview,tr("Info View"),"UAS_INFO_INFOVIEW_DOCKWIDGET",VIEW_FLIGHT,Qt::LeftDockWidgetArea);
+
+    UASQuickTabView *uasquicktabview = new UASQuickTabView(this);
+    uasquicktabview->addSource(mavlinkDecoder);
+    createDockWidget(pilotView,uasquicktabview,"Параметры","UAS_QUICKTABVIEW_DOCKWIDGET",VIEW_FLIGHT,Qt::LeftDockWidgetArea);
+
 
     // Custom widgets, added last to all menus and layouts
     buildCustomWidget();

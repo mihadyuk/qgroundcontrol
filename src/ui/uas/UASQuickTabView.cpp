@@ -22,13 +22,13 @@ UASQuickTabView::UASQuickTabView(QWidget *parent) :
 //    tableWidget->horizontalHeader()->setFixedSize(0,0);
 //    tableWidget->setStyleSheet("gridline-color : gray");
 
-    this->setColumnCount(2);
-    this->setRowCount(6);
-    this->setLineWidth(1);
-    this->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    this->verticalHeader()->setFixedSize(0,0);
-    this->horizontalHeader()->setFixedSize(0,0);
-    this->setStyleSheet("gridline-color : gray");
+    ui->tableWidget->setColumnCount(2);
+    ui->tableWidget->setRowCount(6);
+    ui->tableWidget->setLineWidth(1);
+    ui->tableWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+//    ui->tableWidget->verticalHeader()->setFixedSize(0,0);
+//    ui->tableWidget->horizontalHeader()->setFixedSize(0,0);
+    ui->tableWidget->setStyleSheet("gridline-color : gray");
 
     //tableFont = new QFont("Times New Roman", 14, 3);
     tableFont.setFamily("Times New Roman");
@@ -47,10 +47,10 @@ UASQuickTabView::UASQuickTabView(QWidget *parent) :
 //    this->setModel(model);
 
 
-    this->verticalHeader()->setFixedSize(0,0);
-    this->horizontalHeader()->setFixedSize(0,0);
+    //this->verticalHeader()->setFixedSize(0,0);
+    //this->horizontalHeader()->setFixedSize(0,0);
 
-    this->setStyleSheet("gridline-color : gray");
+    ui->tableWidget->setStyleSheet("gridline-color : gray");
 
     QStringList nameList;// = new QStringList();
     nameList.append("Широта:");
@@ -80,8 +80,8 @@ UASQuickTabView::UASQuickTabView(QWidget *parent) :
         //qDebug()<<nameList.at(i);
         item->setFont(tableFont);
         //item->setSelected(true);
-        this->setItem(i, 0, item);
-        qDebug()<<"Text in item in table: "<<this->itemAt(i,0)->text();
+        ui->tableWidget->setItem(i, 0, item);
+        qDebug()<<"Text in item in table: "<<ui->tableWidget->itemAt(i,0)->text();
         //qDebug()<<i;
         }
 
@@ -156,10 +156,10 @@ void UASQuickTabView::valueChanged(const int uasId, const QString& name, const Q
 }
 
 void UASQuickTabView::setTableGeometry(){
-    this->setColumnWidth(0, (this->width()-this->verticalHeader()->width())/2);
-    this->setColumnWidth(1, (this->width()-this->verticalHeader()->width())/2 - 3);
+    ui->tableWidget->setColumnWidth(0, (ui->tableWidget->width()-ui->tableWidget->verticalHeader()->width())/2);
+    ui->tableWidget->setColumnWidth(1, (ui->tableWidget->width()-ui->tableWidget->verticalHeader()->width())/2);
     for(int i = 0; i < 6; i++){
-        this->setRowHeight(i, (this->width()/*-this->horizontalHeader()->width()*/)/4);
+        ui->tableWidget->setRowHeight(i, (ui->tableWidget->width()/*-this->horizontalHeader()->width()*/)/6);
     }
 
 }
