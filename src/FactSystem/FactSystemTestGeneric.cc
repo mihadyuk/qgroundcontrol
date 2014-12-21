@@ -21,39 +21,29 @@
  
  ======================================================================*/
 
-#ifndef FLIGHTMODESCOMPONENT_H
-#define FLIGHTMODESCOMPONENT_H
-
-#include "PX4Component.h"
-
 /// @file
-///     @brief The FlightModes VehicleComponent is used to set the associated Flight Mode switches.
 ///     @author Don Gagne <don@thegagnes.com>
 
-class FlightModesComponent : public PX4Component
-{
-    Q_OBJECT
-    
-public:
-    FlightModesComponent(UASInterface* uas, QObject* parent = NULL);
-    
-    // Virtuals from PX4Component
-    virtual const char** setupCompleteChangedTriggerList(void) const;
-    
-    // Virtuals from VehicleComponent
-    virtual QString name(void) const;
-    virtual QString description(void) const;
-    virtual QString icon(void) const;
-    virtual bool requiresSetup(void) const;
-    virtual bool setupComplete(void) const;
-    virtual QString setupStateDescription(void) const;
-    virtual QWidget* setupWidget(void) const;
-    virtual QStringList paramFilterList(void) const;
-    virtual const QVariantList& summaryItems(void);
-    
-private:
-    const QString   _name;
-    QVariantList    _summaryItems;
-};
+#include "FactSystemTestGeneric.h"
+#include "LinkManager.h"
+#include "MockLink.h"
+#include "AutoPilotPluginManager.h"
+#include "UASManager.h"
+#include "QGCApplication.h"
+#include "QGCQuickWidget.h"
 
-#endif
+#include <QQuickItem>
+
+UT_REGISTER_TEST(FactSystemTestGeneric)
+
+/// FactSystem Unit Test for PX4 autpilot
+FactSystemTestGeneric::FactSystemTestGeneric(void)
+{
+    
+}
+
+void FactSystemTestGeneric::init(void)
+{
+    UnitTest::init();
+    _init(MAV_AUTOPILOT_ARDUPILOTMEGA);
+}

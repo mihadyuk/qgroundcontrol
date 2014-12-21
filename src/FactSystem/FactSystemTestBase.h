@@ -21,39 +21,37 @@
  
  ======================================================================*/
 
-#ifndef FLIGHTMODESCOMPONENT_H
-#define FLIGHTMODESCOMPONENT_H
-
-#include "PX4Component.h"
-
 /// @file
-///     @brief The FlightModes VehicleComponent is used to set the associated Flight Mode switches.
 ///     @author Don Gagne <don@thegagnes.com>
 
-class FlightModesComponent : public PX4Component
+#ifndef FactSystemTestBase_H
+#define FactSystemTestBase_H
+
+#include "UnitTest.h"
+#include "UASInterface.h"
+#include "AutoPilotPlugin.h"
+
+// Base class for FactSystemTest[PX4|Generic] unit tests
+class FactSystemTestBase : public UnitTest
 {
     Q_OBJECT
     
 public:
-    FlightModesComponent(UASInterface* uas, QObject* parent = NULL);
+    FactSystemTestBase(void);
     
-    // Virtuals from PX4Component
-    virtual const char** setupCompleteChangedTriggerList(void) const;
+protected:
+    void _init(MAV_AUTOPILOT autopilot);
+    void _cleanup(void);
     
-    // Virtuals from VehicleComponent
-    virtual QString name(void) const;
-    virtual QString description(void) const;
-    virtual QString icon(void) const;
-    virtual bool requiresSetup(void) const;
-    virtual bool setupComplete(void) const;
-    virtual QString setupStateDescription(void) const;
-    virtual QWidget* setupWidget(void) const;
-    virtual QStringList paramFilterList(void) const;
-    virtual const QVariantList& summaryItems(void);
+    void _parameter_test(void);
+    void _qml_test(void);
+    void _paramMgrSignal_test(void);
+    void _qmlUpdate_test(void);
     
-private:
-    const QString   _name;
-    QVariantList    _summaryItems;
+    UASInterface*                   _uas;
+    QGCUASParamManagerInterface*    _paramMgr;
+    AutoPilotPlugin*                _plugin;
+    LinkManager*                    _linkMgr;
 };
 
 #endif

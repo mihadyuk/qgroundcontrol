@@ -21,43 +21,37 @@
  
  ======================================================================*/
 
-#ifndef PX4ParameterFacts_h
-#define PX4ParameterFacts_h
+#ifndef VehicleComponentSummaryItem_H
+#define VehicleComponentSummaryItem_H
 
 #include <QObject>
-#include <QMap>
-#include <QXmlStreamReader>
-#include <QLoggingCategory>
+#include <QQmlContext>
+#include <QQuickItem>
 
-#include "FactSystem.h"
 #include "UASInterface.h"
 
 /// @file
+///     @brief Vehicle Component class. A vehicle component is an object which
+///             abstracts the physical portion of a vehicle into a set of
+///             configurable values and user interface.
 ///     @author Don Gagne <don@thegagnes.com>
 
-Q_DECLARE_LOGGING_CATEGORY(PX4ParameterFactsMetaDataLog)
-
-/// Collection of Parameter Facts for PX4 AutoPilot
-
-class PX4ParameterFacts : public FactLoader
+class VehicleComponentSummaryItem : public QObject
 {
     Q_OBJECT
     
+    Q_PROPERTY(QString name READ name CONSTANT)
+    Q_PROPERTY(QString state READ state CONSTANT)
+    
 public:
-    /// @param uas Uas which this set of facts is associated with
-    PX4ParameterFacts(UASInterface* uas, QObject* parent = NULL);
+    VehicleComponentSummaryItem(const QString& name, const QString& state, QObject* parent = NULL);
     
-    static void loadParameterFactMetaData(void);
-    static void deleteParameterFactMetaData(void);
-    static void clearStaticData(void);
+    QString name(void) const { return _name; }
+    QString state(void) const { return _state; }
     
-private:
-    static FactMetaData* _parseParameter(QXmlStreamReader& xml, const QString& group);
-    static void _initMetaData(FactMetaData* metaData);
-    static QVariant _stringToTypedVariant(const QString& string, FactMetaData::ValueType_t type, bool failOk = false);
-
-    static bool _parameterMetaDataLoaded;   ///< true: parameter meta data already loaded
-    static QMap<QString, FactMetaData*> _mapParameterName2FactMetaData; ///< Maps from a parameter name to FactMetaData
+protected:
+    QString _name;
+    QString _state;
 };
 
 #endif

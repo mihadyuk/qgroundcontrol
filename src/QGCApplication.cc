@@ -497,6 +497,10 @@ void QGCApplication::_createSingletons(void)
 
 void QGCApplication::_destroySingletons(void)
 {
+    if (MainWindow::instance()) {
+        delete MainWindow::instance();
+    }
+    
     if (LinkManager::instance(true /* nullOk */)) {
         // This will close/delete all connections
         LinkManager::instance()->_shutdown();
