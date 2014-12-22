@@ -494,7 +494,8 @@ HEADERS += \
     src/QGCComboBox.h \
     src/QGCTemporaryFile.h \
     src/audio/QGCAudioWorker.h \
-    src/QGCQuickWidget.h
+    src/QGCQuickWidget.h \
+    src/QGCPalette.h \
 
 SOURCES += \
     src/main.cc \
@@ -635,6 +636,7 @@ SOURCES += \
     src/QGCTemporaryFile.cc \
     src/audio/QGCAudioWorker.cpp \
     src/QGCQuickWidget.cc \
+    src/QGCPalette.cc \
 
 #
 # Unit Test specific configuration goes here
