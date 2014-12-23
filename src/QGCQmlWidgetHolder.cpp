@@ -24,27 +24,26 @@
 /// @file
 ///     @author Don Gagne <don@thegagnes.com>
 
-#include "Fact.h"
+#include "QGCQmlWidgetHolder.h"
 
-#include <QtQml>
-
-Fact::Fact(QString name, QObject* parent) :
-    QObject(parent),
-    _name(name),
-    _metaData(NULL)
+QGCQmlWidgetHolder::QGCQmlWidgetHolder(QWidget *parent) :
+    QWidget(parent)
 {
-    _value = "";
+    _ui.setupUi(this);
 }
 
-void Fact::setValue(const QVariant& value)
+QGCQmlWidgetHolder::~QGCQmlWidgetHolder()
 {
-    _value = value;
-    emit valueChanged(_value);
-    emit _containerValueChanged(_value);
+
 }
 
-void Fact::_containerSetValue(const QVariant& value)
+void QGCQmlWidgetHolder::setAutoPilot(AutoPilotPlugin* autoPilot)
 {
-    _value = value;
-    emit valueChanged(_value);
+    _ui.qmlWidget->rootContext()->setContextProperty("autopilot", autoPilot);
+}
+
+void QGCQmlWidgetHolder::setSource(const QUrl& qmlUrl)
+{
+    _ui.qmlWidget->setSource(qmlUrl);
+    _ui.qmlWidget->setMinimumSize(_ui.qmlWidget->rootObject()->width(), _ui.qmlWidget->rootObject()->height());
 }
