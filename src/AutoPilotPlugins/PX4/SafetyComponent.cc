@@ -28,6 +28,7 @@
 #include "PX4RCCalibration.h"
 #include "VehicleComponentSummaryItem.h"
 #include "QGCQmlWidgetHolder.h"
+#include "PX4AutoPilotPlugin.h"
 
 /// @brief Parameters which signal a change in setupComplete state
 static const char* triggerParams[] = { NULL };
@@ -100,57 +101,19 @@ QWidget* SafetyComponent::setupWidget(void) const
     return holder;
 }
 
-const QVariantList& SafetyComponent::summaryItems(void)
+QUrl SafetyComponent::summaryQmlSource(void) const
 {
-    // FIXME: No summary items yet
-#if 0
-    if (!_summaryItems.count()) {
-        QString name;
-        QString state;
-        
-        // FIXME: Need to pull receiver type from RSSI value
-        name = "Receiver type:";
-        state = "n/a";
+    return QUrl::fromUserInput("qrc:/qml/SafetyComponentSummary.qml");
+}
 
-        VehicleComponentSummaryItem* item = new VehicleComponentSummaryItem(name, state, this);
-        _summaryItems.append(QVariant::fromValue(item));
-        
-        static const char* stickParams[] = { "RC_MAP_ROLL", "RC_MAP_PITCH", "RC_MAP_YAW", "RC_MAP_THROTTLE" };
-        
-        QString summary("Chan ");
-        
-        bool allSticksMapped = true;
-        for (size_t i=0; i<sizeof(stickParams)/sizeof(stickParams[0]); i++) {
-            QVariant value;
-            
-            if (_paramMgr->getParameterValue(_paramMgr->getDefaultComponentId(), stickParams[i], value)) {
-                if (value.toInt() == 0) {
-                    allSticksMapped = false;
-                    break;
-                } else {
-                    if (i != 0) {
-                        summary += ",";
-                    }
-                    summary += value.toString();
-                }
-            } else {
-                // Why is the parameter missing?
-                Q_ASSERT(false);
-                summary += "?";
-            }
-        }
-        
-        if (!allSticksMapped) {
-            summary = "Not mapped";
-        }
-
-        name = "Ail, Ele, Rud, Throt:";
-        state = summary;
-        
-        item = new VehicleComponentSummaryItem(name, state, this);
-        _summaryItems.append(QVariant::fromValue(item));
-    }
-#endif
+QString SafetyComponent::prerequisiteSetup(void) const
+{
+    PX4AutoPilotPlugin* plugin = dynamic_cast<PX4AutoPilotPlugin*>(_autopilot);
+    Q_ASSERT(plugin);
     
-    return _summaryItems;
+    if (!plugin->airframeComponent()->setupComplete()) {
+        return plugin->airframeComponent()->name();
+    }
+    
+    return QString();
 }

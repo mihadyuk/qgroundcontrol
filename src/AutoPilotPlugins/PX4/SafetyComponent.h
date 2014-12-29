@@ -50,7 +50,8 @@ public:
     virtual QString setupStateDescription(void) const;
     virtual QWidget* setupWidget(void) const;
     virtual QStringList paramFilterList(void) const;
-    virtual const QVariantList& summaryItems(void);
+    virtual QUrl summaryQmlSource(void) const;
+    virtual QString prerequisiteSetup(void) const;
     
 private:
     const QString   _name;
