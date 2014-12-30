@@ -97,20 +97,8 @@ QGCApplication::QGCApplication(int &argc, char* argv[], bool unitTesting) :
     Q_ASSERT(_app == NULL);
     _app = this;
     
-    /* Initialize translator.*/
-//    QString pathToLngFile = QCoreApplication::applicationDirPath();
-//    /* @TODO: add language to main menu.
-//     * Now the en-ru.qm must be placed into the same dir as executable file.*/
-//#if defined(Q_OS_WIN32) || defined(Q_OS_WIN64)
-//    pathToLngFile += "\en-ru";
-//#else
-//    pathToLngFile += "/en-ru";
-//#endif
-//    translator.load(pathToLngFile);
-//    this->installTranslator(&translator);
-
-
-
+    // This prevents usage of QQuickWidget to fail since it doesn't support native widget siblings
+    setAttribute(Qt::AA_DontCreateNativeWidgetSiblings);
     
 #ifdef QT_DEBUG
     // First thing we want to do is set up the qtlogging.ini file. If it doesn't already exist we copy
