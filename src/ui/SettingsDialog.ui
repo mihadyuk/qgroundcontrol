@@ -80,9 +80,6 @@
         </widget>
        </item>
        <item>
-        <widget class="QComboBox" name="customModeComboBox"/>
-       </item>
-       <item>
         <widget class="QGroupBox" name="groupBox">
          <property name="title">
           <string>Style</string>
