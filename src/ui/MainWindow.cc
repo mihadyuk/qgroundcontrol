@@ -841,7 +841,7 @@ void MainWindow::createCustomWidget()
 void MainWindow::loadCustomWidget()
 {
     QString widgetFileExtension(".qgw");
-    QString fileName = QGCFileDialog::getOpenFileName(this, tr("Specify Widget File Name"), QStandardPaths::writableLocation(QStandardPaths::DesktopLocation), tr("QGroundControl Widget (*%1);;").arg(widgetFileExtension));
+    QString fileName = QGCFileDialog::getOpenFileName(this, tr("Specify Widget File Name"), QStandardPaths::writableLocation(QStandardPaths::DesktopLocation), tr("QGroundControl Widget (*%1)").arg(widgetFileExtension));
     if (fileName != "") loadCustomWidget(fileName);
 }
 void MainWindow::loadCustomWidget(const QString& fileName, int view)
@@ -1001,14 +1001,16 @@ void MainWindow::configureWindowName()
 
 void MainWindow::startVideoCapture()
 {
-    QString format = "bmp";
+    QString format("bmp");
     QString initialPath = QDir::currentPath() + tr("/untitled.") + format;
 
     QString screenFileName = QGCFileDialog::getSaveFileName(this, tr("Save As"),
                                                           initialPath,
                                                           tr("%1 Files (*.%2);;All Files (*)")
                                                           .arg(format.toUpper())
-                                                          .arg(format));
+                                                          .arg(format),
+                                                          0,0,
+                                                          &format);
     delete videoTimer;
     videoTimer = new QTimer(this);
 }

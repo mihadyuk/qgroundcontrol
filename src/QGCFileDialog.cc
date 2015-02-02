@@ -88,17 +88,38 @@ QString QGCFileDialog::getSaveFileName(QWidget* parent,
                                   const QString& dir,
                                   const QString& filter,
                                   QString* selectedFilter,
-                                  Options options)
+                                  Options options,
+                                  QString* defaultSuffix)
 {
     _validate(selectedFilter, options);
-    
+
 #ifdef QT_DEBUG
     if (qgcApp()->runningUnitTests()) {
-        return UnitTest::_getSaveFileName(parent, caption, dir, filter, selectedFilter, options);
+        return UnitTest::_getSaveFileName(parent, caption, dir, filter, selectedFilter, options, defaultSuffix);
     } else
 #endif
     {
-        return QFileDialog::getSaveFileName(parent, caption, dir, filter, selectedFilter, options);
+        QFileDialog dlg(parent, caption, dir, filter);
+        dlg.setAcceptMode(QFileDialog::AcceptSave);
+        if (selectedFilter) {
+            dlg.selectNameFilter(*selectedFilter);
+        }
+        if (options) {
+            dlg.setOptions(options);
+        }
+        if (defaultSuffix) {
+            //-- Make sure dot is not present
+            if (defaultSuffix->startsWith(".")) {
+                defaultSuffix->remove(0,1);
+            }
+            dlg.setDefaultSuffix(*defaultSuffix);
+        }
+        if (dlg.exec()) {
+            if (dlg.selectedFiles().count()) {
+                return dlg.selectedFiles().first();
+            }
+        }
+        return QString("");
     }
 }
 

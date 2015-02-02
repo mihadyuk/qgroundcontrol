@@ -571,8 +571,15 @@ void QGCToolWidget::widgetRemoved()
 
 void QGCToolWidget::exportWidget()
 {
+    QString defaultSuffix("qgw");
     const QString widgetFileExtension(".qgw");
-    QString fileName = QGCFileDialog::getSaveFileName(this, tr("Specify File Name"), QStandardPaths::writableLocation(QStandardPaths::DesktopLocation), tr("QGroundControl Widget (*%1);;").arg(widgetFileExtension));
+    QString fileName = QGCFileDialog::getSaveFileName(
+        this, tr("Specify File Name"),
+        QStandardPaths::writableLocation(QStandardPaths::DesktopLocation),
+        tr("QGroundControl Widget (*%1)").arg(widgetFileExtension),
+        0,0,
+        &defaultSuffix);
+    //-- Note that if the user enters foo.bar, this will end up foo.bar.qgw
     if (!fileName.endsWith(widgetFileExtension))
     {
         fileName = fileName.append(widgetFileExtension);
@@ -584,7 +591,7 @@ void QGCToolWidget::exportWidget()
 void QGCToolWidget::importWidget()
 {
     const QString widgetFileExtension(".qgw");
-    QString fileName = QGCFileDialog::getOpenFileName(this, tr("Specify File Name"), QStandardPaths::writableLocation(QStandardPaths::DesktopLocation), tr("QGroundControl Widget (*%1);;").arg(widgetFileExtension));
+    QString fileName = QGCFileDialog::getOpenFileName(this, tr("Specify File Name"), QStandardPaths::writableLocation(QStandardPaths::DesktopLocation), tr("QGroundControl Widget (*%1)").arg(widgetFileExtension));
     loadSettings(fileName);
 }
 

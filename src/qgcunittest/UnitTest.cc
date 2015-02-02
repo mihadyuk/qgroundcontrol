@@ -345,16 +345,20 @@ QString UnitTest::_getSaveFileName(QWidget* parent,
                                    const QString& dir,
                                    const QString& filter,
                                    QString* selectedFilter,
-                                   QFileDialog::Options options)
+                                   QFileDialog::Options options,
+                                   QString* defaultSuffix)
 {
     Q_UNUSED(parent);
     Q_UNUSED(caption);
     Q_UNUSED(dir);
     Q_UNUSED(filter);
     Q_UNUSED(options);
-    
+
+    if(defaultSuffix)
+        Q_ASSERT(defaultSuffix->startsWith(".") == false);
+
     // Support for selectedFilter is not yet implemented
     Q_ASSERT(selectedFilter == NULL);
-    
+
     return _fileDialogResponseSingle(getSaveFileName);
 }
