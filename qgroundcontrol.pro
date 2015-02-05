@@ -208,6 +208,8 @@ ReleaseBuild {
     }
 }
 
+QML_IMPORT_PATH = $$BASEDIR/qml
+
 # qextserialport should not be used by general QGroundControl code. Use QSerialPort instead. This is only
 # here to support special case Firmware Upgrade code.
 include(libs/qextserialport/src/qextserialport.pri)
@@ -345,7 +347,7 @@ FORMS += \
     src/ui/QGCUASFileView.ui \
     src/ui/uas/UASQuickTabView.ui \
     src/QGCQmlWidgetHolder.ui \
-    src/ui/QGCMapRCToParamDialog.ui
+    src/ui/QGCMapRCToParamDialog.ui \
 
 
 HEADERS += \
@@ -718,13 +720,12 @@ FORMS += \
     src/VehicleSetup/ParameterEditor.ui \
     src/ui/QGCPX4VehicleConfig.ui \
     src/AutoPilotPlugins/PX4/FlightModeConfig.ui \
-    src/VehicleSetup/SetupWidgetHolder.ui \
+    src/VehicleSetup/SetupView.ui \
 
 HEADERS+= \
     src/VehicleSetup/SetupView.h \
     src/VehicleSetup/ParameterEditor.h \
     src/VehicleSetup/VehicleComponent.h \
-    src/VehicleSetup/VehicleComponentSummaryItem.h \
     src/AutoPilotPlugins/AutoPilotPluginManager.h \
     src/AutoPilotPlugins/AutoPilotPlugin.h \
     src/AutoPilotPlugins/Generic/GenericAutoPilotPlugin.h \
@@ -738,13 +739,11 @@ HEADERS+= \
     src/AutoPilotPlugins/PX4/SensorsComponent.h \
     src/AutoPilotPlugins/PX4/SafetyComponent.h \
     src/AutoPilotPlugins/PX4/PX4ParameterFacts.h \
-    src/VehicleSetup/SetupWidgetHolder.h \
 
 SOURCES += \
     src/VehicleSetup/SetupView.cc \
     src/VehicleSetup/ParameterEditor.cc \
     src/VehicleSetup/VehicleComponent.cc \
-    src/VehicleSetup/VehicleComponentSummaryItem.cc \
     src/AutoPilotPlugins/AutoPilotPluginManager.cc \
     src/AutoPilotPlugins/Generic/GenericAutoPilotPlugin.cc \
     src/AutoPilotPlugins/Generic/GenericParameterFacts.cc \
@@ -757,7 +756,6 @@ SOURCES += \
     src/AutoPilotPlugins/PX4/SensorsComponent.cc \
     src/AutoPilotPlugins/PX4/SafetyComponent.cc \
     src/AutoPilotPlugins/PX4/PX4ParameterFacts.cc \
-    src/VehicleSetup/SetupWidgetHolder.cc \
 
 # Fact System code
 
