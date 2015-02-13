@@ -686,6 +686,7 @@ HEADERS += \
     src/FactSystem/FactSystemTestPX4.h \
     src/FactSystem/FactSystemTestGeneric.h \
     src/QmlControls/QmlTestWidget.h \
+    src/VehicleSetup/SetupViewTest.h \
 
 SOURCES += \
     src/qgcunittest/UnitTest.cc \
@@ -711,6 +712,7 @@ SOURCES += \
     src/FactSystem/FactSystemTestPX4.cc \
     src/FactSystem/FactSystemTestGeneric.cc \
     src/QmlControls/QmlTestWidget.cc \
+    src/VehicleSetup/SetupViewTest.cc \
 
 }
 
