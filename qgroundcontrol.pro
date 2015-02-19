@@ -330,7 +330,7 @@ FORMS += \
     src/ui/uas/UASQuickViewItemSelect.ui \
     src/ui/QGCTabbedInfoView.ui \
     src/ui/UASRawStatusView.ui \
-    src/ui/uas/QGCMessageView.ui \
+    src/ui/uas/UASMessageView.ui \
     src/ui/JoystickButton.ui \
     src/ui/JoystickAxis.ui \
     src/ui/configuration/terminalconsole.ui \
@@ -461,7 +461,7 @@ HEADERS += \
     src/ui/QGCTabbedInfoView.h \
     src/ui/UASRawStatusView.h \
     src/ui/PrimaryFlightDisplay.h \
-    src/ui/uas/QGCMessageView.h \
+    src/ui/uas/UASMessageView.h \
     src/ui/JoystickButton.h \
     src/ui/JoystickAxis.h \
     src/ui/configuration/console.h \
@@ -498,7 +498,8 @@ HEADERS += \
     src/ui/QGCLinkConfiguration.h \
     src/comm/LinkConfiguration.h \
     src/ui/QGCCommConfiguration.h \
-    src/ui/QGCUDPLinkConfiguration.h
+    src/ui/QGCUDPLinkConfiguration.h \
+    src/uas/UASMessageHandler.h
 
 SOURCES += \
     src/main.cc \
@@ -608,7 +609,7 @@ SOURCES += \
     src/ui/PrimaryFlightDisplay.cc \
     src/ui/JoystickButton.cc \
     src/ui/JoystickAxis.cc \
-    src/ui/uas/QGCMessageView.cc \
+    src/ui/uas/UASMessageView.cc \
     src/ui/configuration/terminalconsole.cpp \
     src/ui/configuration/console.cpp \
     src/ui/configuration/SerialSettingsDialog.cc \
@@ -640,7 +641,8 @@ SOURCES += \
     src/ui/QGCLinkConfiguration.cc \
     src/comm/LinkConfiguration.cc \
     src/ui/QGCCommConfiguration.cc \
-    src/ui/QGCUDPLinkConfiguration.cc
+    src/ui/QGCUDPLinkConfiguration.cc \
+    src/uas/UASMessageHandler.cc
 
 #
 # Unit Test specific configuration goes here
