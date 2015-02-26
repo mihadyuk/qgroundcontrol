@@ -367,6 +367,37 @@ Rectangle {
                     enabled: false
                 }
 
+                // QGCButton - menu
+                Loader {
+                    sourceComponent: ctlRowHeader
+                    property var text: "QGCButton(menu)"
+                }
+                Menu {
+                    id: buttonMenu
+                    MenuItem {
+                        text: "Item 1"
+                    }
+                    MenuItem {
+                        text: "Item 2"
+                    }
+                    MenuItem {
+                        text: "Item 3"
+                    }
+                }
+                QGCButton {
+                    width: 100
+                    height: 20
+                    text: "Button"
+                    menu: buttonMenu
+                }
+                QGCButton {
+                    width: 100
+                    height: 20
+                    text: "Button"
+                    enabled: false
+                    menu: buttonMenu
+                }
+
                 // QGCRadioButton
                 Loader {
                     sourceComponent: ctlRowHeader
@@ -464,6 +495,23 @@ Rectangle {
                     width: 100
                     height: 20
                     text: "FactTextField"
+                    enabled: false
+                }
+
+                // QGCComboBox
+                Loader {
+                    sourceComponent: ctlRowHeader
+                    property var text: "QGCComboBox"
+                }
+                QGCComboBox {
+                    width: 100
+                    height: 20
+                    model: [ "Item 1", "Item 2", "Item 3" ]
+                }
+                QGCComboBox {
+                    width: 100
+                    height: 20
+                    model: [ "Item 1", "Item 2", "Item 3" ]
                     enabled: false
                 }
 
