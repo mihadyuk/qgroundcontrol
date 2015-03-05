@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>500</width>
-    <height>604</height>
+    <width>753</width>
+    <height>640</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -22,6 +22,9 @@
   <layout class="QVBoxLayout" name="verticalLayout_5">
    <item>
     <widget class="QTabWidget" name="tabWidget">
+     <property name="currentIndex">
+      <number>1</number>
+     </property>
      <widget class="QWidget" name="general">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
@@ -361,14 +364,40 @@
         </layout>
        </item>
       </layout>
-      <zorder>audioMuteCheckBox</zorder>
-      <zorder>reconnectCheckBox</zorder>
-      <zorder>lowPowerCheckBox</zorder>
-      <zorder>promptFlightDataSave</zorder>
-      <zorder>groupBox</zorder>
-      <zorder>fileLocationsLayout</zorder>
-      <zorder>groupBox_2</zorder>
-      <zorder>groupBox_3</zorder>
+     </widget>
+     <widget class="QWidget" name="langSettings">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <attribute name="title">
+       <string>Language</string>
+      </attribute>
+      <widget class="QComboBox" name="localeComboBox">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>30</y>
+         <width>201</width>
+         <height>26</height>
+        </rect>
+       </property>
+      </widget>
+      <widget class="QLabel" name="label_3">
+       <property name="geometry">
+        <rect>
+         <x>210</x>
+         <y>30</y>
+         <width>121</width>
+         <height>20</height>
+        </rect>
+       </property>
+       <property name="text">
+        <string>Language for ui</string>
+       </property>
+      </widget>
      </widget>
     </widget>
    </item>

@@ -90,7 +90,7 @@ _ui(new Ui::SettingsDialog)
     connect(_ui->deleteSettings, &QAbstractButton::toggled, this, &SettingsDialog::_deleteSettingsToggled);
     
 
-#if 0
+#if 1
     QDir dir;
     QStringList entry;
     entry.append("*.qm");
@@ -104,7 +104,7 @@ _ui(new Ui::SettingsDialog)
     }
     _ui->localeComboBox->setCurrentIndex(0);
 
-    QSettings settings;
+    //QSettings settings;
 
     if(settings.contains("LANG_FILE_NAME"))
     {
@@ -189,7 +189,7 @@ void SettingsDialog::_validateBeforeClose(void)
     app->setSavedFilesLocation(saveLocation);
     qgcApp()->setPromptFlightDataSave(_ui->promptFlightDataSave->checkState() == Qt::Checked);
 
-#if 0
+#if 1
     if(_ui->localeComboBox->currentText() != "Default"){
 
             qgcApp()->setLocaleFileName(_ui->localeComboBox->currentText() + ".qm");
