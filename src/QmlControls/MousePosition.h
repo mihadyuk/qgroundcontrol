@@ -2,7 +2,7 @@
  
  QGroundControl Open Source Ground Control Station
  
- (c) 2009 - 2014 QGROUNDCONTROL PROJECT <http://www.qgroundcontrol.org>
+ (c) 2009, 2015 QGROUNDCONTROL PROJECT <http://www.qgroundcontrol.org>
  
  This file is part of the QGROUNDCONTROL project
  
@@ -24,28 +24,27 @@
 /// @file
 ///     @author Don Gagne <don@thegagnes.com>
 
-#include "FactSystem.h"
-#include "UASManager.h"
-#include "QGCApplication.h"
-#include "VehicleComponent.h"
-#include "FactBinder.h"
+#ifndef MOUSEPOSITION_H
+#define MOUSEPOSITION_H
 
-#include <QtQml>
+#include <QObject>
+#include <QCursor>
 
-IMPLEMENT_QGC_SINGLETON(FactSystem, FactSystem)
-
-const char* FactSystem::_factSystemQmlUri = "QGroundControl.FactSystem";
-
-FactSystem::FactSystem(QObject* parent) :
-    QGCSingleton(parent)
+/// This Qml control is used to return global mouse positions. It is needed to fix
+/// a problem with hover state of buttons not being updated correctly if the mouse
+/// moves out of a QQuickWidget control.
+class MousePosition : public QObject
 {
-    qmlRegisterType<FactBinder>(_factSystemQmlUri, 1, 0, "Fact");
+    Q_OBJECT
     
-    // FIXME: Where should these go?
-    qmlRegisterUncreatableType<VehicleComponent>(_factSystemQmlUri, 1, 0, "VehicleComponent", "Can only reference VehicleComponent");
-}
+public:
+    MousePosition(void);
+    
+    Q_PROPERTY(int mouseX READ mouseX)
+    Q_PROPERTY(int mouseY READ mouseY)
+    
+    int mouseX(void) { return QCursor::pos().x(); }
+    int mouseY(void) { return QCursor::pos().y(); }
+};
 
-FactSystem::~FactSystem()
-{
-
-}
+#endif

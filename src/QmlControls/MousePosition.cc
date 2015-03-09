@@ -2,7 +2,7 @@
  
  QGroundControl Open Source Ground Control Station
  
- (c) 2009 - 2014 QGROUNDCONTROL PROJECT <http://www.qgroundcontrol.org>
+ (c) 2009, 2015 QGROUNDCONTROL PROJECT <http://www.qgroundcontrol.org>
  
  This file is part of the QGROUNDCONTROL project
  
@@ -24,28 +24,9 @@
 /// @file
 ///     @author Don Gagne <don@thegagnes.com>
 
-#include "FactSystem.h"
-#include "UASManager.h"
-#include "QGCApplication.h"
-#include "VehicleComponent.h"
-#include "FactBinder.h"
+#include "MousePosition.h"
 
-#include <QtQml>
-
-IMPLEMENT_QGC_SINGLETON(FactSystem, FactSystem)
-
-const char* FactSystem::_factSystemQmlUri = "QGroundControl.FactSystem";
-
-FactSystem::FactSystem(QObject* parent) :
-    QGCSingleton(parent)
-{
-    qmlRegisterType<FactBinder>(_factSystemQmlUri, 1, 0, "Fact");
-    
-    // FIXME: Where should these go?
-    qmlRegisterUncreatableType<VehicleComponent>(_factSystemQmlUri, 1, 0, "VehicleComponent", "Can only reference VehicleComponent");
-}
-
-FactSystem::~FactSystem()
+MousePosition::MousePosition(void)
 {
 
 }
