@@ -31,8 +31,9 @@
 #include <Eigen/Geometry>
 #include "AutoPilotPluginManager.h"
 #include "QGCMessageBox.h"
+#include "QGCLoggingCategory.h"
 
-Q_LOGGING_CATEGORY(UASLog, "UASLog")
+QGC_LOGGING_CATEGORY(UASLog, "UASLog")
 
 #define UAS_DEFAULT_BATTERY_WARNLEVEL 20
 
@@ -1028,8 +1029,6 @@ void UAS::receiveMessage(LinkInterface* link, mavlink_message_t message)
             paramVal.type = rawValue.param_type;
 
             processParamValueMsg(message, parameterName,rawValue,paramVal);
-            processParamValueMsgHook(message, parameterName,rawValue,paramVal);
-
          }
             break;
         case MAVLINK_MSG_ID_COMMAND_ACK:
@@ -1247,14 +1246,17 @@ void UAS::receiveMessage(LinkInterface* link, mavlink_message_t message)
             QByteArray b;
             b.resize(MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1);
             mavlink_msg_statustext_get_text(&message, b.data());
+ 
             // Ensure NUL-termination
             b[b.length()-1] = '\0';
             QString text = QString(b);
             int severity = mavlink_msg_statustext_get_severity(&message);
 
-            if (text.startsWith("#") || severity <= MAV_SEVERITY_WARNING)
+	    // If the message is NOTIFY or higher severity, or starts with a '#',
+	    // then read it aloud.
+            if (text.startsWith("#") || severity <= MAV_SEVERITY_NOTICE)
             {
-                text.remove("#audio:");
+                text.remove("#");
                 emit textMessageReceived(uasId, message.compid, severity, text);
                 GAudioOutput::instance()->say(text.toLower(), severity);
             }

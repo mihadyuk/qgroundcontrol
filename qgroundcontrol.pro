@@ -482,7 +482,6 @@ HEADERS += \
     src/uas/QGCUASFileManager.h \
     src/ui/QGCUASFileView.h \
     src/CmdLineOptParser.h \
-    src/uas/QGXPX4UAS.h \
     src/QGCFileDialog.h \
     src/QGCMessageBox.h \
     src/ui/uas/UASQuickTabView.h \
@@ -501,7 +500,8 @@ HEADERS += \
     src/ui/QGCUDPLinkConfiguration.h \
     src/uas/UASMessageHandler.h \
     src/ui/toolbar/MainToolBar.h \
-    src/QmlControls/ScreenTools.h
+    src/QmlControls/ScreenTools.h \
+    src/QGCLoggingCategory.h
 
 SOURCES += \
     src/main.cc \
@@ -626,7 +626,6 @@ SOURCES += \
     src/uas/QGCUASFileManager.cc \
     src/ui/QGCUASFileView.cc \
     src/CmdLineOptParser.cc \
-    src/uas/QGXPX4UAS.cc \
     src/QGCFileDialog.cc \
     src/ui/uas/UASQuickTabView.cpp \
     src/QGCComboBox.cc \
@@ -644,7 +643,8 @@ SOURCES += \
     src/ui/QGCUDPLinkConfiguration.cc \
     src/uas/UASMessageHandler.cc \
     src/ui/toolbar/MainToolBar.cc \
-    src/QmlControls/ScreenTools.cc
+    src/QmlControls/ScreenTools.cc \
+    src/QGCLoggingCategory.cc
 
 #
 # Unit Test specific configuration goes here
