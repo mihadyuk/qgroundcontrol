@@ -72,6 +72,8 @@ Supported builds for Linux are 32 or 64-bit, built using gcc.
     * Next, set the environment variables by executing in the terminal: `source /opt/qt54/bin/qt54-env.sh` or copy and paste the contents to your `~/.profile` file to set them on login.
     * Verify that the variables have been set: `echo $PATH && echo $QTDIR`. The output should read `/opt/qt54/bin:...` and `/opt/qt54`.
 
+If you get this error when running qgroundcontrol: /usr/lib/x86_64-linux-gnu/libstdc++.so.6: version 'GLIBCXX_3.4.20' not found. You need to either update to the latest gcc, or install the latest libstdc++.6 using: sudo apt-get install libstdc++6.
+
 #### [Optional] Install additional libraries
 * For text-to-speech (espeak)
 	* For Ubuntu: `sudo apt-get install espeak libespeak-dev`
@@ -103,6 +105,24 @@ Download Qt 5.4 from here: <http://download.qt-project.org/official_releases/qt/
 3. Run `qmake -tp vc qgroundcontrol.pro`.  This will create a 'qgroundcontrol.vcxproj' project file which is capable of building both debug and release configurations.
 4. Now open the generated 'qgroundcontrol.vcxproj' file in Visual Studio.
 5. Compile and edit in Visual Studio. If you need to add new files, add them to qgroundcontrol.pro and re-run qmake from step 3.
+
+#### Alternate (Qt Creator IDE) Build Type (Any OS)
+All steps below assume you already have a running software development enviroment (i.e. gcc/g++ on Ubuntu, Xcode on Mac OSX along with the command line tools, Visual Studio on Windows, etc.) along with the various external dependencies described elsewhere in this document.
+* Download the Qt Online Installer executable from <http://www.qt.io/download-open-source/>
+    * On Ubuntu, you have to set the file to executable:`chmod +x ~/Downloads/qt-opensource-linux-x64-1.6.0-8-online.run\`
+* Run the installer and follow the installation steps.
+    * Select the directory you want to install Qt, which is handy if you don't want to install system wide or don't have root access.
+    * Select the components you want to install. *Tools* will be selected by default. You also want to install the Qt 5.4 module along with the targets you are interested in (i.e. 32-Bit for Windows, etc.). On Ubuntu, *Android armv7* will be selected by default as well. You may or may not want to install that, depending on your desire to target that platform. Same idea for OS X. It will have *iOS* Kits selected as well.
+    * Accept the license and the installer will download all the necessary modules and install where you told it to install.
+* Go to the Qt Creator directory:
+	* `~/local/Qt/Tools/QtCreator/bin` for Ubuntu (if that's where you installed it)
+	* `~/local/Qt/Qt Creator.app` for OS X (if that's where you installed it)
+	* `C:/local/Qt/Tools/QtCreator/bin` for Windows (if that's where you installed it)
+* Launch Qt Creator and open the `qgroundcontrol.pro` project.
+
+When you open a project in Qt Creator for the first time, it will ask what targets (*Kits*) you want to target. The options will depend on what modules you downloaded above. For instance, on Mac OS X you would select *Desktop Qt 5.4.1 clang 64bit*.
+It's also a good idea to go into *Projects/Build Steps* (side tool bar) and select Make's *Details*. For *Make Arguments*, add `-jx` (`/J x` on Windows) where `x` is at least the numbers of cores you have. That is, if you are running on a Mac Pro with 24 cores, you would use `-j24`. That will run 24 concurrent compiler instances at a time and run the build a whole lot faster. Your mileage may vary depending on your disk IO throughput.
+Qt Creator is a full-blown development IDE. You can even debug right from within it and it provides the full Qt API documentation. Just place the mouse cursor over a Qt class/element and hit the F1 key.
 
 ### Additional build notes for all supported OS
 
