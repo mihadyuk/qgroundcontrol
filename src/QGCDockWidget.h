@@ -38,6 +38,10 @@ public:
     QGCDockWidget(const QString& title, QWidget *parent = 0, Qt::WindowFlags flags = 0);
 
     void closeEvent(QCloseEvent* event);
+
+signals:
+    void hided(QGCDockWidget*);
+
 };
 
 

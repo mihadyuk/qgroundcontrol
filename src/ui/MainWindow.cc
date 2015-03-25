@@ -69,6 +69,8 @@ This file is part of the QGROUNDCONTROL project
 #include "QGCMessageBox.h"
 #include "QGCDockWidget.h"
 
+#include "qgcvideoview.h"
+
 #ifdef UNITTEST_BUILD
 #include "QmlControls/QmlTestWidget.h"
 #endif
@@ -99,6 +101,10 @@ const char* MainWindow::_pfdDockWidgetName = "PRIMARY_FLIGHT_DISPLAY_DOCKWIDGET"
 const char* MainWindow::_hudDockWidgetName = "HEAD_UP_DISPLAY_DOCKWIDGET";
 const char* MainWindow::_uasInfoViewDockWidgetName = "UAS_INFO_INFOVIEW_DOCKWIDGET";
 const char* MainWindow::_debugConsoleDockWidgetName = "COMMUNICATION_CONSOLE_DOCKWIDGET";
+
+const char* MainWindow::_uasVideoViewDockWidgetName = "UAS_VIDEO_VIDEOVIEW_DOCKWIDGET";
+
+
 
 static MainWindow* _instance = NULL;   ///< @brief MainWindow singleton
 
@@ -383,6 +389,7 @@ void MainWindow::_createDockWidget(const QString& title, const QString& name, Qt
     action->setCheckable(true);
     action->setData(name);
     connect(action, &QAction::triggered, this, &MainWindow::_showDockWidgetAction);
+    connect(dockWidget, SIGNAL(hided(QGCDockWidget*)), this, SLOT(onHided(QGCDockWidget*)));
     _ui.menuTools->addAction(action);
     _mapName2DockWidget[name] = dockWidget;
     _mapDockWidget2Action[dockWidget] = action;
@@ -427,7 +434,8 @@ void MainWindow::_buildCommonWidgets(void)
         { _pfdDockWidgetName,               "Primary Flight Display",   Qt::RightDockWidgetArea },
         { _hudDockWidgetName,               "Video Downlink",           Qt::RightDockWidgetArea },
         { _uasInfoViewDockWidgetName,       "Info View",                Qt::LeftDockWidgetArea },
-        { _debugConsoleDockWidgetName,      "Communications Console",   Qt::LeftDockWidgetArea }
+        { _debugConsoleDockWidgetName,      "Communications Console",   Qt::LeftDockWidgetArea },
+        { _uasVideoViewDockWidgetName,      "Video View",               Qt::LeftDockWidgetArea }
     };
     static const size_t cDockWidgetInfo = sizeof(rgDockWidgetInfo) / sizeof(rgDockWidgetInfo[0]);
 
@@ -580,6 +588,8 @@ void MainWindow::_createInnerDockWidget(const QString& widgetName)
         QGCTabbedInfoView* pInfoView = new QGCTabbedInfoView(this);
         pInfoView->addSource(mavlinkDecoder);
         widget = pInfoView;
+    } else if (widgetName == _uasVideoViewDockWidgetName) {
+        widget = new QGCVideoView(this);
     } else if (widgetName == _debugConsoleDockWidgetName) {
         widget = new DebugConsole(this);
     } else {
@@ -1382,3 +1392,15 @@ void MainWindow::_showQmlTestWidget(void)
     new QmlTestWidget();
 }
 #endif
+
+
+
+
+void MainWindow::onHided(QGCDockWidget *wid){
+    QAction* act = _mapDockWidget2Action[wid];
+    for(int i = 0; i < _ui.menuTools->actions().size(); i++)
+    {
+        if(_ui.menuTools->actions().at(i) == act)
+            act->setChecked(false);
+    }
+}

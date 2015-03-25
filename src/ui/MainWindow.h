@@ -80,6 +80,8 @@ class Linecharts;
 class QGCDataPlot2D;
 class QGCUASFileViewMulti;
 
+class QGCDockWidget;
+
 /**
  * @brief Main Application Window
  *
@@ -297,6 +299,9 @@ private slots:
     void _showDockWidgetAction(bool show);
     void _loadCustomWidgetFromFile(void);
     void _createNewCustomWidget(void);
+
+
+    void onHided(QGCDockWidget* wid);
 #ifdef UNITTEST_BUILD
     void _showQmlTestWidget(void);
 #endif
@@ -333,6 +338,8 @@ private:
     static const char* _hudDockWidgetName;
     static const char* _uasInfoViewDockWidgetName;
     static const char* _debugConsoleDockWidgetName;
+
+    static const char* _uasVideoViewDockWidgetName;
 
     QMap<QString, QDockWidget*>     _mapName2DockWidget;
     QMap<int, QDockWidget*>         _mapUasId2HilDockWidget;

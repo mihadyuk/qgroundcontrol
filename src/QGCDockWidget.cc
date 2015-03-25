@@ -24,6 +24,7 @@
 #include "QGCDockWidget.h"
 
 #include <QCloseEvent>
+#include <QDebug>
 
 QGCDockWidget::QGCDockWidget(const QString& title, QWidget *parent, Qt::WindowFlags flags) :
     QDockWidget(title, parent, flags)
@@ -34,6 +35,12 @@ QGCDockWidget::QGCDockWidget(const QString& title, QWidget *parent, Qt::WindowFl
 // Instead of destroying the widget just hide it
 void QGCDockWidget::closeEvent(QCloseEvent* event)
 {
-    event->ignore();
+    qDebug()<<this->widget()->metaObject()->className();
+    if(QString(this->widget()->metaObject()->className()) == "QGCVideoView")
+    {
+        this->widget()->close();
+    }
     setVisible(false);
+    event->ignore();
+    emit hided(this);
 }
