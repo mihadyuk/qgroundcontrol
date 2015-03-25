@@ -347,7 +347,8 @@ FORMS += \
     src/ui/QGCMapRCToParamDialog.ui \
     src/ui/QGCLinkConfiguration.ui \
     src/ui/QGCCommConfiguration.ui \
-    src/ui/QGCUDPLinkConfiguration.ui
+    src/ui/QGCUDPLinkConfiguration.ui \
+    src/ui/qgcvideoview.ui
 
 
 HEADERS += \
@@ -501,7 +502,8 @@ HEADERS += \
     src/uas/UASMessageHandler.h \
     src/ui/toolbar/MainToolBar.h \
     src/QmlControls/ScreenTools.h \
-    src/QGCLoggingCategory.h
+    src/QGCLoggingCategory.h \
+    src/ui/qgcvideoview.h
 
 SOURCES += \
     src/main.cc \
@@ -644,7 +646,8 @@ SOURCES += \
     src/uas/UASMessageHandler.cc \
     src/ui/toolbar/MainToolBar.cc \
     src/QmlControls/ScreenTools.cc \
-    src/QGCLoggingCategory.cc
+    src/QGCLoggingCategory.cc \
+    src/ui/qgcvideoview.cpp
 
 #
 # Unit Test specific configuration goes here
