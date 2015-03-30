@@ -210,6 +210,10 @@ MainWindow::MainWindow(QSplashScreen* splashScreen)
     connect(this, SIGNAL(x11EventOccured(XEvent*)), mouse, SLOT(handleX11Event(XEvent*)));
 #endif //QGC_MOUSE_ENABLED_LINUX
 
+    // These also cause the screen to redraw so we need to update any OpenGL canvases in QML controls
+    connect(LinkManager::instance(), &LinkManager::linkConnected,    this, &MainWindow::_linkStateChange);
+    connect(LinkManager::instance(), &LinkManager::linkDisconnected, this, &MainWindow::_linkStateChange);
+
     // Connect link
     if (_autoReconnect)
     {
@@ -1351,6 +1355,11 @@ void MainWindow::restoreLastUsedConnection()
         // Create a link for it
         LinkManager::instance()->createConnectedLink(connection);
     }
+}
+
+void MainWindow::_linkStateChange(LinkInterface*)
+{
+    emit repaintCanvas();
 }
 
 #ifdef QGC_MOUSE_ENABLED_LINUX
