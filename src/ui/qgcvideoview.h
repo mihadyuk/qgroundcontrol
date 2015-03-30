@@ -4,6 +4,9 @@
 #include <QWidget>
 #include <QProcess>
 #include <QCloseEvent>
+#include <QMoveEvent>
+
+#include <QTimer>
 
 namespace Ui {
 class QGCVideoView;
@@ -17,13 +20,17 @@ public:
     explicit QGCVideoView(QWidget *parent = 0);
     ~QGCVideoView();
 
+public slots:
+    void elapsed();
 
 
 private:
     Ui::QGCVideoView *ui;
     QProcess proc;
+    QTimer *timer;
 
     void closeEvent(QCloseEvent *event);
+    void mouseMoveEvent(QMouseEvent *event);
 };
 
 #endif // QGCVIDEOVIEW_H
