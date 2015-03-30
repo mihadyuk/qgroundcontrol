@@ -61,7 +61,6 @@ This file is part of the QGROUNDCONTROL project
 #include "QGCGoogleEarthView.h"
 #endif
 #include "MainToolBar.h"
-#include "QGCToolBar.h"
 #include "LogCompressor.h"
 
 #include "QGCMAVLinkInspector.h"
@@ -257,8 +256,6 @@ protected:
     QPointer<QGCFirmwareUpdate> firmwareUpdateWidget;
 
     QPointer<MainToolBar> _mainToolBar;
-    QPointer<QGCToolBar> toolBar;
-
     QPointer<QDockWidget> mavlinkInspectorWidget;
     QPointer<MAVLinkDecoder> mavlinkDecoder;
     QPointer<QDockWidget> mavlinkSenderWidget;
@@ -299,9 +296,7 @@ private slots:
     void _showDockWidgetAction(bool show);
     void _loadCustomWidgetFromFile(void);
     void _createNewCustomWidget(void);
-
-
-    void onHided(QGCDockWidget* wid);
+    void _linkStateChange(LinkInterface*);
 #ifdef UNITTEST_BUILD
     void _showQmlTestWidget(void);
 #endif

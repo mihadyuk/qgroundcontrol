@@ -216,6 +216,10 @@ MainWindow::MainWindow(QSplashScreen* splashScreen)
     connect(this, SIGNAL(x11EventOccured(XEvent*)), mouse, SLOT(handleX11Event(XEvent*)));
 #endif //QGC_MOUSE_ENABLED_LINUX
 
+    // These also cause the screen to redraw so we need to update any OpenGL canvases in QML controls
+    connect(LinkManager::instance(), &LinkManager::linkConnected,    this, &MainWindow::_linkStateChange);
+    connect(LinkManager::instance(), &LinkManager::linkDisconnected, this, &MainWindow::_linkStateChange);
+
     // Connect link
     if (_autoReconnect)
     {
@@ -389,7 +393,6 @@ void MainWindow::_createDockWidget(const QString& title, const QString& name, Qt
     action->setCheckable(true);
     action->setData(name);
     connect(action, &QAction::triggered, this, &MainWindow::_showDockWidgetAction);
-    connect(dockWidget, SIGNAL(hided(QGCDockWidget*)), this, SLOT(onHided(QGCDockWidget*)));
     _ui.menuTools->addAction(action);
     _mapName2DockWidget[name] = dockWidget;
     _mapDockWidget2Action[dockWidget] = action;
@@ -585,7 +588,9 @@ void MainWindow::_createInnerDockWidget(const QString& widgetName)
     } else if (widgetName == _hudDockWidgetName) {
         widget = new HUD(320,240,this);
     } else if (widgetName == _uasInfoViewDockWidgetName) {
-        widget = new QGCTabbedInfoView(this);
+		QGCTabbedInfoView* pInfoView = new QGCTabbedInfoView(this);
+        pInfoView->addSource(mavlinkDecoder);
+        widget = pInfoView;
     } else if (widgetName == _uasVideoViewDockWidgetName) {
         widget = new QGCVideoView(this);
     } else if (widgetName == _debugConsoleDockWidgetName) {
@@ -655,15 +660,7 @@ void MainWindow::normalActionItemCallback()
 void MainWindow::closeEvent(QCloseEvent *event)
 {
     // Disallow window close if there are active connections
-    bool foundConnections = false;
-    foreach(LinkInterface* link, LinkManager::instance()->getLinks()) {
-        if (link->isConnected()) {
-            foundConnections = true;
-            break;
-        }
-    }
-
-    if (foundConnections) {
+    if (LinkManager::instance()->anyConnectedLinks()) {
         QGCMessageBox::StandardButton button =
             QGCMessageBox::warning(
                 tr("QGroundControl close"),
@@ -671,9 +668,7 @@ void MainWindow::closeEvent(QCloseEvent *event)
                 QMessageBox::Yes | QMessageBox::Cancel,
                 QMessageBox::Cancel);
         if (button == QMessageBox::Yes) {
-            foreach(LinkInterface* link, LinkManager::instance()->getLinks()) {
-                LinkManager::instance()->disconnectLink(link);
-            }
+            LinkManager::instance()->disconnectAll();
         } else {
             event->ignore();
             return;
@@ -682,11 +677,10 @@ void MainWindow::closeEvent(QCloseEvent *event)
 
     // This will process any remaining flight log save dialogs
     qgcApp()->processEvents(QEventLoop::ExcludeUserInputEvents);
+    
     // Should not be any active connections
-    foreach(LinkInterface* link, LinkManager::instance()->getLinks()) {
-        Q_UNUSED(link);
-        Q_ASSERT(!link->isConnected());
-    }
+    Q_ASSERT(!LinkManager::instance()->anyConnectedLinks());
+    
     _storeCurrentViewState();
     storeSettings();
     UASManager::instance()->storeSettings();
@@ -1368,12 +1362,13 @@ void MainWindow::restoreLastUsedConnection()
     if(settings.contains(key)) {
         QString connection = settings.value(key).toString();
         // Create a link for it
-        LinkInterface* link = LinkManager::instance()->createLink(connection);
-        if(link) {
-            // Connect it
-            LinkManager::instance()->connectLink(link);
-        }
+        LinkManager::instance()->createConnectedLink(connection);
     }
+}
+
+void MainWindow::_linkStateChange(LinkInterface*)
+{
+    emit repaintCanvas();
 }
 
 #ifdef QGC_MOUSE_ENABLED_LINUX
@@ -1390,15 +1385,3 @@ void MainWindow::_showQmlTestWidget(void)
     new QmlTestWidget();
 }
 #endif
-
-
-
-
-void MainWindow::onHided(QGCDockWidget *wid){
-    QAction* act = _mapDockWidget2Action[wid];
-    for(int i = 0; i < _ui.menuTools->actions().size(); i++)
-    {
-        if(_ui.menuTools->actions().at(i) == act)
-            act->setChecked(false);
-    }
-}

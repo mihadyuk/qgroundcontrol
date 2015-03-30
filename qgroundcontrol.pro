@@ -429,7 +429,6 @@ HEADERS += \
     src/ui/map/QGCMapTool.h \
     src/ui/map/QGCMapToolBar.h \
     src/QGCGeo.h \
-    src/ui/QGCToolBar.h \
     src/ui/QGCMAVLinkInspector.h \
     src/ui/MAVLinkDecoder.h \
     src/ui/WaypointViewOnlyView.h \
@@ -577,7 +576,6 @@ SOURCES += \
     src/ui/map/Waypoint2DIcon.cc \
     src/ui/map/QGCMapTool.cc \
     src/ui/map/QGCMapToolBar.cc \
-    src/ui/QGCToolBar.cc \
     src/ui/QGCMAVLinkInspector.cc \
     src/ui/MAVLinkDecoder.cc \
     src/ui/WaypointViewOnlyView.cc \
@@ -727,7 +725,6 @@ INCLUDEPATH += \
 
 FORMS += \
     src/VehicleSetup/ParameterEditor.ui \
-    src/ui/QGCPX4VehicleConfig.ui \
     src/VehicleSetup/SetupView.ui \
 
 HEADERS+= \
@@ -787,7 +784,7 @@ HEADERS += \
     src/FactSystem/FactBinder.h \
     src/FactSystem/FactMetaData.h \
     src/FactSystem/FactValidator.h \
-    src/FactSystem/FactLoader.h \
+    src/FactSystem/ParameterLoader.h \
 
 SOURCES += \
     src/FactSystem/FactSystem.cc \
@@ -795,7 +792,8 @@ SOURCES += \
     src/FactSystem/FactBinder.cc \
     src/FactSystem/FactMetaData.cc \
     src/FactSystem/FactValidator.cc \
-    src/FactSystem/FactLoader.cc \
-     
+    src/FactSystem/ParameterLoader.cc \
+
 CONFIG += c++11
+
 
