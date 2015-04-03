@@ -125,11 +125,6 @@ contains(DEFINES, QGC_NOTIFY_TUNES_ENABLED) {
     QT += multimedia
 }
 
-!contains(DEFINES, DISABLE_GOOGLE_EARTH) {
-    QT += webkit webkitwidgets
-}
-
-
 #  testlib is needed even in release flavor for QSignalSpy support
 QT += testlib
 
@@ -146,7 +141,7 @@ MacBuild {
     CONFIG -= x86
     QMAKE_MACOSX_DEPLOYMENT_TARGET = 10.6
     QMAKE_MAC_SDK = macosx10.9
-    ICON = $$BASEDIR/files/images/icons/macx.icns
+    ICON = $$BASEDIR/resources/icons/macx.icns
     QT += quickwidgets
 }
 
@@ -270,6 +265,7 @@ INCLUDEPATH += \
     src/ui/px4_configuration \
     src/ui/main \
     src/ui/toolbar \
+    src/ui/flightdisplay \
     src/VehicleSetup \
     src/AutoPilotPlugins \
     src/QmlControls
@@ -288,11 +284,9 @@ FORMS += \
     src/ui/DebugConsole.ui \
     src/ui/HDDisplay.ui \
     src/ui/MAVLinkSettingsWidget.ui \
-    src/ui/AudioOutputWidget.ui \
     src/ui/QGCSensorSettingsWidget.ui \
     src/ui/QGCDataPlot2D.ui \
     src/ui/QMap3D.ui \
-    src/ui/map3D/QGCGoogleEarthView.ui \
     src/ui/uas/QGCUnconnectedInfoWidget.ui \
     src/ui/designer/QGCToolWidget.ui \
     src/ui/designer/QGCParamSlider.ui \
@@ -339,7 +333,6 @@ FORMS += \
     src/ui/JoystickAxis.ui \
     src/ui/configuration/terminalconsole.ui \
     src/ui/configuration/SerialSettingsDialog.ui \
-    src/ui/px4_configuration/QGCPX4AirframeConfig.ui \
     src/ui/px4_configuration/PX4RCCalibration.ui \
     src/ui/QGCUASFileView.ui \
     src/ui/uas/UASQuickTabView.ui \
@@ -390,7 +383,6 @@ HEADERS += \
     src/ui/DebugConsole.h \
     src/ui/HDDisplay.h \
     src/ui/MAVLinkSettingsWidget.h \
-    src/ui/AudioOutputWidget.h \
     src/GAudioOutput.h \
     src/LogCompressor.h \
     src/ui/QGCParamWidget.h \
@@ -473,7 +465,6 @@ HEADERS += \
     src/uas/UASParameterDataModel.h \
     src/uas/UASParameterCommsMgr.h \
     src/ui/QGCPendingParamWidget.h \
-    src/ui/px4_configuration/QGCPX4AirframeConfig.h \
     src/ui/QGCBaseParamWidget.h \
     src/ui/px4_configuration/PX4RCCalibration.h \
     src/ui/px4_configuration/RCValueWidget.h \
@@ -502,7 +493,8 @@ HEADERS += \
     src/ui/toolbar/MainToolBar.h \
     src/QmlControls/ScreenTools.h \
     src/QGCLoggingCategory.h \
-    src/ui/qgcvideoview.h
+    src/ui/qgcvideoview.h \
+    src/ui/flightdisplay/QGCFlightDisplay.h
 
 SOURCES += \
     src/main.cc \
@@ -539,7 +531,6 @@ SOURCES += \
     src/ui/DebugConsole.cc \
     src/ui/HDDisplay.cc \
     src/ui/MAVLinkSettingsWidget.cc \
-    src/ui/AudioOutputWidget.cc \
     src/GAudioOutput.cc \
     src/LogCompressor.cc \
     src/ui/QGCParamWidget.cc \
@@ -619,7 +610,6 @@ SOURCES += \
     src/uas/UASParameterDataModel.cc \
     src/uas/UASParameterCommsMgr.cc \
     src/ui/QGCPendingParamWidget.cc \
-    src/ui/px4_configuration/QGCPX4AirframeConfig.cc \
     src/ui/QGCBaseParamWidget.cc \
     src/ui/px4_configuration/PX4RCCalibration.cc \
     src/ui/px4_configuration/RCValueWidget.cc \
@@ -645,7 +635,8 @@ SOURCES += \
     src/ui/toolbar/MainToolBar.cc \
     src/QmlControls/ScreenTools.cc \
     src/QGCLoggingCategory.cc \
-    src/ui/qgcvideoview.cpp
+    src/ui/qgcvideoview.cpp \
+    src/ui/flightdisplay/QGCFlightDisplay.cc
 
 #
 # Unit Test specific configuration goes here
@@ -744,6 +735,8 @@ HEADERS+= \
     src/AutoPilotPlugins/PX4/FlightModesComponent.h \
     src/AutoPilotPlugins/PX4/FlightModesComponentController.h \
     src/AutoPilotPlugins/PX4/AirframeComponent.h \
+    src/AutoPilotPlugins/PX4/AirframeComponentAirframes.h \
+    src/AutoPilotPlugins/PX4/AirframeComponentController.h \
     src/AutoPilotPlugins/PX4/SensorsComponent.h \
     src/AutoPilotPlugins/PX4/SensorsComponentController.h \
     src/AutoPilotPlugins/PX4/SafetyComponent.h \
@@ -767,6 +760,8 @@ SOURCES += \
     src/AutoPilotPlugins/PX4/FlightModesComponent.cc \
     src/AutoPilotPlugins/PX4/FlightModesComponentController.cc \
     src/AutoPilotPlugins/PX4/AirframeComponent.cc \
+    src/AutoPilotPlugins/PX4/AirframeComponentAirframes.cc \
+    src/AutoPilotPlugins/PX4/AirframeComponentController.cc \
     src/AutoPilotPlugins/PX4/SensorsComponent.cc \
     src/AutoPilotPlugins/PX4/SensorsComponentController.cc \
     src/AutoPilotPlugins/PX4/SafetyComponent.cc \

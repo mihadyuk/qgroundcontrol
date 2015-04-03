@@ -79,8 +79,8 @@ const char* QGCApplication::_defaultSavedFileDirectoryName = "QGroundControl";
 const char* QGCApplication::_savedFileMavlinkLogDirectoryName = "FlightData";
 const char* QGCApplication::_savedFileParameterDirectoryName = "SavedParameters";
 
-const char* QGCApplication::_darkStyleFile = ":files/styles/style-dark.css";
-const char* QGCApplication::_lightStyleFile = ":files/styles/style-light.css";
+const char* QGCApplication::_darkStyleFile = ":/res/styles/style-dark.css";
+const char* QGCApplication::_lightStyleFile = ":/res/styles/style-light.css";
 
 /**
  * @brief Constructor for the main application.
@@ -272,7 +272,7 @@ void QGCApplication::_initCommon(void)
 
     // Load application font
     QFontDatabase fontDatabase = QFontDatabase();
-    const QString fontFileName = ":/general/vera.ttf"; ///< Font file is part of the QRC file and compiled into the app
+    const QString fontFileName = ":/res/fonts/vera.ttf"; ///< Font file is part of the QRC file and compiled into the app
     //const QString fontFamilyName = "Bitstream Vera Sans";
     if(!QFile::exists(fontFileName)) printf("ERROR! font file: %s DOES NOT EXIST!\n", fontFileName.toStdString().c_str());
     fontDatabase.addApplicationFont(fontFileName);
@@ -292,7 +292,7 @@ bool QGCApplication::_initForNormalAppBoot(void)
     _createSingletons();
 
     // Show splash screen
-    QPixmap splashImage(":/files/images/splash.png");
+    QPixmap splashImage(":/res/SplashScreen");
     QSplashScreen* splashScreen = new QSplashScreen(splashImage);
     // Delete splash screen after mainWindow was displayed
     splashScreen->setAttribute(Qt::WA_DeleteOnClose);
@@ -593,9 +593,33 @@ void QGCApplication::_loadCurrentStyle(void)
             success = false;
         }
     }
+    
+    // Now that we have the styles loaded we need to dpi adjust the font point sizes
+    
+    QString dpiAdjustedStyles;
+    if (success) {
+        QTextStream styleStream(&styles, QIODevice::ReadOnly);
+        QRegularExpression regex("font-size:.+(\\d\\d)pt;");
+        
+        while (!styleStream.atEnd()) {
+            QString adjustedLine;
+            QString line = styleStream.readLine();
+            
+            QRegularExpressionMatch match = regex.match(line);
+            if (match.hasMatch()) {
+                //qDebug() << "found:" << line << match.captured(1);
+                adjustedLine = QString("font-size: %1pt;").arg(ScreenTools::dpiAdjustedPointSize_s(match.captured(1).toDouble()));
+                //qDebug() << "adjusted:" << adjustedLine;
+            } else {
+                adjustedLine = line;
+            }
+            
+            dpiAdjustedStyles += adjustedLine;
+        }
+    }
 
-    if (!styles.isEmpty()) {
-        setStyleSheet(styles);
+    if (!dpiAdjustedStyles.isEmpty()) {
+        setStyleSheet(dpiAdjustedStyles);
     }
 
     if (!success) {
@@ -607,4 +631,27 @@ void QGCApplication::_loadCurrentStyle(void)
 
     // Finally restore the cursor before returning.
     restoreOverrideCursor();
+}
+
+void QGCApplication::reconnectAfterWait(int waitSeconds)
+{
+    LinkManager* linkManager = LinkManager::instance();
+    Q_ASSERT(linkManager);
+    
+    Q_ASSERT(linkManager->getLinks().count() == 1);
+    LinkInterface* link = linkManager->getLinks()[0];
+    
+    // Save the link configuration so we can restart the link laster
+    _reconnectLinkConfig = linkManager->getLinks()[0]->getLinkConfiguration();
+    
+    // Disconnect and wait
+    
+    linkManager->disconnectLink(link);
+    QTimer::singleShot(waitSeconds * 1000, this, &QGCApplication::_reconnect);
+}
+
+void QGCApplication::_reconnect(void)
+{
+    qgcApp()->restoreOverrideCursor();
+    LinkManager::instance()->createConnectedLink(_reconnectLinkConfig);
 }

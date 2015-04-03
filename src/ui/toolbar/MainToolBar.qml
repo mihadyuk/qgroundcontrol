@@ -75,24 +75,24 @@ Rectangle {
 
     function getMessageIcon() {
         if(mainToolBar.messageType === MainToolBar.MessageNormal || mainToolBar.messageType === MainToolBar.MessageNone)
-            return "qrc:/files/images/status/message_megaphone.png";
+            return "qrc:/res/Megaphone";
         else
-            return "qrc:/files/images/status/message_triangle.png";
+            return "qrc:/res/Yield";
     }
 
     function getBatteryIcon() {
         if(mainToolBar.batteryPercent < 20.0)
-            return "qrc:/files/images/status/battery_0.svg";
+            return "qrc:/res/Battery_0";
         else if(mainToolBar.batteryPercent < 40.0)
-            return "qrc:/files/images/status/battery_20.svg";
+            return "qrc:/res/Battery_20";
         else if(mainToolBar.batteryPercent < 60.0)
-            return "qrc:/files/images/status/battery_40.svg";
+            return "qrc:/res/Battery_40";
         else if(mainToolBar.batteryPercent < 80.0)
-            return "qrc:/files/images/status/battery_60.svg";
+            return "qrc:/res/Battery_60";
         else if(mainToolBar.batteryPercent < 90.0)
-            return "qrc:/files/images/status/battery_80.svg";
+            return "qrc:/res/Battery_80";
         else
-            return "qrc:/files/images/status/battery_100.svg";
+            return "qrc:/res/Battery_100";
     }
 
     function getBatteryColor() {
@@ -238,7 +238,7 @@ Rectangle {
                     anchors.verticalCenter: parent.verticalCenter
                     anchors.right: parent.right
                     width: messages.width - messageIcon.width
-                    Text {
+                    QGCLabel {
                         id: messageText
                         text: (mainToolBar.messageCount > 0) ? mainToolBar.messageCount : ''
                         font.pointSize: screenTools.dpiAdjustedPointSize(14);
@@ -316,7 +316,7 @@ Rectangle {
                 border.width: 0
 
                 Image {
-                    source: "qrc:/files/images/status/gps.svg";
+                    source: "qrc:/res/Gps";
                     height: 24
                     fillMode: Image.PreserveAspectFit
                     anchors.verticalCenter: parent.verticalCenter
@@ -326,7 +326,7 @@ Rectangle {
                     smooth: true
                 }
 
-                Text {
+                QGCLabel {
                     id: satelitteText
                     text: (mainToolBar.satelliteCount > 0) ? mainToolBar.satelliteCount : ''
                     font.pointSize: screenTools.dpiAdjustedPointSize(14);
@@ -361,7 +361,7 @@ Rectangle {
                     smooth: true
                 }
 
-                Text {
+                QGCLabel {
                     id: batteryText
                     text: mainToolBar.batteryVoltage.toFixed(1) + ' V';
                     font.pointSize: screenTools.dpiAdjustedPointSize(14);
@@ -389,7 +389,7 @@ Rectangle {
                     border.color: "#00000000"
                     border.width: 0
 
-                    Text {
+                    QGCLabel {
                         id: armedStatusText
                         text: (mainToolBar.systemArmed) ? qsTr("ARMED") :  qsTr("DISARMED")
                         font.pointSize: screenTools.dpiAdjustedPointSize(12);
@@ -408,7 +408,7 @@ Rectangle {
                     border.color: "#00000000"
                     border.width: 0
 
-                    Text {
+                    QGCLabel {
                         id: stateStatusText
                         text: mainToolBar.currentState
                         font.pointSize: screenTools.dpiAdjustedPointSize(12);
@@ -429,7 +429,7 @@ Rectangle {
                 border.color: "#00000000"
                 border.width: 0
 
-                Text {
+                QGCLabel {
                     id: modeStatusText
                     text: mainToolBar.currentMode
                     font.pointSize: screenTools.dpiAdjustedPointSize(12);
@@ -450,7 +450,7 @@ Rectangle {
                 border.color: "#00000000"
                 border.width: 0
 
-                Text {
+                QGCLabel {
                     id: connectionStatusText
                     text: qsTr("CONNECTION LOST")
                     font.pointSize: screenTools.dpiAdjustedPointSize(14);

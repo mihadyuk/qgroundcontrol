@@ -60,6 +60,7 @@ This file is part of the QGROUNDCONTROL project
 #include "QGCTabbedInfoView.h"
 #include "UASRawStatusView.h"
 #include "PrimaryFlightDisplay.h"
+#include "QGCFlightDisplay.h"
 #include "SetupView.h"
 #include "SerialSettingsDialog.h"
 #include "terminalconsole.h"
@@ -274,20 +275,18 @@ MainWindow::MainWindow(QSplashScreen* splashScreen)
     _ui.actionMissionView->setShortcut(QApplication::translate("MainWindow", "Meta+2", 0));
     _ui.actionFlightView->setShortcut(QApplication::translate("MainWindow", "Meta+3", 0));
     _ui.actionEngineersView->setShortcut(QApplication::translate("MainWindow", "Meta+4", 0));
-    _ui.actionGoogleEarthView->setShortcut(QApplication::translate("MainWindow", "Meta+5", 0));
-    _ui.actionLocal3DView->setShortcut(QApplication::translate("MainWindow", "Meta+6", 0));
-    _ui.actionTerminalView->setShortcut(QApplication::translate("MainWindow", "Meta+7", 0));
-    _ui.actionSimulationView->setShortcut(QApplication::translate("MainWindow", "Meta+8", 0));
+    _ui.actionLocal3DView->setShortcut(QApplication::translate("MainWindow", "Meta+5", 0));
+    _ui.actionTerminalView->setShortcut(QApplication::translate("MainWindow", "Meta+6", 0));
+    _ui.actionSimulationView->setShortcut(QApplication::translate("MainWindow", "Meta+7", 0));
     _ui.actionFullscreen->setShortcut(QApplication::translate("MainWindow", "Meta+Return", 0));
 #else
     _ui.actionSetup->setShortcut(QApplication::translate("MainWindow", "Ctrl+1", 0));
     _ui.actionMissionView->setShortcut(QApplication::translate("MainWindow", "Ctrl+2", 0));
     _ui.actionFlightView->setShortcut(QApplication::translate("MainWindow", "Ctrl+3", 0));
     _ui.actionEngineersView->setShortcut(QApplication::translate("MainWindow", "Ctrl+4", 0));
-    _ui.actionGoogleEarthView->setShortcut(QApplication::translate("MainWindow", "Ctrl+5", 0));
-    _ui.actionLocal3DView->setShortcut(QApplication::translate("MainWindow", "Ctrl+6", 0));
-    _ui.actionTerminalView->setShortcut(QApplication::translate("MainWindow", "Ctrl+7", 0));
-    _ui.actionSimulationView->setShortcut(QApplication::translate("MainWindow", "Ctrl+8", 0));
+    _ui.actionLocal3DView->setShortcut(QApplication::translate("MainWindow", "Ctrl+5", 0));
+    _ui.actionTerminalView->setShortcut(QApplication::translate("MainWindow", "Ctrl+6", 0));
+    _ui.actionSimulationView->setShortcut(QApplication::translate("MainWindow", "Ctrl+7", 0));
     _ui.actionFullscreen->setShortcut(QApplication::translate("MainWindow", "Ctrl+Return", 0));
 #endif
 
@@ -461,7 +460,8 @@ void MainWindow::_buildPlannerView(void)
 void MainWindow::_buildPilotView(void)
 {
     if (!_pilotView) {
-        _pilotView = new PrimaryFlightDisplay(this);
+        //_pilotView = new PrimaryFlightDisplay(this);
+        _pilotView = new QGCFlightDisplay(this);
         _pilotView->setVisible(false);
     }
 }
@@ -496,16 +496,6 @@ void MainWindow::_buildTerminalView(void)
         _terminalView = new TerminalConsole(this);
         _terminalView->setVisible(false);
     }
-}
-
-void MainWindow::_buildGoogleEarthView(void)
-{
-#ifdef QGC_GOOGLE_EARTH_ENABLED
-    if (!_googleEarthView) {
-        _googleEarthView = new QGCGoogleEarthView(this);
-        _googleEarthView->setVisible(false);
-    }
-#endif
 }
 
 void MainWindow::_buildLocal3DView(void)
@@ -584,7 +574,8 @@ void MainWindow::_createInnerDockWidget(const QString& widgetName)
 
         widget = hddisplay;
     } else if (widgetName == _pfdDockWidgetName) {
-        widget = new PrimaryFlightDisplay(this);
+        widget = new QGCFlightDisplay(this);
+        //widget = new PrimaryFlightDisplay(this);
     } else if (widgetName == _hudDockWidgetName) {
         widget = new HUD(320,240,this);
     } else if (widgetName == _uasInfoViewDockWidgetName) {
@@ -746,9 +737,6 @@ void MainWindow::loadSettings()
 #ifdef QGC_OSG_ENABLED
         case VIEW_LOCAL3D:
 #endif
-#ifdef QGC_GOOGLE_EARTH_ENABLED
-        case VIEW_GOOGLEEARTH:
-#endif
             _currentView = currentViewCandidate;
             break;
         default:
@@ -851,14 +839,10 @@ void MainWindow::connectCommonActions()
     perspectives->addAction(_ui.actionMissionView);
     perspectives->addAction(_ui.actionSetup);
     perspectives->addAction(_ui.actionTerminalView);
-    perspectives->addAction(_ui.actionGoogleEarthView);
     perspectives->addAction(_ui.actionLocal3DView);
     perspectives->setExclusive(true);
 
     /* Hide the actions that are not relevant */
-#ifndef QGC_GOOGLE_EARTH_ENABLED
-    _ui.actionGoogleEarthView->setVisible(false);
-#endif
 #ifndef QGC_OSG_ENABLED
     _ui.actionLocal3DView->setVisible(false);
 #endif
@@ -894,11 +878,6 @@ void MainWindow::connectCommonActions()
         _ui.actionTerminalView->setChecked(true);
         _ui.actionTerminalView->activate(QAction::Trigger);
     }
-    if (_currentView == VIEW_GOOGLEEARTH)
-    {
-        _ui.actionGoogleEarthView->setChecked(true);
-        _ui.actionGoogleEarthView->activate(QAction::Trigger);
-    }
     if (_currentView == VIEW_LOCAL3D)
     {
         _ui.actionLocal3DView->setChecked(true);
@@ -931,8 +910,6 @@ void MainWindow::connectCommonActions()
     connect(_ui.actionSimulationView, SIGNAL(triggered()), this, SLOT(loadSimulationView()));
     connect(_ui.actionEngineersView, SIGNAL(triggered()), this, SLOT(loadEngineerView()));
     connect(_ui.actionMissionView, SIGNAL(triggered()), this, SLOT(loadOperatorView()));
-    connect(_ui.actionSetup,SIGNAL(triggered()),this,SLOT(loadSetupView()));
-    connect(_ui.actionGoogleEarthView, SIGNAL(triggered()), this, SLOT(loadGoogleEarthView()));
     connect(_ui.actionLocal3DView, SIGNAL(triggered()), this, SLOT(loadLocal3DView()));
     connect(_ui.actionTerminalView,SIGNAL(triggered()),this,SLOT(loadTerminalView()));
 
@@ -1135,11 +1112,6 @@ void MainWindow::_loadCurrentViewState(void)
             centerView = _terminalView;
             break;
 
-        case VIEW_GOOGLEEARTH:
-            _buildGoogleEarthView();
-            centerView = _googleEarthView;
-            break;
-
         case VIEW_LOCAL3D:
             _buildLocal3DView();
             centerView = _local3DView;
@@ -1277,17 +1249,6 @@ void MainWindow::loadTerminalView()
         _storeCurrentViewState();
         _currentView = VIEW_TERMINAL;
         _ui.actionTerminalView->setChecked(true);
-        _loadCurrentViewState();
-    }
-}
-
-void MainWindow::loadGoogleEarthView()
-{
-    if (_currentView != VIEW_GOOGLEEARTH)
-    {
-        _storeCurrentViewState();
-        _currentView = VIEW_GOOGLEEARTH;
-        _ui.actionGoogleEarthView->setChecked(true);
         _loadCurrentViewState();
     }
 }
