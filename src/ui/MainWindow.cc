@@ -470,6 +470,14 @@ void MainWindow::_buildPilotView(void)
     }
 }
 
+void MainWindow::_buildVideoView(void)
+{
+    if (!_videoView) {
+        _videoView = new QGCVideoView(this);
+        _videoView->setVisible(false);
+    }
+}
+
 void MainWindow::_buildSetupView(void)
 {
     if (!_setupView) {
@@ -746,6 +754,7 @@ void MainWindow::loadSettings()
         case VIEW_SIMULATION:
         case VIEW_SETUP:
         case VIEW_TERMINAL:
+        case VIEW_VIDEO:
 #ifdef QGC_OSG_ENABLED
         case VIEW_LOCAL3D:
 #endif
@@ -896,6 +905,11 @@ void MainWindow::connectCommonActions()
         _ui.actionLocal3DView->setChecked(true);
         _ui.actionLocal3DView->activate(QAction::Trigger);
     }
+    if (_currentView == VIEW_VIDEO)
+    {
+        _ui.actionVideoView->setChecked(true);
+        _ui.actionVideoView->activate(QAction::Trigger);
+    }
 
     // The UAS actions are not enabled without connection to system
     _ui.actionLiftoff->setEnabled(false);
@@ -925,6 +939,8 @@ void MainWindow::connectCommonActions()
     connect(_ui.actionMissionView, SIGNAL(triggered()), this, SLOT(loadOperatorView()));
     connect(_ui.actionLocal3DView, SIGNAL(triggered()), this, SLOT(loadLocal3DView()));
     connect(_ui.actionTerminalView,SIGNAL(triggered()),this,SLOT(loadTerminalView()));
+
+    connect(_ui.actionVideoView, SIGNAL(triggered()), this, SLOT(loadVideoView()));
 
     // Help Actions
     connect(_ui.actionOnline_Documentation, SIGNAL(triggered()), this, SLOT(showHelp()));
@@ -1114,6 +1130,12 @@ void MainWindow::_loadCurrentViewState(void)
             defaultWidgets = "UNMANNED_SYSTEM_LIST_DOCKWIDGET,WAYPOINT_LIST_DOCKWIDGET";
             break;
 
+        case VIEW_VIDEO:
+            _buildVideoView();
+            centerView = _videoView;
+            defaultWidgets = "";
+            break;
+
         case VIEW_SIMULATION:
             _buildSimView();
             centerView = _simView;
@@ -1230,6 +1252,17 @@ void MainWindow::loadEngineerView()
         _storeCurrentViewState();
         _currentView = VIEW_ENGINEER;
         _ui.actionEngineersView->setChecked(true);
+        _loadCurrentViewState();
+    }
+}
+
+void MainWindow::loadVideoView()
+{
+    if (_currentView != VIEW_VIDEO)
+    {
+        _storeCurrentViewState();
+        _currentView = VIEW_VIDEO;
+        _ui.actionVideoView->setChecked(true);
         _loadCurrentViewState();
     }
 }

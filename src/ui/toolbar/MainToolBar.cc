@@ -153,6 +153,12 @@ void MainToolBar::onAnalyzeView()
     MainWindow::instance()->loadEngineerView();
 }
 
+void MainToolBar::onVideoView()
+{
+    setCurrentView(MainWindow::VIEW_VIDEO);
+    MainWindow::instance()->loadVideoView();
+}
+
 void MainToolBar::onConnect(QString conf)
 {
     // If no connection, the role is "Connect"
@@ -275,6 +281,9 @@ void MainToolBar::setCurrentView(int currentView)
             break;
         case MainWindow::VIEW_SETUP:
             view = ViewSetup;
+            break;
+        case MainWindow::VIEW_VIDEO:
+            view = ViewVideo;
             break;
         default:
             view = ViewNone;

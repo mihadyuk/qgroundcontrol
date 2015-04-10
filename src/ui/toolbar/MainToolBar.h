@@ -57,6 +57,7 @@ public:
         ViewPlan   , // MainWindow::VIEW_MISSION
         ViewFly    , // MainWindow::VIEW_FLIGHT
         ViewSetup  , // MainWindow::VIEW_SETUP
+        ViewVideo  , // MainWindow::VIEW_VIDEO
     } ViewType_t;
 
     typedef enum {
@@ -70,6 +71,7 @@ public:
     Q_INVOKABLE void    onPlanView();
     Q_INVOKABLE void    onFlyView();
     Q_INVOKABLE void    onAnalyzeView();
+    Q_INVOKABLE void    onVideoView();
     Q_INVOKABLE void    onConnect(QString conf);
     Q_INVOKABLE void    onLinkConfigurationChanged(const QString& config);
     Q_INVOKABLE void    onEnterMessageArea(int x, int y);
