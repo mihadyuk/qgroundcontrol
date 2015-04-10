@@ -134,6 +134,7 @@ void MainWindow::deleteInstance(void)
 MainWindow::MainWindow(QSplashScreen* splashScreen)
     : _autoReconnect(false)
     , _lowPowerMode(false)
+    , _showStatusBar(false)
     , _centerStackActionGroup(new QActionGroup(this))
     , _simulationLink(NULL)
     , _centralLayout(NULL)
@@ -266,8 +267,9 @@ MainWindow::MainWindow(QSplashScreen* splashScreen)
     }
 
     // And that they will stay checked properly after user input
-    QObject::connect(_ui.actionFullscreen, SIGNAL(triggered()), this, SLOT(fullScreenActionItemCallback()));
-    QObject::connect(_ui.actionNormal,     SIGNAL(triggered()), this, SLOT(normalActionItemCallback()));
+    connect(_ui.actionFullscreen, &QAction::triggered, this, &MainWindow::fullScreenActionItemCallback);
+    connect(_ui.actionNormal,     &QAction::triggered, this, &MainWindow::normalActionItemCallback);
+    connect(_ui.actionStatusBar,  &QAction::triggered, this, &MainWindow::showStatusBarCallback);
 
     // Set OS dependent keyboard shortcuts for the main window, non OS dependent shortcuts are set in MainWindow.ui
 #ifdef Q_OS_MACX
@@ -295,6 +297,8 @@ MainWindow::MainWindow(QSplashScreen* splashScreen)
     emit initStatusChanged(tr("Done"), Qt::AlignLeft | Qt::AlignBottom, QColor(62, 93, 141));
 
     if (!qgcApp()->runningUnitTests()) {
+        _ui.actionStatusBar->setChecked(_showStatusBar);
+        showStatusBarCallback(_showStatusBar);
         show();
 #ifdef Q_OS_MAC
         // TODO HACK
@@ -638,14 +642,21 @@ void MainWindow::_showHILConfigurationWidgets(void)
     }
 }
 
-void MainWindow::fullScreenActionItemCallback()
+void MainWindow::fullScreenActionItemCallback(bool)
 {
     _ui.actionNormal->setChecked(false);
 }
 
-void MainWindow::normalActionItemCallback()
+void MainWindow::normalActionItemCallback(bool)
 {
     _ui.actionFullscreen->setChecked(false);
+}
+
+void MainWindow::showStatusBarCallback(bool checked)
+{
+    _showStatusBar = checked;
+    checked ? statusBar()->show() : statusBar()->hide();
+    _ui.actionStatusBar->setText(checked ? "Hide Status Bar" : "Show Status Bar");
 }
 
 void MainWindow::closeEvent(QCloseEvent *event)
@@ -724,6 +735,7 @@ void MainWindow::loadSettings()
     settings.beginGroup(MAIN_SETTINGS_GROUP);
     _autoReconnect = settings.value("AUTO_RECONNECT", _autoReconnect).toBool();
     _lowPowerMode  = settings.value("LOW_POWER_MODE", _lowPowerMode).toBool();
+    _showStatusBar = settings.value("SHOW_STATUSBAR", _showStatusBar).toBool();
     settings.endGroup();
     // Select the proper view. Default to the flight view or load the last one used if it's supported.
     VIEW_SECTIONS currentViewCandidate = (VIEW_SECTIONS) settings.value("CURRENT_VIEW", _currentView).toInt();
@@ -753,6 +765,7 @@ void MainWindow::storeSettings()
     settings.beginGroup(MAIN_SETTINGS_GROUP);
     settings.setValue("AUTO_RECONNECT", _autoReconnect);
     settings.setValue("LOW_POWER_MODE", _lowPowerMode);
+    settings.setValue("SHOW_STATUSBAR", _showStatusBar);
     settings.endGroup();
     settings.setValue(_getWindowGeometryKey(), saveGeometry());
     // Save the last current view in any case
