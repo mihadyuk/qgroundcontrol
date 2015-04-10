@@ -81,6 +81,8 @@ void MainWindowTest::_connectWindowClose_test(MAV_AUTOPILOT autopilot)
     QTest::qWait(1000);
     _mainToolBar->onAnalyzeView();
     QTest::qWait(1000);
+    _mainToolBar->onVideoView();
+    QTest::qWait(1000);
     
     // On MainWindow close we should get a message box telling the user to disconnect first. Cancel should do nothing.
     setExpectedMessageBox(QGCMessageBox::Cancel);

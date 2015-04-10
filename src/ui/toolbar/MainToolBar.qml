@@ -142,6 +142,7 @@ Rectangle {
                     planButton.repaintChevron    = true;
                     flyButton.repaintChevron     = true;
                     analyzeButton.repaintChevron = true;
+                    videoButton.repaintChevron = true;
                 }
             }
 
@@ -201,6 +202,20 @@ Rectangle {
                     mainToolBar.onAnalyzeView();
                 }
                 z: 700
+            }
+
+            QGCToolBarButton {
+                id: videoButton
+                width: 90
+                height: cellHeight
+                exclusiveGroup: mainActionGroup
+                text: qsTr("Video")
+                anchors.verticalCenter: parent.verticalCenter
+                checked: (mainToolBar.currentView === MainToolBar.ViewVideo)
+                onClicked: {
+                    mainToolBar.onVideoView();
+                }
+                z: 600
             }
 
         }

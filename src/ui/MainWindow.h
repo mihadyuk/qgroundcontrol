@@ -166,6 +166,8 @@ public slots:
     void loadGoogleEarthView();
     /** @brief Load local 3D view */
     void loadLocal3DView();
+    /** @brief Load video view */
+    void loadVideoView();
     /** @brief Manage Links */
     void manageLinks();
 
@@ -232,7 +234,8 @@ protected:
         VIEW_SETUP,            // Setup view. Used for initializing the system for operation. Includes UI for calibration, firmware updating/checking, and parameter modifcation.
         VIEW_TERMINAL,         // Terminal interface. Used for communicating with the remote system, usually in a special configuration input mode.
         VIEW_LOCAL3D,          // A local 3D view. Provides a local 3D view that makes visualizing 3D attitude/orientation/pose easy while in operation.
-        VIEW_GOOGLEEARTH       // 3D Google Earth view. A 3D terrain view, though the vehicle is still 2D.
+        VIEW_GOOGLEEARTH,       // 3D Google Earth view. A 3D terrain view, though the vehicle is still 2D.
+        VIEW_VIDEO,            // Video view mode
     } VIEW_SECTIONS;
 
     /** @brief Catch window resize events */
@@ -317,6 +320,7 @@ private:
     QPointer<QWidget> _pilotView;
     QPointer<QWidget> _setupView;
     QPointer<QWidget> _engineeringView;
+    QPointer<QWidget> _videoView;
     QPointer<QWidget> _simView;
     QPointer<QWidget> _terminalView;
     QPointer<QWidget> _googleEarthView;
@@ -353,6 +357,8 @@ private:
     void _buildTerminalView(void);
     void _buildGoogleEarthView(void);
     void _buildLocal3DView(void);
+
+    void _buildVideoView(void);
 
     void _storeCurrentViewState(void);
     void _loadCurrentViewState(void);
