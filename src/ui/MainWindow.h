@@ -124,6 +124,8 @@ public:
     
     /// @brief Gets a pointer to the Main Tool Bar
     MainToolBar* getMainToolBar(void) { return _mainToolBar; }
+    
+    QWidget* getCurrentViewWidget(void) { return _currentViewWidget; }
 
 public slots:
     /** @brief Show the application settings */
@@ -139,9 +141,6 @@ public slots:
     void UASDeleted(UASInterface* uas);
     /** @brief Update system specs of a UAS */
     void UASSpecsChanged(int uas);
-    void startVideoCapture();
-    void stopVideoCapture();
-    void saveScreen();
 
     void handleMisconfiguration(UASInterface* uas);
     /** @brief Load configuration views */
