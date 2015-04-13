@@ -71,6 +71,7 @@ This file is part of the QGROUNDCONTROL project
 #include "QGCDockWidget.h"
 
 #include "qgcvideoview.h"
+#include "smplayer/mplayerwindow.h"
 
 #ifdef UNITTEST_BUILD
 #include "QmlControls/QmlTestWidget.h"
@@ -189,6 +190,8 @@ MainWindow::MainWindow(QSplashScreen* splashScreen)
     widget->setFeatures(QDockWidget::NoDockWidgetFeatures);
     widget->setTitleBarWidget(new QWidget(this)); // Disables the title bar
     addDockWidget(Qt::TopDockWidgetArea, widget);
+
+    mPlayerWindow = new MPlayerWindow(this);
 
     // Setup UI state machines
     _centerStackActionGroup->setExclusive(true);
@@ -473,7 +476,7 @@ void MainWindow::_buildPilotView(void)
 void MainWindow::_buildVideoView(void)
 {
     if (!_videoView) {
-        _videoView = new QGCVideoView(this);
+        _videoView = new QGCVideoView(mPlayerWindow, this);
         _videoView->setVisible(false);
     }
 }
@@ -595,7 +598,8 @@ void MainWindow::_createInnerDockWidget(const QString& widgetName)
         pInfoView->addSource(mavlinkDecoder);
         widget = pInfoView;
     } else if (widgetName == _uasVideoViewDockWidgetName) {
-        widget = new QGCVideoView(this);
+        //widget = new QGCVideoView(this);
+        widget = mPlayerWindow;
     } else if (widgetName == _debugConsoleDockWidgetName) {
         widget = new DebugConsole(this);
     } else {

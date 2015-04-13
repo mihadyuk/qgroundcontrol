@@ -78,6 +78,8 @@ class QGCUASFileViewMulti;
 
 class QGCDockWidget;
 
+class MPlayerWindow;
+
 /**
  * @brief Main Application Window
  *
@@ -262,6 +264,8 @@ protected:
     QPointer<QGCUASFileViewMulti> fileWidget;
 
     JoystickInput* joystick; ///< The joystick manager for QGC
+
+    MPlayerWindow* mPlayerWindow;
 
 #ifdef QGC_MOUSE_ENABLED_WIN
     /** @brief 3d Mouse support (WIN only) */
