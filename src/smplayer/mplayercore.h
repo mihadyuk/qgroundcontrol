@@ -44,15 +44,15 @@ class WinScreenSaver;
 class RetrieveYoutubeUrl;
 #endif
 
-class Core : public QObject
+class MplayerCore : public QObject
 {
     Q_OBJECT
     
 public:
 	enum State { Stopped = 0, Playing = 1, Paused = 2 };
 
-    Core( MplayerWindow *mpw, QWidget* parent = 0 );
-    ~Core();
+    MplayerCore( MplayerWindow *mpw, QWidget* parent = 0 );
+    ~MplayerCore();
 
     MediaData mdat;
 	MediaSettings mset;
@@ -374,7 +374,7 @@ protected slots:
 	// Catches mediaInfoChanged and sends mediaPlaying signal
 	void sendMediaInfo();
 	
-	void watchState(Core::State state);
+    void watchState(MplayerCore::State state);
 
 	//! Called when a video has just started to play.
 	//! This function checks if the codec of video is ffh264 and if
@@ -442,7 +442,7 @@ signals:
 	void mediaInfoChanged();
 	//! Sends the filename and title of the stream playing in this moment
 	void mediaPlaying(const QString & filename, const QString & title);
-	void stateChanged(Core::State state);
+    void stateChanged(MplayerCore::State state);
 	void mediaStartPlay();
 	void mediaFinished(); // Media has arrived to the end.
 	void mediaStoppedByUser();

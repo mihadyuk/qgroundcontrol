@@ -33,7 +33,7 @@ QGCVideoView::QGCVideoView(MplayerWindow * wind, QWidget *parent) :
     videoWidget->allowVideoMovement( pref->allow_video_movement );
     videoWidget->delayLeftClick(pref->delay_left_click);
 
-    core = new Core(videoWidget, this);
+    core = new MplayerCore(videoWidget, this);
     connect( core, SIGNAL(menusNeedInitialize()),
              this, SLOT(initializeMenus()) );
     connect( core, SIGNAL(widgetsNeedUpdate()),
@@ -96,11 +96,12 @@ QGCVideoView::~QGCVideoView()
     delete videoTrackGroup;
     delete videotrack_menu;
 
-    if (core->state() != Core::Stopped) {
+    if (core->state() != MplayerCore::Stopped) {
         core->stop();
     }
 
     delete core;
+    delete videoWidget;
     global_end();
 }
 

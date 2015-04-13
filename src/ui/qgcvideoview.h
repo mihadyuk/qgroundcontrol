@@ -13,7 +13,7 @@
 
 #include "smplayer/myactiongroup.h"
 //#include "smplayer/mediadata.h"
-#include "smplayer/core.h"
+#include "smplayer/mplayercore.h"
 #include "smplayer/mplayerwindow.h"
 #include "smplayer/preferences.h"
 #include "smplayer/global.h"
@@ -39,7 +39,7 @@ protected slots:
 private:
     Ui::QGCVideoView *ui;
     //QProcess *proc;
-    Core *core;
+    MplayerCore *core;
     MplayerWindow *videoWidget;
 
     MyActionGroup * videoTrackGroup;

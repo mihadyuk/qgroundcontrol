@@ -71,7 +71,7 @@ This file is part of the QGROUNDCONTROL project
 #include "QGCDockWidget.h"
 
 #include "qgcvideoview.h"
-#include "smplayer/mplayerwindow.h"
+
 
 #ifdef UNITTEST_BUILD
 #include "QmlControls/QmlTestWidget.h"
@@ -191,7 +191,7 @@ MainWindow::MainWindow(QSplashScreen* splashScreen)
     widget->setTitleBarWidget(new QWidget(this)); // Disables the title bar
     addDockWidget(Qt::TopDockWidgetArea, widget);
 
-    mPlayerWindow = new MPlayerWindow(this);
+    mPlayerWindow = new MplayerWindow(this);
 
     // Setup UI state machines
     _centerStackActionGroup->setExclusive(true);
