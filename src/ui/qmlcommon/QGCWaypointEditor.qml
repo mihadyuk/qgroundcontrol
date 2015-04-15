@@ -2,7 +2,7 @@
 
 QGroundControl Open Source Ground Control Station
 
-(c) 2009, 2010 QGROUNDCONTROL PROJECT <http://www.qgroundcontrol.org>
+(c) 2009, 2015 QGROUNDCONTROL PROJECT <http://www.qgroundcontrol.org>
 
 This file is part of the QGROUNDCONTROL project
 
@@ -23,49 +23,17 @@ This file is part of the QGROUNDCONTROL project
 
 /**
  * @file
- *   @brief Definition of class ParameterInterface
- *
- *   @author Lorenz Meier <mavteam@student.ethz.ch>
- *
+ *   @brief QGC Waypoint Editor
+ *   @author Gus Grubba <mavlink@grubba.com>
  */
 
-#ifndef PARAMETERINTERFACE_H
-#define PARAMETERINTERFACE_H
+import QtQuick 2.4
 
-#include <QWidget>
+import QGroundControl.Palette 1.0
 
-#include "ui_ParameterInterface.h"
-#include "UASInterface.h"
-#include "QGCParamWidget.h"
+Rectangle {
+    QGCPalette { id: palette; colorGroupEnabled: true }
+    id: root
+    color: palette.window
 
-namespace Ui
-{
-class ParameterInterface;
 }
-
-/**
- * @brief Container class for onboard parameter widgets
- *
- * @see QGCParamWidget
- */
-class ParameterInterface : public QWidget
-{
-    Q_OBJECT
-public:
-    explicit ParameterInterface(QWidget *parent = 0);
-    virtual ~ParameterInterface();
-
-public slots:
-    void addUAS(UASInterface* uas);
-    void selectUAS(int index);
-
-protected:
-    virtual void changeEvent(QEvent *e);
-    QMap<int, QGCParamWidget*>* paramWidgets;
-    int curr;
-
-private:
-    Ui::parameterWidget *m_ui;
-};
-
-#endif // PARAMETERINTERFACE_H

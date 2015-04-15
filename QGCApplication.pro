@@ -152,7 +152,6 @@ INCLUDEPATH += \
     src/input \
     src/lib/qmapcontrol \
     src/ui/mavlink \
-    src/ui/param \
     src/ui/map3D \
     src/ui/mission \
     src/ui/designer \
@@ -161,9 +160,11 @@ INCLUDEPATH += \
     src/ui/main \
     src/ui/toolbar \
     src/ui/flightdisplay \
+    src/ui/mapdisplay \
     src/VehicleSetup \
     src/AutoPilotPlugins \
-    src/QmlControls
+    src/QmlControls \
+    src/ViewWidgets
 
 FORMS += \
     src/ui/MainWindow.ui \
@@ -173,13 +174,11 @@ FORMS += \
     src/ui/UASInfo.ui \
     src/ui/Linechart.ui \
     src/ui/UASView.ui \
-    src/ui/ParameterInterface.ui \
     src/ui/WaypointList.ui \
     src/ui/JoystickWidget.ui \
     src/ui/DebugConsole.ui \
     src/ui/HDDisplay.ui \
     src/ui/MAVLinkSettingsWidget.ui \
-    src/ui/QGCSensorSettingsWidget.ui \
     src/ui/QGCDataPlot2D.ui \
     src/ui/QMap3D.ui \
     src/ui/uas/QGCUnconnectedInfoWidget.ui \
@@ -268,7 +267,7 @@ HEADERS += \
     src/comm/MAVLinkSimulationLink.h \
     src/comm/UDPLink.h \
     src/comm/TCPLink.h \
-    src/ui/ParameterInterface.h \
+    src/ViewWidgets/ParameterEditorWidget.h \
     src/ui/WaypointList.h \
     src/Waypoint.h \
     src/input/JoystickInput.h \
@@ -278,8 +277,6 @@ HEADERS += \
     src/ui/MAVLinkSettingsWidget.h \
     src/GAudioOutput.h \
     src/LogCompressor.h \
-    src/ui/QGCParamWidget.h \
-    src/ui/QGCSensorSettingsWidget.h \
     src/ui/linechart/Linecharts.h \
     src/uas/UASWaypointManager.h \
     src/ui/HSIDisplay.h \
@@ -357,8 +354,6 @@ HEADERS += \
     src/ui/configuration/ApmHighlighter.h \
     src/uas/UASParameterDataModel.h \
     src/uas/UASParameterCommsMgr.h \
-    src/ui/QGCPendingParamWidget.h \
-    src/ui/QGCBaseParamWidget.h \
     src/ui/px4_configuration/PX4RCCalibration.h \
     src/ui/px4_configuration/RCValueWidget.h \
     src/uas/UASManagerInterface.h \
@@ -375,7 +370,6 @@ HEADERS += \
     src/QGCQuickWidget.h \
     src/QGCPalette.h \
     src/QGCQmlWidgetHolder.h \
-    src/ui/QGCParamTreeWidget.h \
     src/ui/QGCMapRCToParamDialog.h \
     src/QGCDockWidget.h \
     src/ui/QGCLinkConfiguration.h \
@@ -385,8 +379,11 @@ HEADERS += \
     src/uas/UASMessageHandler.h \
     src/ui/toolbar/MainToolBar.h \
     src/QmlControls/ScreenTools.h \
+    src/QmlControls/ParameterEditorController.h \
     src/QGCLoggingCategory.h \
-    src/ui/flightdisplay/QGCFlightDisplay.h
+    src/ui/flightdisplay/QGCFlightDisplay.h \
+    src/ui/mapdisplay/QGCMapDisplay.h \
+    src/ViewWidgets/ViewWidgetController.h \
 
 SOURCES += \
     src/main.cc \
@@ -415,7 +412,7 @@ SOURCES += \
     src/comm/MAVLinkSimulationLink.cc \
     src/comm/UDPLink.cc \
     src/comm/TCPLink.cc \
-    src/ui/ParameterInterface.cc \
+    src/ViewWidgets/ParameterEditorWidget.cc \
     src/ui/WaypointList.cc \
     src/Waypoint.cc \
     src/input/JoystickInput.cc \
@@ -425,8 +422,6 @@ SOURCES += \
     src/ui/MAVLinkSettingsWidget.cc \
     src/GAudioOutput.cc \
     src/LogCompressor.cc \
-    src/ui/QGCParamWidget.cc \
-    src/ui/QGCSensorSettingsWidget.cc \
     src/ui/linechart/Linecharts.cc \
     src/uas/UASWaypointManager.cc \
     src/ui/HSIDisplay.cc \
@@ -501,8 +496,6 @@ SOURCES += \
     src/ui/configuration/ApmHighlighter.cc \
     src/uas/UASParameterDataModel.cc \
     src/uas/UASParameterCommsMgr.cc \
-    src/ui/QGCPendingParamWidget.cc \
-    src/ui/QGCBaseParamWidget.cc \
     src/ui/px4_configuration/PX4RCCalibration.cc \
     src/ui/px4_configuration/RCValueWidget.cc \
     src/uas/QGCUASFileManager.cc \
@@ -516,7 +509,6 @@ SOURCES += \
     src/QGCQuickWidget.cc \
     src/QGCPalette.cc \
     src/QGCQmlWidgetHolder.cpp \
-    src/ui/QGCParamTreeWidget.cpp \
     src/ui/QGCMapRCToParamDialog.cpp \
     src/QGCDockWidget.cc \
     src/ui/QGCLinkConfiguration.cc \
@@ -526,8 +518,11 @@ SOURCES += \
     src/uas/UASMessageHandler.cc \
     src/ui/toolbar/MainToolBar.cc \
     src/QmlControls/ScreenTools.cc \
+    src/QmlControls/ParameterEditorController.cc \
     src/QGCLoggingCategory.cc \
-    src/ui/flightdisplay/QGCFlightDisplay.cc
+    src/ui/flightdisplay/QGCFlightDisplay.cc \
+    src/ui/mapdisplay/QGCMapDisplay.cc \
+    src/ViewWidgets/ViewWidgetController.cc \
 
 #
 # Unit Test specific configuration goes here
@@ -604,12 +599,10 @@ INCLUDEPATH += \
     src/VehicleSetup
 
 FORMS += \
-    src/VehicleSetup/ParameterEditor.ui \
     src/VehicleSetup/SetupView.ui \
 
 HEADERS+= \
     src/VehicleSetup/SetupView.h \
-    src/VehicleSetup/ParameterEditor.h \
     src/VehicleSetup/VehicleComponent.h \
     src/VehicleSetup/FirmwareUpgradeController.h \
     src/VehicleSetup/PX4Bootloader.h \
@@ -634,7 +627,6 @@ HEADERS+= \
 
 SOURCES += \
     src/VehicleSetup/SetupView.cc \
-    src/VehicleSetup/ParameterEditor.cc \
     src/VehicleSetup/VehicleComponent.cc \
     src/VehicleSetup/FirmwareUpgradeController.cc \
     src/VehicleSetup/PX4Bootloader.cc \
