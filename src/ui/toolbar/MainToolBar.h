@@ -37,6 +37,7 @@ This file is part of the QGROUNDCONTROL project
 #define TOOL_BAR_SHOW_GPS       "ShowGPS"
 #define TOOL_BAR_SHOW_MAV       "ShowMav"
 #define TOOL_BAR_SHOW_MESSAGES  "ShowMessages"
+#define TOOL_BAR_SHOW_RSSI       "ShowRSSI"
 
 class UASInterface;
 class UASMessage;
@@ -73,7 +74,7 @@ public:
     Q_INVOKABLE void    onAnalyzeView();
     Q_INVOKABLE void    onVideoView();
     Q_INVOKABLE void    onConnect(QString conf);
-    Q_INVOKABLE void    onLinkConfigurationChanged(const QString& config);
+    Q_INVOKABLE void    onDisconnect(QString conf);
     Q_INVOKABLE void    onEnterMessageArea(int x, int y);
     Q_INVOKABLE QString getMavIconColor();
 
@@ -88,7 +89,6 @@ public:
     Q_PROPERTY(MessageType_t messageType        MEMBER _currentMessageType      NOTIFY messageTypeChanged)
     Q_PROPERTY(int           newMessageCount    MEMBER _currentMessageCount     NOTIFY newMessageCountChanged)
     Q_PROPERTY(int           messageCount       MEMBER _messageCount            NOTIFY messageCountChanged)
-    Q_PROPERTY(QString       currentConfig      MEMBER _currentConfig           NOTIFY currentConfigChanged)
     Q_PROPERTY(QString       systemPixmap       MEMBER _systemPixmap            NOTIFY systemPixmapChanged)
     Q_PROPERTY(int           satelliteCount     MEMBER _satelliteCount          NOTIFY satelliteCountChanged)
     Q_PROPERTY(QStringList   connectedList      MEMBER _connectedList           NOTIFY connectedListChanged)
@@ -99,12 +99,19 @@ public:
     Q_PROPERTY(bool          showMav            MEMBER _showMav                 NOTIFY showMavChanged)
     Q_PROPERTY(bool          showMessages       MEMBER _showMessages            NOTIFY showMessagesChanged)
     Q_PROPERTY(bool          showBattery        MEMBER _showBattery             NOTIFY showBatteryChanged)
+    Q_PROPERTY(bool          showRSSI           MEMBER _showRSSI                NOTIFY showRSSIChanged)
     Q_PROPERTY(float         progressBarValue   MEMBER _progressBarValue        NOTIFY progressBarValueChanged)
+    Q_PROPERTY(int           remoteRSSI         READ remoteRSSI                 NOTIFY remoteRSSIChanged)
+    Q_PROPERTY(int           telemetryRRSSI     READ telemetryRRSSI             NOTIFY telemetryRRSSIChanged)
+    Q_PROPERTY(int           telemetryLRSSI     READ telemetryLRSSI             NOTIFY telemetryLRSSIChanged)
 
-    bool          mavPresent             () { return _mav != NULL; }
+    bool        mavPresent              () { return _mav != NULL; }
+    int         remoteRSSI              () { return _remoteRSSI; }
+    int         telemetryRRSSI          () { return _telemetryRRSSI; }
+    int         telemetryLRSSI          () { return _telemetryLRSSI; }
 
-    void          setCurrentView         (int currentView);
-    void          viewStateChanged       (const QString& key, bool value);
+    void        setCurrentView          (int currentView);
+    void        viewStateChanged        (const QString& key, bool value);
 
 signals:
     void connectionCountChanged         (int count);
@@ -129,7 +136,11 @@ signals:
     void showMavChanged                 (bool value);
     void showMessagesChanged            (bool value);
     void showBatteryChanged             (bool value);
+    void showRSSIChanged                (bool value);
     void progressBarValueChanged        (float value);
+    void remoteRSSIChanged              (int value);
+    void telemetryRRSSIChanged          (int value);
+    void telemetryLRSSIChanged          (int value);
 
 private slots:
     void _setActiveUAS                  (UASInterface* active);
@@ -150,6 +161,8 @@ private slots:
     void _leaveMessageView              ();
     void _setSatLoc                     (UASInterface* uas, int fix);
     void _setProgressBarValue           (float value);
+    void _remoteControlRSSIChanged      (uint8_t rssi);
+    void _telemetryChanged              (LinkInterface* link, unsigned rxerrors, unsigned fixed, unsigned rssi, unsigned remrssi, unsigned txbuf, unsigned noise, unsigned remnoise);
 
 private:
     void _updateConnection              (LinkInterface *disconnectedLink = NULL);
@@ -162,8 +175,6 @@ private:
     double          _batteryVoltage;
     double          _batteryPercent;
     QStringList     _linkConfigurations;
-    QString         _currentConfig;
-    bool            _linkSelected;
     int             _connectionCount;
     bool            _systemArmed;
     QString         _currentState;
@@ -185,8 +196,12 @@ private:
     bool            _showGPS;
     bool            _showMav;
     bool            _showMessages;
+    bool            _showRSSI;
     bool            _showBattery;
     float           _progressBarValue;
+    int             _remoteRSSI;
+    int             _telemetryRRSSI;
+    int             _telemetryLRSSI;
 
     UASMessageViewRollDown* _rollDownMessages;
 };

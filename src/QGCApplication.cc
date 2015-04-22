@@ -61,6 +61,8 @@
 #include "QGCPalette.h"
 #include "ScreenTools.h"
 #include "QGCLoggingCategory.h"
+#include "ViewWidgetController.h"
+#include "ParameterEditorController.h"
 
 #ifdef QGC_RTLAB_ENABLED
 #include "OpalLink.h"
@@ -283,6 +285,8 @@ void QGCApplication::_initCommon(void)
     // Register our Qml objects
     qmlRegisterType<QGCPalette>("QGroundControl.Palette", 1, 0, "QGCPalette");
     qmlRegisterType<ScreenTools>("QGroundControl.ScreenTools", 1, 0, "ScreenTools");
+	qmlRegisterType<ViewWidgetController>("QGroundControl.Controllers", 1, 0, "ViewWidgetController");
+	qmlRegisterType<ParameterEditorController>("QGroundControl.Controllers", 1, 0, "ParameterEditorController");
 }
 
 bool QGCApplication::_initForNormalAppBoot(void)
@@ -642,7 +646,7 @@ void QGCApplication::reconnectAfterWait(int waitSeconds)
     LinkInterface* link = linkManager->getLinks()[0];
     
     // Save the link configuration so we can restart the link laster
-    _reconnectLinkConfig = linkManager->getLinks()[0]->getLinkConfiguration();
+    _reconnectLinkConfig = LinkConfiguration::duplicateSettings(linkManager->getLinks()[0]->getLinkConfiguration());
     
     // Disconnect and wait
     
@@ -652,6 +656,9 @@ void QGCApplication::reconnectAfterWait(int waitSeconds)
 
 void QGCApplication::_reconnect(void)
 {
+    Q_ASSERT(_reconnectLinkConfig);
+    
     qgcApp()->restoreOverrideCursor();
     LinkManager::instance()->createConnectedLink(_reconnectLinkConfig);
+    _reconnectLinkConfig = NULL;
 }

@@ -19,6 +19,10 @@
 
 QMAKE_POST_LINK += echo "Copying files"
 
+AndroidBuild {
+    INSTALLS += $$DESTDIR
+}
+
 #
 # Copy the application resources to the associated place alongside the application
 #
@@ -40,8 +44,10 @@ WindowsBuild {
     BASEDIR_COPY_RESOURCE_LIST = $$replace(BASEDIR,"/","\\")
     QMAKE_POST_LINK += $$escape_expand(\\n) $$QMAKE_COPY_DIR \"$$BASEDIR_COPY_RESOURCE_LIST\\flightgear\" \"$$DESTDIR_COPY_RESOURCE_LIST\\flightgear\"
 } else {
-    # Make sure to keep both side of this if using the same set of directories
-    QMAKE_POST_LINK += && $$QMAKE_COPY_DIR $$BASEDIR/flightgear $$DESTDIR_COPY_RESOURCE_LIST
+    !AndroidBuild {
+        # Make sure to keep both sides of this if using the same set of directories
+        QMAKE_POST_LINK += && $$QMAKE_COPY_DIR $$BASEDIR/flightgear $$DESTDIR_COPY_RESOURCE_LIST
+    }
 }
 
 #
@@ -199,6 +205,7 @@ WindowsBuild {
     QMAKE_POST_LINK += $$escape_expand(\\n) $$QMAKE_COPY_DIR \"$$PLUGINS_DIR_WIN\\iconengines\" \"$$DESTDIR_WIN\\iconengines\"
     QMAKE_POST_LINK += $$escape_expand(\\n) $$QMAKE_COPY_DIR \"$$PLUGINS_DIR_WIN\\printsupport\" \"$$DESTDIR_WIN\\printsupport\"
     QMAKE_POST_LINK += $$escape_expand(\\n) $$QMAKE_COPY_DIR \"$$PLUGINS_DIR_WIN\\qmltooling\" \"$$DESTDIR_WIN\\qmltooling\"
+    QMAKE_POST_LINK += $$escape_expand(\\n) $$QMAKE_COPY_DIR \"$$PLUGINS_DIR_WIN\\geoservices\" \"$$DESTDIR_WIN\\geoservices\"
 
     # Copy Qml libraries
     Q_DIR = $$[QT_INSTALL_QML]
@@ -206,6 +213,8 @@ WindowsBuild {
     QMAKE_POST_LINK += $$escape_expand(\\n) $$QMAKE_COPY_DIR \"$$QML_DIR_WIN\\QtGraphicalEffects\" \"$$DESTDIR_WIN\\QtGraphicalEffects\"
     QMAKE_POST_LINK += $$escape_expand(\\n) $$QMAKE_COPY_DIR \"$$QML_DIR_WIN\\QtQuick\" \"$$DESTDIR_WIN\\QtQuick\"
     QMAKE_POST_LINK += $$escape_expand(\\n) $$QMAKE_COPY_DIR \"$$QML_DIR_WIN\\QtQuick.2\" \"$$DESTDIR_WIN\\QtQuick.2\"
+    QMAKE_POST_LINK += $$escape_expand(\\n) $$QMAKE_COPY_DIR \"$$QML_DIR_WIN\\QtLocation\" \"$$DESTDIR_WIN\\QtLocation\"
+    QMAKE_POST_LINK += $$escape_expand(\\n) $$QMAKE_COPY_DIR \"$$QML_DIR_WIN\\QtPositioning\" \"$$DESTDIR_WIN\\QtPositioning\"
 
         ReleaseBuild {
 		# Copy Visual Studio DLLs
