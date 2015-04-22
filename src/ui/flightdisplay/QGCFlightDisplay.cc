@@ -67,8 +67,8 @@ QGCFlightDisplay::QGCFlightDisplay(QWidget *parent)
     if(pl) {
         pl->setContentsMargins(0,0,0,0);
     }
-    setMinimumWidth(270);
-    setMinimumHeight(300);
+    setMinimumWidth(380);
+    setMinimumHeight(360);
     setContextPropertyObject("flightDisplay", this);
     setSource(QUrl::fromUserInput("qrc:/qml/FlightDisplay.qml"));
     setVisible(true);
@@ -114,6 +114,7 @@ void QGCFlightDisplay::_forgetUAS(UASInterface* uas)
         disconnect(_mav, &UASInterface::NavigationControllerDataChanged, this, &QGCFlightDisplay::_updateNavigationControllerData);
     }
     _mav = NULL;
+    emit mavPresentChanged();
 }
 
 void QGCFlightDisplay::_setActiveUAS(UASInterface* uas)
@@ -136,6 +137,7 @@ void QGCFlightDisplay::_setActiveUAS(UASInterface* uas)
         // Set new UAS
         _mav = uas;
     }
+    emit mavPresentChanged();
 }
 
 void QGCFlightDisplay::_updateAttitude(UASInterface*, double roll, double pitch, double yaw, quint64)
@@ -145,7 +147,7 @@ void QGCFlightDisplay::_updateAttitude(UASInterface*, double roll, double pitch,
     } else {
         bool update = false;
         float rolldeg = roll * (180.0 / M_PI);
-        if (fabs(roll - rolldeg) > 2.5) {
+        if (fabs(roll - rolldeg) > 1.0) {
             update = true;
         }
         _roll = rolldeg;
@@ -160,7 +162,7 @@ void QGCFlightDisplay::_updateAttitude(UASInterface*, double roll, double pitch,
     } else {
         bool update = false;
         float pitchdeg = pitch * (180.0 / M_PI);
-        if (fabs(pitch - pitchdeg) > 2.5) {
+        if (fabs(pitch - pitchdeg) > 1.0) {
             update = true;
         }
         _pitch = pitchdeg;
@@ -301,10 +303,14 @@ void QGCFlightDisplay::_checkUpdate()
         emit longitudeChanged();
     }
     if(_mav) {
-        _latitude  = _mav->getLatitude();
-        _longitude = _mav->getLongitude();
-        if(_latitude)  emit latitudeChanged();
-        if(_longitude) emit longitudeChanged();
+        if(_latitude != _mav->getLatitude()) {
+            _latitude = _mav->getLatitude();
+            emit latitudeChanged();
+        }
+        if(_longitude != _mav->getLongitude()) {
+            _longitude = _mav->getLongitude();
+            emit longitudeChanged();
+        }
     }
 }
 

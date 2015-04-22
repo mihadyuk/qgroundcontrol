@@ -58,14 +58,23 @@ MainToolBar::MainToolBar(QWidget* parent)
     , _showGPS(true)
     , _showMav(true)
     , _showMessages(true)
+    , _showRSSI(true)
     , _showBattery(true)
     , _progressBarValue(0.0f)
+    , _remoteRSSI(0)
+    , _telemetryRRSSI(0)
+    , _telemetryLRSSI(0)
     , _rollDownMessages(0)
 {
     setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::MinimumExpanding);
     setObjectName("MainToolBar");
+#ifdef __android__
+    setMinimumHeight(120);
+    setMaximumHeight(120);
+#else
     setMinimumHeight(40);
     setMaximumHeight(40);
+#endif
     setMinimumWidth(MainWindow::instance()->minimumWidth());
     // Get rid of layout default margins
     QLayout* pl = layout();
@@ -90,10 +99,14 @@ MainToolBar::MainToolBar(QWidget* parent)
     emit heartbeatTimeoutChanged(_currentHeartbeatTimeout);
     emit connectionCountChanged(_connectionCount);
     // Link signals
-    connect(UASManager::instance(),  &UASManager::activeUASSet,              this, &MainToolBar::_setActiveUAS);
-    connect(LinkManager::instance(), &LinkManager::linkConfigurationChanged, this, &MainToolBar::_updateConfigurations);
-    connect(LinkManager::instance(), &LinkManager::linkConnected,            this, &MainToolBar::_linkConnected);
-    connect(LinkManager::instance(), &LinkManager::linkDisconnected,         this, &MainToolBar::_linkDisconnected);
+    connect(UASManager::instance(),      &UASManager::activeUASSet,              this, &MainToolBar::_setActiveUAS);
+    connect(LinkManager::instance(),     &LinkManager::linkConfigurationChanged, this, &MainToolBar::_updateConfigurations);
+    connect(LinkManager::instance(),     &LinkManager::linkConnected,            this, &MainToolBar::_linkConnected);
+    connect(LinkManager::instance(),     &LinkManager::linkDisconnected,         this, &MainToolBar::_linkDisconnected);
+    // RSSI (didn't like standard connection)
+    connect(MAVLinkProtocol::instance(),
+        SIGNAL(radioStatusChanged(LinkInterface*, unsigned, unsigned, unsigned, unsigned, unsigned, unsigned, unsigned)), this,
+        SLOT(_telemetryChanged(LinkInterface*, unsigned, unsigned, unsigned, unsigned, unsigned, unsigned, unsigned)));
 }
 
 MainToolBar::~MainToolBar()
@@ -119,6 +132,9 @@ void MainToolBar::_setToolBarState(const QString& key, bool value)
     } else if(key == TOOL_BAR_SHOW_MESSAGES) {
         _showMessages = value;
         emit showMessagesChanged(value);
+    } else if(key == TOOL_BAR_SHOW_RSSI) {
+        _showRSSI = value;
+        emit showRSSIChanged(value);
     }
 }
 
@@ -291,6 +307,7 @@ void MainToolBar::_setActiveUAS(UASInterface* active)
         disconnect(_mav, &UASInterface::nameChanged,                                            this, &MainToolBar::_updateName);
         disconnect(_mav, &UASInterface::systemTypeSet,                                          this, &MainToolBar::_setSystemType);
         disconnect(_mav, &UASInterface::localizationChanged,                                    this, &MainToolBar::_setSatLoc);
+        disconnect(_mav, &UASInterface::remoteControlRSSIChanged,                               this, &MainToolBar::_remoteControlRSSIChanged);
         disconnect(_mav, SIGNAL(statusChanged(UASInterface*,QString,QString)),                  this, SLOT(_updateState(UASInterface*,QString,QString)));
         disconnect(_mav, SIGNAL(armingChanged(bool)),                                           this, SLOT(_updateArmingState(bool)));
         if (_mav->getWaypointManager())
@@ -319,6 +336,7 @@ void MainToolBar::_setActiveUAS(UASInterface* active)
         connect(_mav, &UASInterface::nameChanged,                                           this, &MainToolBar::_updateName);
         connect(_mav, &UASInterface::systemTypeSet,                                         this, &MainToolBar::_setSystemType);
         connect(_mav, &UASInterface::localizationChanged,                                   this, &MainToolBar::_setSatLoc);
+        connect(_mav, &UASInterface::remoteControlRSSIChanged,                              this, &MainToolBar::_remoteControlRSSIChanged);
         connect(_mav, SIGNAL(statusChanged(UASInterface*,QString,QString)),                 this, SLOT(_updateState(UASInterface*, QString,QString)));
         connect(_mav, SIGNAL(armingChanged(bool)),                                          this, SLOT(_updateArmingState(bool)));
         if (_mav->getWaypointManager())
@@ -334,9 +352,40 @@ void MainToolBar::_setActiveUAS(UASInterface* active)
         QGCUASParamManagerInterface* paramMgr = _mav->getParamManager();
         Q_ASSERT(paramMgr);
         connect(paramMgr, SIGNAL(parameterListProgress(float)),              this, SLOT(_setProgressBarValue(float)));
+        // Reset connection lost (if any)
+        _currentHeartbeatTimeout = 0;
+        emit heartbeatTimeoutChanged(_currentHeartbeatTimeout);
     }
     // Let toolbar know about it
     emit mavPresentChanged(_mav != NULL);
+}
+
+void MainToolBar::_telemetryChanged(LinkInterface*, unsigned, unsigned, unsigned rssi, unsigned remrssi, unsigned, unsigned, unsigned)
+{
+    // We only care if we haveone single connection
+    if(_connectionCount == 1) {
+        if((unsigned)_telemetryLRSSI != rssi) {
+            // According to the Silabs data sheet, the RSSI value is 0.5db per bit
+            _telemetryLRSSI = rssi >> 1;
+            emit telemetryLRSSIChanged(_telemetryLRSSI);
+        }
+        if((unsigned)_telemetryRRSSI != remrssi) {
+            // According to the Silabs data sheet, the RSSI value is 0.5db per bit
+            _telemetryRRSSI = remrssi >> 1;
+            emit telemetryRRSSIChanged(_telemetryRRSSI);
+        }
+    }
+}
+
+void MainToolBar::_remoteControlRSSIChanged(uint8_t rssi)
+{
+    // We only care if we haveone single connection
+    if(_connectionCount == 1) {
+        if(_remoteRSSI != rssi) {
+            _remoteRSSI = rssi;
+            emit remoteRSSIChanged(_remoteRSSI);
+        }
+    }
 }
 
 void MainToolBar::_updateArmingState(bool armed)
@@ -417,6 +466,19 @@ void MainToolBar::_updateConnection(LinkInterface *disconnectedLink)
     if(connList != _connectedList) {
         _connectedList = connList;
         emit connectedListChanged(_connectedList);
+    }
+    // Update telemetry RSSI display
+    if(_connectionCount != 1 && _telemetryRRSSI > 0) {
+        _telemetryRRSSI = 0;
+        emit telemetryRRSSIChanged(_telemetryRRSSI);
+    }
+    if(_connectionCount != 1 && _telemetryLRSSI > 0) {
+        _telemetryLRSSI = 0;
+        emit telemetryLRSSIChanged(_telemetryLRSSI);
+    }
+    if(_connectionCount != 1 && _remoteRSSI > 0) {
+        _remoteRSSI = 0;
+        emit remoteRSSIChanged(_remoteRSSI);
     }
 }
 

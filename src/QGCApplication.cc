@@ -646,7 +646,7 @@ void QGCApplication::reconnectAfterWait(int waitSeconds)
     LinkInterface* link = linkManager->getLinks()[0];
     
     // Save the link configuration so we can restart the link laster
-    _reconnectLinkConfig = linkManager->getLinks()[0]->getLinkConfiguration();
+    _reconnectLinkConfig = LinkConfiguration::duplicateSettings(linkManager->getLinks()[0]->getLinkConfiguration());
     
     // Disconnect and wait
     
@@ -656,6 +656,9 @@ void QGCApplication::reconnectAfterWait(int waitSeconds)
 
 void QGCApplication::_reconnect(void)
 {
+    Q_ASSERT(_reconnectLinkConfig);
+    
     qgcApp()->restoreOverrideCursor();
     LinkManager::instance()->createConnectedLink(_reconnectLinkConfig);
+    _reconnectLinkConfig = NULL;
 }

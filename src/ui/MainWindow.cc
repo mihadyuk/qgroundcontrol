@@ -45,7 +45,9 @@ This file is part of the QGROUNDCONTROL project
 #include "MAVLinkProtocol.h"
 #include "QGCWaypointListMulti.h"
 #include "MainWindow.h"
+#ifndef __android__
 #include "JoystickWidget.h"
+#endif
 #include "GAudioOutput.h"
 #include "QGCToolWidget.h"
 #include "QGCMAVLinkLogPlayer.h"
@@ -60,7 +62,6 @@ This file is part of the QGROUNDCONTROL project
 #include "Linecharts.h"
 #include "QGCTabbedInfoView.h"
 #include "UASRawStatusView.h"
-#include "PrimaryFlightDisplay.h"
 #include "QGCFlightDisplay.h"
 #include "SetupView.h"
 #include "SerialSettingsDialog.h"
@@ -152,7 +153,7 @@ MainWindow::MainWindow(QSplashScreen* splashScreen)
     emit initStatusChanged(tr("Setting up user interface"), Qt::AlignLeft | Qt::AlignBottom, QColor(62, 93, 141));
     _ui.setupUi(this);
     // Make sure tool bar elements all fit before changing minimum width
-    setMinimumWidth(926);
+    setMinimumWidth(1008);
     configureWindowName();
 
     // Setup central widget with a layout to hold the views
@@ -199,8 +200,9 @@ MainWindow::MainWindow(QSplashScreen* splashScreen)
     connectCommonActions();
     // Connect user interface devices
     emit initStatusChanged(tr("Initializing joystick interface"), Qt::AlignLeft | Qt::AlignBottom, QColor(62, 93, 141));
+#ifndef __android__
     joystick = new JoystickInput();
-
+#endif
 #ifdef QGC_MOUSE_ENABLED_WIN
     emit initStatusChanged(tr("Initializing 3D mouse interface"), Qt::AlignLeft | Qt::AlignBottom, QColor(62, 93, 141));
     mouseInput = new Mouse3DInput(this);
@@ -321,6 +323,7 @@ MainWindow::~MainWindow()
         delete _simulationLink;
         _simulationLink = NULL;
     }
+#ifndef __android__
     if (joystick)
     {
         joystick->shutdown();
@@ -328,6 +331,7 @@ MainWindow::~MainWindow()
         delete joystick;
         joystick = NULL;
     }
+#endif
     // Delete all UAS objects
     for (int i=0;i<_commsWidgetList.size();i++)
     {
@@ -466,7 +470,6 @@ void MainWindow::_buildExperimentalPlanView(void)
 void MainWindow::_buildFlightView(void)
 {
     if (!_flightView) {
-        //_pilotView = new PrimaryFlightDisplay(this);
         _flightView = new QGCFlightDisplay(this);
         _flightView->setVisible(false);
     }
@@ -581,7 +584,6 @@ void MainWindow::_createInnerDockWidget(const QString& widgetName)
         widget = hddisplay;
     } else if (widgetName == _pfdDockWidgetName) {
         widget = new QGCFlightDisplay(this);
-        //widget = new PrimaryFlightDisplay(this);
     } else if (widgetName == _hudDockWidgetName) {
         widget = new HUD(320,240,this);
     } else if (widgetName == _uasInfoViewDockWidgetName) {
@@ -953,7 +955,11 @@ void MainWindow::showRoadMap()
 
 void MainWindow::showSettings()
 {
+#ifndef __android__
     SettingsDialog settings(joystick, this);
+#else
+    SettingsDialog settings(this);
+#endif
     settings.exec();
 }
 
@@ -1276,7 +1282,11 @@ void MainWindow::hideSplashScreen(void)
 
 void MainWindow::manageLinks()
 {
+#ifndef __android__
     SettingsDialog settings(joystick, this, SettingsDialog::ShowCommLinks);
+#else
+    SettingsDialog settings(this, SettingsDialog::ShowCommLinks);
+#endif
     settings.exec();
 }
 
