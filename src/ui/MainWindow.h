@@ -69,6 +69,10 @@ This file is part of the QGROUNDCONTROL project
 #include "QGCFlightGearLink.h"
 #include "QGCToolWidget.h"
 
+#include "smplayer/mplayerwindow.h"
+
+
+
 class QGCMapTool;
 class QGCMAVLinkMessageSender;
 class QGCFirmwareUpdate;
@@ -79,6 +83,8 @@ class QGCDataPlot2D;
 class QGCUASFileViewMulti;
 
 class QGCDockWidget;
+
+//class MPlayerWindow;
 
 /**
  * @brief Main Application Window
@@ -262,6 +268,8 @@ protected:
 #ifndef __android__
     JoystickInput* joystick; ///< The joystick manager for QGC
 #endif
+
+    MplayerWindow * mPlayerWindow;
 
 #ifdef QGC_MOUSE_ENABLED_WIN
     /** @brief 3d Mouse support (WIN only) */

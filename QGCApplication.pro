@@ -167,6 +167,10 @@ INCLUDEPATH += \
     src/ui/uas \
     src/VehicleSetup \
     src/ViewWidgets \
+    src/AutoPilotPlugins \
+    src/QmlControls \
+    src/smplayer
+
 
 FORMS += \
     src/QGCQmlWidgetHolder.ui \
@@ -387,6 +391,42 @@ HEADERS += \
     src/Waypoint.h \
     src/ui/uas/UASQuickTabView.h \
     src/ui/qgcvideoview.h \
+    src/smplayer/assstyles.h \
+    src/smplayer/audioequalizerlist.h \
+    src/smplayer/autohidewidget.h \
+    src/smplayer/chapters.h \
+    src/smplayer/colorutils.h \
+    src/smplayer/config.h \
+    src/smplayer/constants.h \
+    src/smplayer/mplayercore.h \
+    src/smplayer/desktopinfo.h \
+    src/smplayer/discname.h \
+    src/smplayer/extensions.h \
+    src/smplayer/filehash.h \
+    src/smplayer/filesettings.h \
+    src/smplayer/filesettingsbase.h \
+    src/smplayer/filesettingshash.h \
+    src/smplayer/filters.h \
+    src/smplayer/global.h \
+    src/smplayer/helper.h \
+    src/smplayer/images.h \
+    src/smplayer/mediadata.h \
+    src/smplayer/mediasettings.h \
+    src/smplayer/mplayerprocess.h \
+    src/smplayer/mplayerversion.h \
+    src/smplayer/mplayerwindow.h \
+    src/smplayer/myaction.h \
+    src/smplayer/myactiongroup.h \
+    src/smplayer/myprocess.h \
+    src/smplayer/paths.h \
+    src/smplayer/preferences.h \
+    src/smplayer/recents.h \
+    src/smplayer/subtracks.h \
+    src/smplayer/titletracks.h \
+    src/smplayer/tracks.h \
+    src/smplayer/translator.h \
+    src/smplayer/tvsettings.h \
+    src/smplayer/urlhistory.h \
 
 !AndroidBuild {
 HEADERS += \
@@ -530,6 +570,39 @@ SOURCES += \
     src/Waypoint.cc \
     src/ui/uas/UASQuickTabView.cpp \
     src/ui/qgcvideoview.cpp \
+    src/smplayer/assstyles.cpp \
+    src/smplayer/autohidewidget.cpp \
+    src/smplayer/chapters.cpp \
+    src/smplayer/colorutils.cpp \
+    src/smplayer/mplayercore.cpp \
+    src/smplayer/desktopinfo.cpp \
+    src/smplayer/discname.cpp \
+    src/smplayer/extensions.cpp \
+    src/smplayer/filehash.cpp \
+    src/smplayer/filesettings.cpp \
+    src/smplayer/filesettingsbase.cpp \
+    src/smplayer/filesettingshash.cpp \
+    src/smplayer/filters.cpp \
+    src/smplayer/global.cpp \
+    src/smplayer/helper.cpp \
+    src/smplayer/images.cpp \
+    src/smplayer/mediadata.cpp \
+    src/smplayer/mediasettings.cpp \
+    src/smplayer/mplayerprocess.cpp \
+    src/smplayer/mplayerversion.cpp \
+    src/smplayer/mplayerwindow.cpp \
+    src/smplayer/myaction.cpp \
+    src/smplayer/myactiongroup.cpp \
+    src/smplayer/myprocess.cpp \
+    src/smplayer/paths.cpp \
+    src/smplayer/preferences.cpp \
+    src/smplayer/recents.cpp \
+    src/smplayer/subtracks.cpp \
+    src/smplayer/titletracks.cpp \
+    src/smplayer/tracks.cpp \
+    src/smplayer/translator.cpp \
+    src/smplayer/tvsettings.cpp \
+    src/smplayer/urlhistory.cpp \
 
 !AndroidBuild {
 SOURCES += \
@@ -537,7 +610,7 @@ SOURCES += \
     src/ui/JoystickAxis.cc \
     src/ui/JoystickButton.cc \
     src/ui/JoystickWidget.cc \
-    src/ui/CameraView.cc 
+    src/ui/CameraView.cc
 }
 
 #
