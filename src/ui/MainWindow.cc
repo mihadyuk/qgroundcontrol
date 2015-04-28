@@ -188,7 +188,9 @@ MainWindow::MainWindow(QSplashScreen* splashScreen)
     // Qt 4 on Ubuntu does place the native menubar correctly so on Linux we revert back to in-window menu bar.
     // TODO: Check that this is still necessary on Qt5 on Ubuntu
 #ifdef Q_OS_LINUX
+#ifndef __android__
     menuBar()->setNativeMenuBar(false);
+#endif
 #endif
     
 #ifdef UNITTEST_BUILD
@@ -1091,8 +1093,7 @@ void MainWindow::_loadCurrentViewState(void)
         case VIEW_FLIGHT:
             _buildFlightView();
             centerView = _flightView;
-            //defaultWidgets = "COMMUNICATION_CONSOLE_DOCKWIDGET,UAS_INFO_INFOVIEW_DOCKWIDGET";
-            defaultWidgets.clear();
+            defaultWidgets = "COMMUNICATION_CONSOLE_DOCKWIDGET,UAS_INFO_INFOVIEW_DOCKWIDGET";
             break;
 
         case VIEW_PLAN:
@@ -1146,6 +1147,7 @@ void MainWindow::_loadCurrentViewState(void)
 
     // Restore the widgets for the new view
     QString widgetNames = settings.value(_getWindowStateKey() + "WIDGETS", defaultWidgets).toString();
+    qDebug() << widgetNames;
     if (!widgetNames.isEmpty()) {
         QStringList split = widgetNames.split(",");
         foreach (QString widgetName, split) {

@@ -38,7 +38,7 @@ message(BASEDIR $$BASEDIR DESTDIR $$DESTDIR TARGET $$TARGET)
 LIBS += -L$${LOCATION_PLUGIN_DESTDIR}
 LIBS += -l$${LOCATION_PLUGIN_NAME}
 
-LinuxBuild|MacBuild|AndoidBuild {
+LinuxBuild|MacBuild|AndroidBuild {
     PRE_TARGETDEPS += $${LOCATION_PLUGIN_DESTDIR}/lib$${LOCATION_PLUGIN_NAME}.a
 }
 
@@ -103,9 +103,11 @@ DebugBuild {
     CONFIG += console
 }
 
+!AndroidBuild {
 # qextserialport should not be used by general QGroundControl code. Use QSerialPort instead. This is only
 # here to support special case Firmware Upgrade code.
 include(libs/qextserialport/src/qextserialport.pri)
+}
 
 #
 # External library configuration
@@ -634,11 +636,15 @@ HEADERS+= \
     src/AutoPilotPlugins/PX4/SafetyComponent.h \
     src/AutoPilotPlugins/PX4/SensorsComponent.h \
     src/AutoPilotPlugins/PX4/SensorsComponentController.h \
-    src/VehicleSetup/FirmwareUpgradeController.h \
-    src/VehicleSetup/PX4Bootloader.h \
-    src/VehicleSetup/PX4FirmwareUpgradeThread.h \
     src/VehicleSetup/SetupView.h \
     src/VehicleSetup/VehicleComponent.h \
+
+!AndroidBuild {
+HEADERS += \
+    src/VehicleSetup/FirmwareUpgradeController.h \
+    src/VehicleSetup/PX4Bootloader.h \
+    src/VehicleSetup/PX4FirmwareUpgradeThread.h
+}
 
 SOURCES += \
     src/AutoPilotPlugins/AutoPilotPlugin.cc \
@@ -658,11 +664,15 @@ SOURCES += \
     src/AutoPilotPlugins/PX4/SafetyComponent.cc \
     src/AutoPilotPlugins/PX4/SensorsComponent.cc \
     src/AutoPilotPlugins/PX4/SensorsComponentController.cc \
-    src/VehicleSetup/FirmwareUpgradeController.cc \
-    src/VehicleSetup/PX4Bootloader.cc \
-    src/VehicleSetup/PX4FirmwareUpgradeThread.cc \
     src/VehicleSetup/SetupView.cc \
     src/VehicleSetup/VehicleComponent.cc \
+
+!AndroidBuild {
+SOURCES += \
+    src/VehicleSetup/FirmwareUpgradeController.cc \
+    src/VehicleSetup/PX4Bootloader.cc \
+    src/VehicleSetup/PX4FirmwareUpgradeThread.cc
+}
 
 # Fact System code
 
