@@ -34,6 +34,7 @@ This file is part of the QGROUNDCONTROL project
 #include "MainWindow.h"
 #include "UASMessageHandler.h"
 #include "UASMessageView.h"
+#include "QGCFlightDisplay.h"
 
 MainToolBar::MainToolBar(QWidget* parent)
     : QGCQmlWidgetHolder(parent)
@@ -154,6 +155,14 @@ void MainToolBar::onFlyView()
 {
     setCurrentView(MainWindow::VIEW_FLIGHT);
     MainWindow::instance()->loadFlightView();
+}
+
+void MainToolBar::onFlyViewMenu()
+{
+    QGCFlightDisplay* fdsp = MainWindow::instance()->getFlightDisplay();
+    if(fdsp) {
+        fdsp->showOptionsMenu();
+    }
 }
 
 void MainToolBar::onAnalyzeView()
@@ -305,18 +314,18 @@ void MainToolBar::_setActiveUAS(UASInterface* active)
         disconnect(_mav, &UASInterface::remoteControlRSSIChanged,                               this, &MainToolBar::_remoteControlRSSIChanged);
         disconnect(_mav, SIGNAL(statusChanged(UASInterface*,QString,QString)),                  this, SLOT(_updateState(UASInterface*,QString,QString)));
         disconnect(_mav, SIGNAL(armingChanged(bool)),                                           this, SLOT(_updateArmingState(bool)));
-        if (_mav->getWaypointManager())
-        {
+
+        if (_mav->getWaypointManager()) {
             disconnect(_mav->getWaypointManager(), &UASWaypointManager::currentWaypointChanged,  this, &MainToolBar::_updateCurrentWaypoint);
             disconnect(_mav->getWaypointManager(), &UASWaypointManager::waypointDistanceChanged, this, &MainToolBar::_updateWaypointDistance);
         }
+        
         UAS* pUas = dynamic_cast<UAS*>(_mav);
         if(pUas) {
             disconnect(pUas, &UAS::satelliteCountChanged, this, &MainToolBar::_setSatelliteCount);
         }
-        QGCUASParamManagerInterface* paramMgr = _mav->getParamManager();
-        Q_ASSERT(paramMgr);
-        disconnect(paramMgr, SIGNAL(parameterListProgress(float)),              this, SLOT(_setProgressBarValue(float)));
+        
+        disconnect(AutoPilotPluginManager::instance()->getInstanceForAutoPilotPlugin(_mav), &AutoPilotPlugin::parameterListProgress, this, &MainToolBar::_setProgressBarValue);
     }
     // Connect new system
     _mav = active;
@@ -334,19 +343,20 @@ void MainToolBar::_setActiveUAS(UASInterface* active)
         connect(_mav, &UASInterface::remoteControlRSSIChanged,                              this, &MainToolBar::_remoteControlRSSIChanged);
         connect(_mav, SIGNAL(statusChanged(UASInterface*,QString,QString)),                 this, SLOT(_updateState(UASInterface*, QString,QString)));
         connect(_mav, SIGNAL(armingChanged(bool)),                                          this, SLOT(_updateArmingState(bool)));
-        if (_mav->getWaypointManager())
-        {
+        
+        if (_mav->getWaypointManager()) {
             connect(_mav->getWaypointManager(), &UASWaypointManager::currentWaypointChanged,  this, &MainToolBar::_updateCurrentWaypoint);
             connect(_mav->getWaypointManager(), &UASWaypointManager::waypointDistanceChanged, this, &MainToolBar::_updateWaypointDistance);
         }
+        
         UAS* pUas = dynamic_cast<UAS*>(_mav);
         if(pUas) {
             _setSatelliteCount(pUas->getSatelliteCount(), QString(""));
             connect(pUas, &UAS::satelliteCountChanged, this, &MainToolBar::_setSatelliteCount);
         }
-        QGCUASParamManagerInterface* paramMgr = _mav->getParamManager();
-        Q_ASSERT(paramMgr);
-        connect(paramMgr, SIGNAL(parameterListProgress(float)),              this, SLOT(_setProgressBarValue(float)));
+        
+        connect(AutoPilotPluginManager::instance()->getInstanceForAutoPilotPlugin(_mav), &AutoPilotPlugin::parameterListProgress, this, &MainToolBar::_setProgressBarValue);
+        
         // Reset connection lost (if any)
         _currentHeartbeatTimeout = 0;
         emit heartbeatTimeoutChanged(_currentHeartbeatTimeout);
