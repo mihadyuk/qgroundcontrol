@@ -37,6 +37,7 @@ message(BASEDIR $$BASEDIR DESTDIR $$DESTDIR TARGET $$TARGET)
 
 LIBS += -L$${LOCATION_PLUGIN_DESTDIR}
 LIBS += -l$${LOCATION_PLUGIN_NAME}
+LIBS += -lzmq
 
 LinuxBuild|MacBuild|AndoidBuild {
     PRE_TARGETDEPS += $${LOCATION_PLUGIN_DESTDIR}/lib$${LOCATION_PLUGIN_NAME}.a
@@ -169,7 +170,8 @@ INCLUDEPATH += \
     src/ViewWidgets \
     src/AutoPilotPlugins \
     src/QmlControls \
-    src/smplayer
+    src/smplayer \
+    src/vmplayer
 
 
 FORMS += \
@@ -240,6 +242,7 @@ FORMS += \
     src/ui/uas/UASQuickTabView.ui \
     src/ui/QGCUDPLinkConfiguration.ui \
     src/ui/qgcvideoview.ui \
+    src/ui/QGCMultiVideoView.ui
 
 !AndroidBuild {
 FORMS += \
@@ -427,6 +430,8 @@ HEADERS += \
     src/smplayer/translator.h \
     src/smplayer/tvsettings.h \
     src/smplayer/urlhistory.h \
+    src/ui/QGCMultiVideoView.h \
+    src/vmplayer/QGCVMPlayerManager.h
 
 !AndroidBuild {
 HEADERS += \
@@ -603,6 +608,8 @@ SOURCES += \
     src/smplayer/translator.cpp \
     src/smplayer/tvsettings.cpp \
     src/smplayer/urlhistory.cpp \
+    src/ui/QGCMultiVideoView.cpp \
+    src/vmplayer/QGCVMPlayerManager.cpp
 
 !AndroidBuild {
 SOURCES += \

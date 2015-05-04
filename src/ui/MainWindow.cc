@@ -72,7 +72,8 @@ This file is part of the QGROUNDCONTROL project
 #include "QGCMessageBox.h"
 #include "QGCDockWidget.h"
 
-#include "qgcvideoview.h"
+//#include "qgcvideoview.h"
+
 
 
 #ifdef UNITTEST_BUILD
@@ -214,7 +215,31 @@ MainWindow::MainWindow(QSplashScreen* splashScreen)
     widget->setTitleBarWidget(new QWidget(this)); // Disables the title bar
     addDockWidget(Qt::TopDockWidgetArea, widget);
 
-    mPlayerWindow = new MplayerWindow(this);
+//    mPlayerWindow = new MplayerWindow(this);
+//    mPlayerWindow->setVisible(false);
+
+    headingVideoWidget = new QWidget(this);
+    headingVideoWidget->setMinimumWidth(400);
+    headingVideoWidget->setMaximumHeight(300);
+    headingVideoWidget->setVisible(false);
+    headingVideoWidget->setObjectName("HEADING_VIDEO_WIDGET");
+
+    qDebug()<<"!!!!!!!!!!!!!!"<<headingVideoWidget->objectName();
+
+    firstMultiVideoWidget = new QWidget(this);
+    firstMultiVideoWidget->setVisible(false);
+
+    secondMultiVideoWidget = new QWidget(this);
+    secondMultiVideoWidget->setVisible(false);
+
+
+    vmPlayerManager = new QGCVMPlayerManager(headingVideoWidget->winId(),
+                                             firstMultiVideoWidget->winId(),
+                                             secondMultiVideoWidget->winId(), this);
+    multiVideoView = new QGCMultiVideoView(firstMultiVideoWidget, secondMultiVideoWidget, this);
+
+    connect(multiVideoView, SIGNAL(sendCommand(bool,int)), vmPlayerManager, SLOT(sendCmd(bool,int)));
+    multiVideoView->setVisible(false);
 
     // Setup UI state machines
     _centerStackActionGroup->setExclusive(true);
@@ -438,6 +463,11 @@ void MainWindow::_createDockWidget(const QString& title, const QString& name, Qt
     _mapName2DockWidget[name] = dockWidget;
     _mapDockWidget2Action[dockWidget] = action;
     addDockWidget(area, dockWidget);
+//    if(title == "Video View"){
+//        connect(dockWidget, )
+//    }
+//    qDebug()<<"TITLE::"<<title;
+//    qDebug()<<"NAME::"<<name;
 }
 
 void MainWindow::_buildCommonWidgets(void)
@@ -518,7 +548,10 @@ void MainWindow::_buildFlightView(void)
 void MainWindow::_buildVideoView(void)
 {
     if (!_videoView) {
-        _videoView = new QGCVideoView(mPlayerWindow, this);
+        _videoView = multiVideoView;//new QGCMultiVideoView(this);
+        multiVideoView->setVisible(true);
+        firstMultiVideoWidget->setVisible(true);
+        secondMultiVideoWidget->setVisible(true);
         _videoView->setVisible(false);
     }
 }
@@ -586,6 +619,10 @@ void MainWindow::_showDockWidget(const QString& name, bool show)
 
     Q_ASSERT(_mapDockWidget2Action.contains(dockWidget));
     _mapDockWidget2Action[dockWidget]->setChecked(show);
+    qDebug()<<"NAME!!!!!!!!!!!!!!!!"<<name;
+    if(name == "UAS_VIDEO_VIDEOVIEW_DOCKWIDGET"){
+        vmPlayerManager->sendCmd(show, 3);
+    }
 }
 
 /// Creates the specified inner dock widget and adds to the QDockWidget
@@ -640,7 +677,9 @@ void MainWindow::_createInnerDockWidget(const QString& widgetName)
         widget = pInfoView;
     } else if (widgetName == _uasVideoViewDockWidgetName) {
         //widget = new QGCVideoView(this);
-        widget = mPlayerWindow;
+        widget = headingVideoWidget;
+        headingVideoWidget->setVisible(true);
+        //vmPlayerManager->sendCmd(true, 3);
     } else if (widgetName == _debugConsoleDockWidgetName) {
         widget = new DebugConsole(this);
     } else {

@@ -41,13 +41,13 @@ QGCDockWidget::QGCDockWidget(const QString& title, QAction* action, QWidget *par
 // Instead of destroying the widget just hide it
 void QGCDockWidget::closeEvent(QCloseEvent* event)
 {
-    qDebug()<<this->widget()->metaObject()->className();
-    if(QString(this->widget()->metaObject()->className()) == "QGCVideoView")
-    {
-        this->widget()->close();
-    }
+//    qDebug()<<this->widget()->metaObject()->className();
+//    if(QString(this->widget()->metaObject()->className()) == "QGCVideoView")
+//    {
+//        this->widget()->close();
+//    }
     setVisible(false);
-    event->ignore();
+    //event->ignore();
     emit hided(this);
 
 	Q_ASSERT(_action);

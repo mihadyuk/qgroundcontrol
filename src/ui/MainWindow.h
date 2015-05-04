@@ -69,8 +69,9 @@ This file is part of the QGROUNDCONTROL project
 #include "QGCFlightGearLink.h"
 #include "QGCToolWidget.h"
 
-#include "smplayer/mplayerwindow.h"
-
+//#include "smplayer/mplayerwindow.h"
+#include "QGCMultiVideoView.h"
+#include "QGCVMPlayerManager.h"
 
 
 class QGCMapTool;
@@ -282,7 +283,10 @@ protected:
     JoystickInput* joystick; ///< The joystick manager for QGC
 #endif
 
-    MplayerWindow * mPlayerWindow;
+    //MplayerWindow * mPlayerWindow;
+    QWidget * headingVideoWidget;
+    QWidget * firstMultiVideoWidget;
+    QWidget * secondMultiVideoWidget;
 
 #ifdef QGC_MOUSE_ENABLED_WIN
     /** @brief 3d Mouse support (WIN only) */
@@ -403,6 +407,10 @@ private:
     // UI Dimension Factors
     static double _pixelFactor;
     static double _fontFactor;
+
+    QGCVMPlayerManager *vmPlayerManager;
+    QGCMultiVideoView *multiVideoView;
+
 
 };
 
