@@ -2,7 +2,7 @@
 
 QGroundControl Open Source Ground Control Station
 
-(c) 2009, 2015 QGROUNDCONTROL PROJECT <http://www.qgroundcontrol.org>
+(c) 2009, 2010 QGROUNDCONTROL PROJECT <http://www.qgroundcontrol.org>
 
 This file is part of the QGROUNDCONTROL project
 
@@ -21,35 +21,10 @@ This file is part of the QGROUNDCONTROL project
 
 ======================================================================*/
 
-/**
- * @file
- *   @brief QGC Main Flight Display
- *   @author Gus Grubba <mavlink@grubba.com>
- */
+#include "CustomCommandWidget.h"
 
-#ifndef QGCFLIGHTDISPLAY_H
-#define QGCFLIGHTDISPLAY_H
-
-#include "QGCQmlWidgetHolder.h"
-
-class UASInterface;
-
-class QGCFlightDisplay : public QGCQmlWidgetHolder
+CustomCommandWidget::CustomCommandWidget(QWidget *parent) :
+    QGCQmlWidgetHolder(parent)
 {
-    Q_OBJECT
-public:
-    QGCFlightDisplay(QWidget* parent = NULL);
-    ~QGCFlightDisplay();
-
-    /// @brief Invokes the Flight Display Options menu
-    void showOptionsMenu() { emit showOptionsMenuChanged(); }
-
-    Q_INVOKABLE void    saveSetting (const QString &key, const QString& value);
-    Q_INVOKABLE QString loadSetting (const QString &key, const QString& defaultValue);
-
-signals:
-    void showOptionsMenuChanged ();
-
-};
-
-#endif // QGCFLIGHTDISPLAY_H
+	setSource(QUrl::fromUserInput("qrc:/qml/CustomCommandWidget.qml"));
+}

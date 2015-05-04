@@ -21,35 +21,20 @@ This file is part of the QGROUNDCONTROL project
 
 ======================================================================*/
 
-/**
- * @file
- *   @brief QGC Main Flight Display
- *   @author Gus Grubba <mavlink@grubba.com>
- */
+/// @file
+///     @author Don Gagne <don@thegagnes.com>
 
-#ifndef QGCFLIGHTDISPLAY_H
-#define QGCFLIGHTDISPLAY_H
+#ifndef CustomCommandWidget_H
+#define CustomCommandWidget_H
 
 #include "QGCQmlWidgetHolder.h"
 
-class UASInterface;
-
-class QGCFlightDisplay : public QGCQmlWidgetHolder
+class CustomCommandWidget : public QGCQmlWidgetHolder
 {
     Q_OBJECT
+	
 public:
-    QGCFlightDisplay(QWidget* parent = NULL);
-    ~QGCFlightDisplay();
-
-    /// @brief Invokes the Flight Display Options menu
-    void showOptionsMenu() { emit showOptionsMenuChanged(); }
-
-    Q_INVOKABLE void    saveSetting (const QString &key, const QString& value);
-    Q_INVOKABLE QString loadSetting (const QString &key, const QString& defaultValue);
-
-signals:
-    void showOptionsMenuChanged ();
-
+    CustomCommandWidget(QWidget *parent = 0);
 };
 
-#endif // QGCFLIGHTDISPLAY_H
+#endif

@@ -40,7 +40,6 @@ This file is part of the QGROUNDCONTROL project
 #include <QDesktopWidget>
 
 #include "QGC.h"
-#include "MAVLinkSimulationLink.h"
 #include "SerialLink.h"
 #include "MAVLinkProtocol.h"
 #include "QGCWaypointListMulti.h"
@@ -70,6 +69,7 @@ This file is part of the QGROUNDCONTROL project
 #include "QGCFileDialog.h"
 #include "QGCMessageBox.h"
 #include "QGCDockWidget.h"
+#include "CustomCommandWidget.h"
 
 #ifdef UNITTEST_BUILD
 #include "QmlControls/QmlTestWidget.h"
@@ -111,6 +111,7 @@ const char* MainWindow::_uasListDockWidgetName = "UNMANNED_SYSTEM_LIST_DOCKWIDGE
 const char* MainWindow::_waypointsDockWidgetName = "WAYPOINT_LIST_DOCKWIDGET";
 const char* MainWindow::_mavlinkDockWidgetName = "MAVLINK_INSPECTOR_DOCKWIDGET";
 const char* MainWindow::_parametersDockWidgetName = "PARAMETER_INTERFACE_DOCKWIDGET";
+const char* MainWindow::_customCommandWidgetName = "CUSTOM_COMMAND_DOCKWIDGET";
 const char* MainWindow::_filesDockWidgetName = "FILE_VIEW_DOCKWIDGET";
 const char* MainWindow::_uasStatusDetailsDockWidgetName = "UAS_STATUS_DETAILS_DOCKWIDGET";
 const char* MainWindow::_mapViewDockWidgetName = "MAP_VIEW_DOCKWIDGET";
@@ -151,7 +152,6 @@ MainWindow::MainWindow(QSplashScreen* splashScreen)
     , _lowPowerMode(false)
     , _showStatusBar(false)
     , _centerStackActionGroup(new QActionGroup(this))
-    , _simulationLink(NULL)
     , _centralLayout(NULL)
     , _currentViewWidget(NULL)
     , _splashScreen(splashScreen)
@@ -351,11 +351,6 @@ MainWindow::MainWindow(QSplashScreen* splashScreen)
 
 MainWindow::~MainWindow()
 {
-    if (_simulationLink)
-    {
-        delete _simulationLink;
-        _simulationLink = NULL;
-    }
 #ifndef __android__
     if (joystick)
     {
@@ -445,6 +440,7 @@ void MainWindow::_buildCommonWidgets(void)
         { _waypointsDockWidgetName,         "Mission Plan",             Qt::BottomDockWidgetArea },
         { _mavlinkDockWidgetName,           "MAVLink Inspector",        Qt::RightDockWidgetArea },
         { _parametersDockWidgetName,        "Parameter Editor",			Qt::RightDockWidgetArea },
+        { _customCommandWidgetName,         "Custom Command",			Qt::RightDockWidgetArea },
         { _filesDockWidgetName,             "Onboard Files",            Qt::RightDockWidgetArea },
         { _uasStatusDetailsDockWidgetName,  "Status Details",           Qt::RightDockWidgetArea },
         { _mapViewDockWidgetName,           "Map view",                 Qt::RightDockWidgetArea },
@@ -561,6 +557,8 @@ void MainWindow::_createInnerDockWidget(const QString& widgetName)
         widget = new QGCMAVLinkInspector(MAVLinkProtocol::instance(),this);
     } else if (widgetName == _parametersDockWidgetName) {
         widget = new ParameterEditorWidget(this);
+    } else if (widgetName == _customCommandWidgetName) {
+        widget = new CustomCommandWidget(this);
     } else if (widgetName == _filesDockWidgetName) {
         widget = new QGCUASFileViewMulti(this);
     } else if (widgetName == _uasStatusDetailsDockWidgetName) {
@@ -862,8 +860,6 @@ void MainWindow::connectCommonActions()
     // Application Settings
     connect(_ui.actionSettings, SIGNAL(triggered()), this, SLOT(showSettings()));
 
-    connect(_ui.actionSimulate, SIGNAL(triggered(bool)), this, SLOT(simulateLink(bool)));
-
     // Update Tool Bar
     _mainToolBar->setCurrentView(_currentView);
 }
@@ -907,19 +903,6 @@ void MainWindow::showSettings()
     SettingsDialog settings(this);
 #endif
     settings.exec();
-}
-
-void MainWindow::simulateLink(bool simulate) {
-    if (simulate) {
-        if (!_simulationLink) {
-            _simulationLink = new MAVLinkSimulationLink(":/demo-log.txt");
-            Q_CHECK_PTR(_simulationLink);
-        }
-        LinkManager::instance()->connectLink(_simulationLink);
-    } else {
-        Q_ASSERT(_simulationLink);
-        LinkManager::instance()->disconnectLink(_simulationLink);
-    }
 }
 
 void MainWindow::commsWidgetDestroyed(QObject *obj)

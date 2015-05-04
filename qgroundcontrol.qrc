@@ -34,6 +34,7 @@
         <file alias="QGroundControl/Controls/ParameterEditor.qml">src/QmlControls/ParameterEditor.qml</file>
 
         <file alias="ParameterEditorWidget.qml">src/ViewWidgets/ParameterEditorWidget.qml</file>
+        <file alias="CustomCommandWidget.qml">src/ViewWidgets/CustomCommandWidget.qml</file>
 
         <file alias="SetupViewButtonsConnected.qml">src/VehicleSetup/SetupViewButtonsConnected.qml</file>
         <file alias="SetupViewButtonsDisconnected.qml">src/VehicleSetup/SetupViewButtonsDisconnected.qml</file>
@@ -117,6 +118,8 @@
         <file alias="QGroundControl/FlightControls/QGCWaypointEditor.qml">src/ui/qmlcommon/QGCWaypointEditor.qml</file>
         <file alias="QGroundControl/FlightControls/QGCMapToolButton.qml">src/ui/qmlcommon/QGCMapToolButton.qml</file>
         <file alias="QGroundControl/FlightControls/QGCArtificialHorizon.qml">src/ui/qmlcommon/QGCArtificialHorizon.qml</file>
+        <!-- QML Map Resources -->
+        <file alias="QGroundControl/FlightControls/QGCWaypoint.qml">src/ui/qmlcommon/QGCWaypoint.qml</file>
         <!-- QML Main UI Resources -->
         <file alias="compass.svg">src/ui/qmlcommon/compass.svg</file>
         <file alias="compassNeedle.svg">src/ui/qmlcommon/compassNeedle.svg</file>

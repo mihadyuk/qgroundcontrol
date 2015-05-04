@@ -240,10 +240,8 @@ HEADERS += \
     src/comm/LinkInterface.h \
     src/comm/LinkManager.h \
     src/comm/MAVLinkProtocol.h \
-    src/comm/MAVLinkSimulationLink.h \
-    src/comm/MAVLinkSimulationMAV.h \
-    src/comm/MAVLinkSimulationWaypointPlanner.h \
-    src/comm/MAVLinkSwarmSimulationLink.h \
+    src/comm/MockLink.h \
+    src/comm/MockLinkMissionItemHandler.h \
     src/comm/ProtocolInterface.h \
     src/comm/QGCFlightGearLink.h \
     src/comm/QGCHilLink.h \
@@ -359,15 +357,12 @@ HEADERS += \
     src/ui/WaypointList.h \
     src/ui/WaypointViewOnlyView.h \
     src/ViewWidgets/ParameterEditorWidget.h \
+    src/ViewWidgets/CustomCommandWidget.h \
+    src/ViewWidgets/CustomCommandWidgetController.h \
     src/ViewWidgets/ViewWidgetController.h \
     src/Waypoint.h \
     src/ui/uas/UASQuickTabView.h \
-
-DebugBuild {
-HEADERS += \
-    src/comm/MockLink.h \
-    src/comm/MockLinkMissionItemHandler.h
-}
+    src/QmlControls/QGCMavManager.h
 
 !AndroidBuild {
 HEADERS += \
@@ -384,10 +379,8 @@ SOURCES += \
     src/comm/LinkConfiguration.cc \
     src/comm/LinkManager.cc \
     src/comm/MAVLinkProtocol.cc \
-    src/comm/MAVLinkSimulationLink.cc \
-    src/comm/MAVLinkSimulationMAV.cc \
-    src/comm/MAVLinkSimulationWaypointPlanner.cc \
-    src/comm/MAVLinkSwarmSimulationLink.cc \
+    src/comm/MockLink.cc \
+    src/comm/MockLinkMissionItemHandler.cc \
     src/comm/QGCFlightGearLink.cc \
     src/comm/QGCJSBSimLink.cc \
     src/comm/QGCXPlaneLink.cc \
@@ -495,15 +488,12 @@ SOURCES += \
     src/ui/WaypointList.cc \
     src/ui/WaypointViewOnlyView.cc \
     src/ViewWidgets/ParameterEditorWidget.cc \
+    src/ViewWidgets/CustomCommandWidget.cc \
+    src/ViewWidgets/CustomCommandWidgetController.cc \
     src/ViewWidgets/ViewWidgetController.cc \
     src/Waypoint.cc \
     src/ui/uas/UASQuickTabView.cpp \
-
-DebugBuild {
-SOURCES += \
-    src/comm/MockLink.cc \
-    src/comm/MockLinkMissionItemHandler.cc
-}
+    src/QmlControls/QGCMavManager.cc
 
 !AndroidBuild {
 SOURCES += \

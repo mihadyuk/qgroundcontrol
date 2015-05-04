@@ -49,7 +49,6 @@
 #include "QGCMessageBox.h"
 #include "MainWindow.h"
 #include "UDPLink.h"
-#include "MAVLinkSimulationLink.h"
 #include "SerialLink.h"
 #include "QGCSingleton.h"
 #include "LinkManager.h"
@@ -59,10 +58,13 @@
 #include "QGCTemporaryFile.h"
 #include "QGCFileDialog.h"
 #include "QGCPalette.h"
-#include "ScreenTools.h"
 #include "QGCLoggingCategory.h"
 #include "ViewWidgetController.h"
 #include "ParameterEditorController.h"
+#include "CustomCommandWidgetController.h"
+
+#include "ScreenTools.h"
+#include "QGCMavManager.h"
 
 #ifdef QGC_RTLAB_ENABLED
 #include "OpalLink.h"
@@ -83,6 +85,30 @@ const char* QGCApplication::_savedFileParameterDirectoryName = "SavedParameters"
 
 const char* QGCApplication::_darkStyleFile = ":/res/styles/style-dark.css";
 const char* QGCApplication::_lightStyleFile = ":/res/styles/style-light.css";
+
+/**
+ * @brief ScreenTools creation callback
+ *
+ * This is called by the QtQuick engine for creating the singleton
+ **/
+
+static QObject* screenToolsSingletonFactory(QQmlEngine*, QJSEngine*)
+{
+    ScreenTools* screenTools = new ScreenTools;
+    return screenTools;
+}
+
+/**
+ * @brief MavManager creation callback
+ *
+ * This is called by the QtQuick engine for creating the singleton
+**/
+
+static QObject* mavManagerSingletonFactory(QQmlEngine*, QJSEngine*)
+{
+    MavManager* mavManager = new MavManager;
+    return mavManager;
+}
 
 /**
  * @brief Constructor for the main application.
@@ -293,9 +319,14 @@ void QGCApplication::_initCommon(void)
     
     // Register our Qml objects
     qmlRegisterType<QGCPalette>("QGroundControl.Palette", 1, 0, "QGCPalette");
-    qmlRegisterType<ScreenTools>("QGroundControl.ScreenTools", 1, 0, "ScreenTools");
 	qmlRegisterType<ViewWidgetController>("QGroundControl.Controllers", 1, 0, "ViewWidgetController");
 	qmlRegisterType<ParameterEditorController>("QGroundControl.Controllers", 1, 0, "ParameterEditorController");
+    qmlRegisterType<CustomCommandWidgetController>("QGroundControl.Controllers", 1, 0, "CustomCommandWidgetController");
+    //-- Create QML Singleton Interfaces
+    qmlRegisterSingletonType<ScreenTools>("QGroundControl.ScreenTools", 1, 0, "ScreenTools", screenToolsSingletonFactory);
+    qmlRegisterSingletonType<MavManager>("QGroundControl.MavManager", 1, 0, "MavManager", mavManagerSingletonFactory);
+    //-- Register Waypoint Interface
+    qmlRegisterInterface<Waypoint>("Waypoint");
 }
 
 bool QGCApplication::_initForNormalAppBoot(void)
@@ -492,6 +523,7 @@ void QGCApplication::_createSingletons(void)
     MAVLinkProtocol* mavlink = MAVLinkProtocol::_createSingleton();
     Q_UNUSED(mavlink);
     Q_ASSERT(mavlink);
+
 }
 
 void QGCApplication::_destroySingletons(void)
