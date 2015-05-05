@@ -231,6 +231,7 @@ FORMS += \
     src/ui/uas/UASMessageView.ui \
     src/ui/uas/UASQuickView.ui \
     src/ui/uas/UASQuickViewItemSelect.ui \
+    src/ui/uas/UASQuickTabView.ui \
     src/ui/UASControl.ui \
     src/ui/UASInfo.ui \
     src/ui/UASList.ui \
