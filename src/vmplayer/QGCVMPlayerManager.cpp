@@ -78,7 +78,7 @@ void QGCVMPlayerManager::update()
         out << data.data();
 }
 
-void QGCVMPlayerManager::sendCmd(bool start, int ch
+void QGCVMPlayerManager::sendCmd(bool start, int ch)
 {
     QString str = QString("{ \"cmd\": \"%1\", \"channel\": %2 }")
             .arg(start ? "start" : "stop")

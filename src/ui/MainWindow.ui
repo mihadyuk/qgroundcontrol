@@ -96,16 +96,12 @@
      <property name="title">
       <string>Tool Widgets</string>
      </property>
-     <addaction name="actionNewCustomWidget"/>
-     <addaction name="actionLoadCustomWidgetFile"/>
      <addaction name="separator"/>
     </widget>
     <addaction name="actionExperimentalPlanView"/>
-    <addaction name="actionLocal3DView"/>
     <addaction name="actionTerminalView"/>
     <addaction name="actionSimulationView"/>
     <addaction name="separator"/>
-    <addaction name="actionSimulate"/>
     <addaction name="separator"/>
     <addaction name="menuTools"/>
    </widget>
@@ -174,17 +170,6 @@
     <string>Manage Communication Links</string>
    </property>
   </action>
-  <action name="actionSimulate">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>Simulate</string>
-   </property>
-   <property name="toolTip">
-    <string>Simulate one vehicle to test and evaluate this application</string>
-   </property>
-  </action>
   <action name="actionOnline_Documentation">
    <property name="text">
     <string>Online Documentation</string>
@@ -222,11 +207,6 @@
    </property>
    <property name="text">
     <string>Fly</string>
-   </property>
-  </action>
-  <action name="actionNewCustomWidget">
-   <property name="text">
-    <string>New Custom Widget</string>
    </property>
   </action>
   <action name="actionMuteAudioOutput">
@@ -288,11 +268,6 @@
     <string>Esc</string>
    </property>
   </action>
-  <action name="actionLoadCustomWidgetFile">
-   <property name="text">
-    <string>Load Custom Widget File</string>
-   </property>
-  </action>
   <action name="actionSetup">
    <property name="checkable">
     <bool>true</bool>
@@ -329,14 +304,6 @@
    </property>
    <property name="text">
     <string>Terminal</string>
-   </property>
-  </action>
-  <action name="actionLocal3DView">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>Local 3D View</string>
    </property>
   </action>
   <action name="actionStatusBar">
