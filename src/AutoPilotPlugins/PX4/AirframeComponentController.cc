@@ -38,14 +38,10 @@
 bool AirframeComponentController::_typesRegistered = false;
 
 AirframeComponentController::AirframeComponentController(void) :
-    _uas(NULL),
     _currentVehicleIndex(0),
     _autostartId(0),
     _showCustomConfigPanel(false)
 {
-    _uas = UASManager::instance()->getActiveUAS();
-    Q_ASSERT(_uas);
-
     if (!_typesRegistered) {
         _typesRegistered = true;
         qmlRegisterUncreatableType<AirframeType>("QGroundControl.Controllers", 1, 0, "AiframeType", "Can only reference AirframeType");
@@ -101,24 +97,26 @@ void AirframeComponentController::changeAutostart(void)
 		return;
 	}
 	
+    qgcApp()->setOverrideCursor(Qt::WaitCursor);
+    
     _autopilot->getParameterFact("SYS_AUTOSTART")->setValue(_autostartId);
     _autopilot->getParameterFact("SYS_AUTOCONFIG")->setValue(1);
     
-    qgcApp()->setOverrideCursor(Qt::WaitCursor);
     
     // Wait for the parameters to flow through system
     qgcApp()->processEvents(QEventLoop::ExcludeUserInputEvents);
     QGC::SLEEP::sleep(1);
     qgcApp()->processEvents(QEventLoop::ExcludeUserInputEvents);
     
-    // Reboot board and reconnect
+    // Reboot board
     
     _uas->executeCommand(MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN, 1, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0);
     qgcApp()->processEvents(QEventLoop::ExcludeUserInputEvents);
     QGC::SLEEP::sleep(1);
     qgcApp()->processEvents(QEventLoop::ExcludeUserInputEvents);
+    LinkManager::instance()->disconnectAll();
     
-    qgcApp()->reconnectAfterWait(5);
+    qgcApp()->restoreOverrideCursor();
 }
 
 AirframeType::AirframeType(const QString& name, const QString& imageResource, QObject* parent) :

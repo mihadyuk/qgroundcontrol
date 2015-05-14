@@ -39,19 +39,15 @@ QGCView {
     Component {
         id: view
 
-        FactPanel {
+        QGCViewPanel {
             id:             panel
-            anchors.fill:   parent
-
-            signal showDialog(Component component, string title, int charWidth, int buttons)
-            signal hideDialog
 
             Connections {
                 target: rootQGCView
 
                 onCompleted: {
                     if (controller.showCustomConfigPanel) {
-                        panel.showDialog(customConfigDialog, "Custom Airframe Config", 50, StandardButton.Reset)
+                        panel.showDialog(customConfigDialogComponent, "Custom Airframe Config", 50, StandardButton.Reset)
                     }
                 }
             }
@@ -62,23 +58,41 @@ QGCView {
             }
 
             Component {
-                id: customConfigDialog
+                id: customConfigDialogComponent
 
-                QGCLabel {
-                    id:             customConfigPanel
-                    anchors.fill:   parent
-                    wrapMode:       Text.WordWrap
-                    text:           "Your vehicle is using a custom airframe configuration. " +
-                                    "This configuration can only be modified through the Parameter Editor.\n\n" +
-                                    "If you want to Reset your airframe configuration and select a standard configuration, click 'Reset' above."
+                QGCViewMessage {
+                    id:             customConfigDialog
 
-                    signal hideDialog
+                    message:        "Your vehicle is using a custom airframe configuration. " +
+                                        "This configuration can only be modified through the Parameter Editor.\n\n" +
+                                        "If you want to Reset your airframe configuration and select a standard configuration, click 'Reset' above."
 
                     Fact { id: sys_autostart; name: "SYS_AUTOSTART" }
 
                     function accept() {
                         sys_autostart.value = 0
-                        customConfigPanel.hideDialog()
+                        customConfigDialog.hideDialog()
+                    }
+                }
+            }
+
+            Component {
+                id: applyRestartDialogComponent
+
+                QGCViewDialog {
+                    id: applyRestartDialog
+
+                    function accept() {
+                        controller.changeAutostart()
+                        applyRestartDialog.hideDialog()
+                    }
+
+                    QGCLabel {
+                        anchors.fill:   parent
+                        wrapMode:       Text.WordWrap
+                        text:           "Clicking Apply will save the changes you have made to your aiframe configuration. " +
+                                        "Your vehicle will also be rebooted in order to complete the process. " +
+                                        "After your vehicle reboots, you can reconnect it to QGroundControl."
                     }
                 }
             }
@@ -107,7 +121,7 @@ QGCView {
                 QGCLabel {
                     anchors.top:    headingSpacer.bottom
                     width:          parent.width - applyButton.width - 5
-                    text:           "Select you airframe type and specific vehicle bellow. Click 'Apply and Restart' when ready and your vehicle will be disconnected, rebooted to the new settings and re-connected."
+                    text:           "Select your airframe type and specific vehicle bellow. Click 'Apply and Restart' when ready and your vehicle will be disconnected, rebooted to the new settings and re-connected."
                     wrapMode:       Text.WordWrap
                 }
 
@@ -117,7 +131,7 @@ QGCView {
                     anchors.right:  parent.right
                     text:           "Apply and Restart"
 
-                    onClicked: { controller.changeAutostart() }
+                    onClicked:      panel.showDialog(applyRestartDialogComponent, "Apply and Restart", 50, StandardButton.Apply | StandardButton.Cancel)
                 }
 
                 Item {

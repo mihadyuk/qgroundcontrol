@@ -34,7 +34,7 @@ import QGroundControl.ScreenTools 1.0
 import QGroundControl.FactSystem 1.0
 import QGroundControl.FactControls 1.0
 
-Item {
+FactPanel {
     id: __rootItem
 
     property Component viewComponent
@@ -44,11 +44,9 @@ Item {
     /// to go.
     signal completed
 
-    function __showDialog(component, title, charWidth, buttons) {
+    function __setupDialogButtons(buttons) {
         __acceptButton.visible = false
         __rejectButton.visible = false
-        __dialogCharWidth = charWidth
-        __dialogTitle = title
 
         // Accept role buttons
         if (buttons & StandardButton.Ok) {
@@ -106,13 +104,32 @@ Item {
             __rejectButton.text = "Abort"
             __rejectButton.visible = true
         }
+    }
+
+    function showDialog(component, title, charWidth, buttons) {
+        __dialogCharWidth = charWidth
+        __dialogTitle = title
+
+        __setupDialogButtons(buttons)
 
         __dialogComponent = component
         __viewPanel.enabled = false
         __dialogOverlay.visible = true
     }
 
-    function __hideDialog() {
+    function showMessage(title, message, buttons) {
+        __dialogCharWidth = 50
+        __dialogTitle = title
+        __messageDialogText = message
+
+        __setupDialogButtons(buttons)
+
+        __dialogComponent = __messageDialog
+        __viewPanel.enabled = false
+        __dialogOverlay.visible = true
+    }
+
+    function hideDialog() {
         __dialogComponent = null
         __viewPanel.enabled = true
         __dialogOverlay.visible = false
@@ -130,6 +147,8 @@ Item {
     /// The title for the dialog panel
     property string __dialogTitle
 
+    property string __messageDialogText
+
     property Component __dialogComponent
 
     Component.onCompleted: completed()
@@ -137,14 +156,15 @@ Item {
     Connections {
         target: __viewPanel.item
 
-        onShowDialog: __showDialog(component, title, charWidth, buttons)
-        onHideDialog: __hideDialog()
+        onShowDialog:   __rootItem.showDialog(component, title, charWidth, buttons)
+        onShowMessage:  __rootItem.showMessage(title, message, buttons)
+        onHideDialog:   __rootItem.hideDialog()
     }
 
     Connections {
         target: __dialogComponentLoader.item
 
-        onHideDialog: __hideDialog()
+        onHideDialog: __rootItem.hideDialog()
     }
 
     Loader {
@@ -230,4 +250,12 @@ Item {
             }
         } // Rectangle - Dialog panel
     } // Item - Dialog overlay
+
+    Component {
+        id: __messageDialog
+
+        QGCViewMessage {
+            message: __messageDialogText
+        }
+    }
 }

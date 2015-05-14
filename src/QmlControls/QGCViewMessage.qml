@@ -30,21 +30,12 @@ import QtQuick.Controls 1.3
 import QGroundControl.Controls 1.0
 import QGroundControl.Palette 1.0
 
-import QGroundControl.FactSystem 1.0
-import QGroundControl.FactControls 1.0
+QGCViewDialog {
+    property string message
 
-FactPanel {
-    QGCPalette { id: __qgcPal; colorGroupEnabled: enabled }
-
-    signal hideDialog
-
-    function accept() {
-        hideDialog()
+    QGCLabel {
+        anchors.fill:   parent
+        wrapMode:       Text.WordWrap
+        text:           message
     }
-
-    function reject() {
-        hideDialog()
-    }
-
-    color: __qgcPal.windowShadeDark
 }
