@@ -43,7 +43,8 @@ QGCView {
     readonly property string compassHelp:   "For Compass calibration you will need to rotate your vehicle through a number of positions. For this calibration it is best " +
                                                 "to be connected to your vehicle via radio instead of USB, since the USB cable will likely get in the way."
     readonly property string gyroHelp:      "For Gyroscope calibration you will need to place your vehicle right side up on solid surface and leave it still."
-    readonly property string accelHelp:     "For Accelerometer calibration you will need to place your vehicle on all six sides and hold it still in each orientation for a few seconds."
+    readonly property string accelHelp:     "For Accelerometer calibration you will need to place your vehicle on all six sides on a level surface and hold it still in each orientation for a few seconds."
+    readonly property string levelHelp:     "To level the horizon you need to place the vehicle in its level flight position."
     readonly property string airspeedHelp:  "For Airspeed calibration you will need to keep your airspeed sensor out of any wind and then blow across the sensor."
 
     readonly property string statusTextAreaDefaultText: compassHelp + "\n\n" + gyroHelp + "\n\n" + accelHelp + "\n\n" + airspeedHelp + "\n\n"
@@ -128,6 +129,8 @@ QGCView {
                     controller.calibrateGyro()
                 } else if (preCalibrationDialogType == "accel") {
                     controller.calibrateAccel()
+                } else if (preCalibrationDialogType == "level") {
+                    controller.calibrateLevel()
                 } else if (preCalibrationDialogType == "compass") {
                     controller.calibrateCompass()
                 } else if (preCalibrationDialogType == "airspeed") {
@@ -183,7 +186,7 @@ QGCView {
                 Component {
                     id: compass0ComponentLabel
 
-                    QGCLabel { text: "Compass Orientation" }
+                    QGCLabel { text: "External Compass Orientation" }
                 }
                 Component {
                     id: compass0ComponentCombo
@@ -331,6 +334,21 @@ QGCView {
                     }
 
                     IndicatorButton {
+                        property Fact fact: Fact { name: "SENS_BOARD_X_OFF" }
+
+                        id:             levelButton
+                        width:          parent.buttonWidth
+                        text:           "Level Horizon"
+                        indicatorGreen: fact.value != 0
+
+                        onClicked: {
+                            preCalibrationDialogType = "level"
+                            preCalibrationDialogHelp = levelHelp
+                            showDialog(preCalibrationDialogComponent, "Level Horizon", 50, StandardButton.Cancel | StandardButton.Ok)
+                        }
+                    }
+
+                    IndicatorButton {
                         property Fact fact: Fact { name: "SENS_DPRES_OFF" }
 
                         id:             airspeedButton
@@ -452,7 +470,7 @@ QGCView {
                     Column {
                         x: parent.width - rotationColumnWidth
 
-                        QGCLabel { text: "Autpilot Orientation" }
+                        QGCLabel { text: "Autopilot Orientation" }
 
                         FactComboBox {
                             id:     boardRotationCombo
@@ -465,7 +483,7 @@ QGCView {
                         Component {
                             id: compass0ComponentLabel2
 
-                            QGCLabel { text: "Compass Orientation" }
+                            QGCLabel { text: "External Compass Orientation" }
                         }
                         Component {
                             id: compass0ComponentCombo2
