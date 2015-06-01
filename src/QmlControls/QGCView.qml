@@ -37,9 +37,9 @@ import QGroundControl.FactControls 1.0
 FactPanel {
     id: __rootItem
 
-    property bool __completedSignalled: false
+    property bool completedSignalled: false
 
-    property Component viewComponent
+    property var viewPanel
 
     /// This is signalled when the top level Item reaches Component.onCompleted. This allows
     /// the view subcomponent to connect to this signal and do work once the full ui is ready
@@ -114,7 +114,17 @@ FactPanel {
         }
     }
 
+    function __checkForEarlyDialog() {
+        if (!completedSignalled) {
+            console.warn("showDialog|Message called before QGCView.completed signalled")
+        }
+    }
+
     function showDialog(component, title, charWidth, buttons) {
+        if (__checkForEarlyDialog()) {
+            return
+        }
+
         __stopAllAnimations()
 
         __dialogCharWidth = charWidth
@@ -123,13 +133,17 @@ FactPanel {
         __setupDialogButtons(buttons)
 
         __dialogComponent = component
-        __viewPanel.enabled = false
+        viewPanel.enabled = false
         __dialogOverlay.visible = true
 
         __animateShowDialog.start()
     }
 
     function showMessage(title, message, buttons) {
+        if (__checkForEarlyDialog()) {
+            return
+        }
+
         __stopAllAnimations()
 
         __dialogCharWidth = 50
@@ -139,14 +153,14 @@ FactPanel {
         __setupDialogButtons(buttons)
 
         __dialogComponent = __messageDialog
-        __viewPanel.enabled = false
+        viewPanel.enabled = false
         __dialogOverlay.visible = true
 
         __animateShowDialog.start()
     }
 
     function hideDialog() {
-        __viewPanel.enabled = true
+        viewPanel.enabled = true
         __animateHideDialog.start()
     }
 
@@ -170,8 +184,8 @@ FactPanel {
         // When we use this control inside a QGCQmlWidgetHolder Component.onCompleted is signalled
         // before the width and height are adjusted. So we need to wait for width and heigth to be
         // set before we signal our own completed signal.
-        if (!__completedSignalled && width != 0 && height != 0) {
-            __completedSignalled = true
+        if (!completedSignalled && width != 0 && height != 0) {
+            completedSignalled = true
             completed()
         }
     }
@@ -181,24 +195,9 @@ FactPanel {
     onHeightChanged:        __signalCompleted()
 
     Connections {
-        target: __viewPanel.item
-
-        onShowDialog:   __rootItem.showDialog(component, title, charWidth, buttons)
-        onShowMessage:  __rootItem.showMessage(title, message, buttons)
-        onHideDialog:   __rootItem.hideDialog()
-    }
-
-    Connections {
         target: __dialogComponentLoader.item
 
         onHideDialog: __rootItem.hideDialog()
-    }
-
-    Loader {
-        id:                 __viewPanel
-        anchors.fill:       parent
-        focus:              true
-        sourceComponent:    viewComponent
     }
 
     Item {
