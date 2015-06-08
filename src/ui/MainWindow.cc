@@ -801,6 +801,7 @@ void MainWindow::connectCommonActions()
 
     // Connect internal actions
     connect(UASManager::instance(), SIGNAL(UASCreated(UASInterface*)), this, SLOT(UASCreated(UASInterface*)));
+    connect(UASManager::instance(), SIGNAL(UASDeleted(int)), this, SLOT(UASDeleted(int)));
 
     // Unmanned System controls
     connect(_ui.actionLiftoff, SIGNAL(triggered()), UASManager::instance(), SLOT(launchActiveUAS()));
@@ -911,6 +912,14 @@ void MainWindow::UASCreated(UASInterface* uas)
     if (_analyzeView != linechartWidget)
     {
         _analyzeView = linechartWidget;
+    }
+}
+
+void MainWindow::UASDeleted(int uasId)
+{
+    if (_mapUasId2HilDockWidget.contains(uasId)) {
+        _mapUasId2HilDockWidget[uasId]->deleteLater();
+        _mapUasId2HilDockWidget.remove(uasId);
     }
 }
 
