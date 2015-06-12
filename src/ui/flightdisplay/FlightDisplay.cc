@@ -54,7 +54,7 @@ FlightDisplay::FlightDisplay(QWidget *parent)
     setContextPropertyObject("flightDisplay", this);
     setSource(QUrl::fromUserInput("qrc:/qml/FlightDisplay.qml"));
     setVisible(true);
-}
+ }
 
 FlightDisplay::~FlightDisplay()
 {

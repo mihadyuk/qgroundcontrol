@@ -72,6 +72,8 @@ This file is part of the QGROUNDCONTROL project
 #include "QGCMultiVideoView.h"
 #include "QGCVMPlayerManager.h"
 
+#include "SetupView.h"
+
 
 class QGCMapTool;
 class QGCMAVLinkMessageSender;
@@ -82,7 +84,9 @@ class Linecharts;
 class QGCDataPlot2D;
 class QGCUASFileViewMulti;
 
-class FlightDisplay;
+//class FlightDisplay;
+class PrimaryFlightDisplay;
+//class SetupView;
 
 //class MPlayerWindow;
 
@@ -136,7 +140,11 @@ public:
     MainToolBar* getMainToolBar(void) { return _mainToolBar; }
 
     /// @brief Gets a pointer to the Main Flight Display
-    FlightDisplay* getFlightDisplay() { return dynamic_cast<FlightDisplay*>(_flightView.data()); }
+    //FlightDisplay* getFlightDisplay() { return dynamic_cast<FlightDisplay*>(_flightView.data()); }
+    //PrimaryFlightDisplay* getFlightDisplay() { return dynamic_cast<PrimaryFlightDisplay*>(_flightView.data()); }
+
+    /// @brief Gets a pointer to the Setup View
+    SetupView* getSetupView() { return static_cast<SetupView*>(_setupView.data()); }
     
     QWidget* getCurrentViewWidget(void) { return _currentViewWidget; }
 

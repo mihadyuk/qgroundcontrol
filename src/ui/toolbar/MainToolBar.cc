@@ -150,10 +150,10 @@ void MainToolBar::onFlyView()
 
 void MainToolBar::onFlyViewMenu()
 {
-    FlightDisplay* fdsp = MainWindow::instance()->getFlightDisplay();
-    if(fdsp) {
-        fdsp->showOptionsMenu();
-    }
+//    FlightDisplay* fdsp = MainWindow::instance()->getFlightDisplay();
+//    if(fdsp) {
+//        fdsp->showOptionsMenu();
+//    }
 }
 
 void MainToolBar::onAnalyzeView()

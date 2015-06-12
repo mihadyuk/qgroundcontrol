@@ -60,7 +60,8 @@ This file is part of the QGROUNDCONTROL project
 #include "Linecharts.h"
 #include "QGCTabbedInfoView.h"
 #include "UASRawStatusView.h"
-#include "FlightDisplay.h"
+//#include "FlightDisplay.h"
+#include "PrimaryFlightDisplay.h"
 #include "SetupView.h"
 #include "SerialSettingsDialog.h"
 #include "terminalconsole.h"
@@ -231,19 +232,25 @@ MainWindow::MainWindow(QSplashScreen* splashScreen)
 
     qDebug()<<"!!!!!!!!!!!!!!"<<headingVideoWidget->objectName();
 
-    firstMultiVideoWidget = new QWidget(this);
-    firstMultiVideoWidget->setVisible(false);
+//    firstMultiVideoWidget = new QWidget(this);
+//    firstMultiVideoWidget->setVisible(false);
 
-    secondMultiVideoWidget = new QWidget(this);
-    secondMultiVideoWidget->setVisible(false);
+//    secondMultiVideoWidget = new QWidget(this);
+//    secondMultiVideoWidget->setVisible(false);
 
 
-    vmPlayerManager = new QGCVMPlayerManager(headingVideoWidget->winId(),
-                                             firstMultiVideoWidget->winId(),
-                                             secondMultiVideoWidget->winId(), this);
-    multiVideoView = new QGCMultiVideoView(firstMultiVideoWidget, secondMultiVideoWidget, this);
 
-    connect(multiVideoView, SIGNAL(sendCommand(bool,int)), vmPlayerManager, SLOT(sendCmd(bool,int)));
+//    vmPlayerManager = new QGCVMPlayerManager(headingVideoWidget,
+//                                             firstMultiVideoWidget,
+//                                             secondMultiVideoWidget, this);
+    multiVideoView = new QGCMultiVideoView(/*firstMultiVideoWidget, secondMultiVideoWidget, */this);
+    vmPlayerManager = new QGCVMPlayerManager((quint32)headingVideoWidget->winId(),
+                                             multiVideoView->getFirstWinId(),
+                                             multiVideoView->getSecondWinId()/*, this*/);
+    connect(multiVideoView, &QGCMultiVideoView::sendCommand, vmPlayerManager, &QGCVMPlayerManager::parseCommand, Qt::QueuedConnection);
+    connect(multiVideoView ,&QGCMultiVideoView::enableConnection, vmPlayerManager, &QGCVMPlayerManager::changeConnectState, Qt::DirectConnection);
+    connect(vmPlayerManager, &QGCVMPlayerManager::connectStateChanged, multiVideoView, &QGCMultiVideoView::changeConnectState, Qt::DirectConnection);
+    connect(vmPlayerManager, &QGCVMPlayerManager::commandException, multiVideoView, &QGCMultiVideoView::displayCommandException/*, Qt::QueuedConnection*/);
     multiVideoView->setVisible(false);
 
     // Setup UI state machines
@@ -394,6 +401,9 @@ MainWindow::~MainWindow()
         joystick = NULL;
     }
 #endif
+
+    delete vmPlayerManager;
+
     // Delete all UAS objects
     for (int i=0;i<_commsWidgetList.size();i++)
     {
@@ -519,7 +529,10 @@ void MainWindow::_buildExperimentalPlanView(void)
 void MainWindow::_buildFlightView(void)
 {
     if (!_flightView) {
-        _flightView = new FlightDisplay(this);
+        //_flightView = new FlightDisplay(this);
+        _flightView = new PrimaryFlightDisplay(this);
+        //QWidget* widget = (QWidget*)(_flightView.data());
+        //qDebug()<<"FLIGHTWINID: "<<widget->winId();
         _flightView->setVisible(false);
     }
 }
@@ -529,8 +542,8 @@ void MainWindow::_buildVideoView(void)
     if (!_videoView) {
         _videoView = multiVideoView;//new QGCMultiVideoView(this);
         multiVideoView->setVisible(true);
-        firstMultiVideoWidget->setVisible(true);
-        secondMultiVideoWidget->setVisible(true);
+        //firstMultiVideoWidget->setVisible(true);
+        //secondMultiVideoWidget->setVisible(true);
         _videoView->setVisible(false);
     }
 }
@@ -639,7 +652,8 @@ void MainWindow::_createInnerDockWidget(const QString& widgetName)
 
         widget = hddisplay;
     } else if (widgetName == _pfdDockWidgetName) {
-        widget = new FlightDisplay(this);
+        //widget = new FlightDisplay(this);
+        widget = new PrimaryFlightDisplay(this);
     } else if (widgetName == _hudDockWidgetName) {
         widget = new HUD(320,240,this);
     } else if (widgetName == _uasInfoViewDockWidgetName) {
@@ -1044,6 +1058,7 @@ void MainWindow::_loadCurrentViewState(void)
         case VIEW_SETUP:
             _buildSetupView();
             centerView = _setupView;
+            getSetupView()->update();
             break;
 
         case VIEW_ANALYZE:
@@ -1055,6 +1070,7 @@ void MainWindow::_loadCurrentViewState(void)
         case VIEW_FLIGHT:
             _buildFlightView();
             centerView = _flightView;
+            centerView->repaint();//?
             defaultWidgets = "COMMUNICATION_CONSOLE_DOCKWIDGET,UAS_INFO_INFOVIEW_DOCKWIDGET";
             break;
 
@@ -1069,6 +1085,7 @@ void MainWindow::_loadCurrentViewState(void)
             _buildVideoView();
             centerView = _videoView;
             defaultWidgets = "";
+            centerView->repaint();//?
 	        break;
 	    
         case VIEW_EXPERIMENTAL_PLAN:
