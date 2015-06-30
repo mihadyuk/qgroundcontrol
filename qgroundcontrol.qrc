@@ -106,6 +106,7 @@
         <file alias="QGroundControl/Controls/QGCViewMessage.qml">src/QmlControls/QGCViewMessage.qml</file>
 
         <file alias="QGroundControl/Controls/ParameterEditor.qml">src/QmlControls/ParameterEditor.qml</file>
+        <file alias="QGroundControl/Controls/ParameterEditorDialog.qml">src/QmlControls/ParameterEditorDialog.qml</file>
 
         <file alias="ParameterEditorWidget.qml">src/ViewWidgets/ParameterEditorWidget.qml</file>
         <file alias="CustomCommandWidget.qml">src/ViewWidgets/CustomCommandWidget.qml</file>
@@ -199,6 +200,12 @@
         <file alias="SplashScreen">resources/SplashScreen.png</file>
 
         <file alias="QGroundControlConnect">resources/QGroundControlConnect.svg</file>
+    </qresource>
+
+    <qresource prefix="/res/firmware">
+        <file alias="px4.png">resources/firmware/px4.png</file>
+        <file alias="apm.png">resources/firmware/apm.png</file>
+        <file alias="3drradio.png">resources/firmware/3drradio.png</file>
     </qresource>
 
     <qresource prefix="/res/mavs">
