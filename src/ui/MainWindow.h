@@ -47,13 +47,12 @@ This file is part of the QGROUNDCONTROL project
 #include "WaypointList.h"
 #include "CameraView.h"
 #include "UASListWidget.h"
-#ifndef __android__
+#ifndef __mobile__
 #include "input/JoystickInput.h"
 #endif
 #if (defined QGC_MOUSE_ENABLED_WIN) | (defined QGC_MOUSE_ENABLED_LINUX)
 #include "Mouse6dofInput.h"
 #endif // QGC_MOUSE_ENABLED_WIN
-#include "DebugConsole.h"
 #include "ParameterEditorWidget.h"
 #include "HDDisplay.h"
 #include "HSIDisplay.h"
@@ -66,13 +65,10 @@ This file is part of the QGROUNDCONTROL project
 #include "QGCMAVLinkLogPlayer.h"
 #include "MAVLinkDecoder.h"
 #include "QGCUASFileViewMulti.h"
-#include "QGCFlightGearLink.h"
-
 //#include "smplayer/mplayerwindow.h"
+
 #include "QGCMultiVideoView.h"
 #include "QGCVMPlayerManager.h"
-
-#include "SetupView.h"
 
 
 class QGCMapTool;
@@ -143,19 +139,8 @@ public:
     //FlightDisplay* getFlightDisplay() { return dynamic_cast<FlightDisplay*>(_flightView.data()); }
     //PrimaryFlightDisplay* getFlightDisplay() { return dynamic_cast<PrimaryFlightDisplay*>(_flightView.data()); }
 
-    /// @brief Gets a pointer to the Setup View
-    SetupView* getSetupView() { return static_cast<SetupView*>(_setupView.data()); }
     
     QWidget* getCurrentViewWidget(void) { return _currentViewWidget; }
-
-    //! Returns the font point size factor
-    static double   fontPointFactor() { return _fontFactor; }
-    //! Returns the pixel size factor
-    static double   pixelSizeFactor() { return _pixelFactor; }
-    //! Sets pixel size factor
-    void            setPixelSizeFactor(double size);
-    //! Sets font size factor
-    void            setFontSizeFactor(double size);
 
 public slots:
     /** @brief Show the application settings */
@@ -163,6 +148,8 @@ public slots:
 
     /** @brief Add a new UAS */
     void UASCreated(UASInterface* uas);
+    /** @brief Deleting an UAS */
+    void UASDeleted(int uasId);
 
     void handleMisconfiguration(UASInterface* uas);
     /** @brief Load configuration views */
@@ -177,8 +164,6 @@ public slots:
     void loadPlanView();
     /** @brief Load Old (Qt Widget) Map View (Mission) */
     void loadOldPlanView();
-    /** @brief Load Terminal Console views */
-    void loadTerminalView();
     /** @brief Load video view */
     void loadVideoView();
     /** @brief Manage Links */
@@ -228,10 +213,6 @@ signals:
     void valueChanged(const int uasId, const QString& name, const QString& unit, const QVariant& value, const quint64 msec);
     /** Emitted when any the Canvas elements within QML wudgets need updating */
     void repaintCanvas();
-    /** Emitted when pixel size factor changes */
-    void pixelSizeChanged();
-    /** Emitted when pixel size factor changes */
-    void fontSizeChanged();
 
 #ifdef QGC_MOUSE_ENABLED_LINUX
     /** @brief Forward X11Event to catch 3DMouse inputs */
@@ -253,8 +234,8 @@ protected:
         VIEW_FLIGHT,           // Flight/Fly/Operate view mode. Used for 1st-person observation of the vehicle.
         VIEW_SIMULATION,       // HIL Simulation view. Useful overview of the entire system when doing hardware-in-the-loop simulations.
         VIEW_SETUP,            // Setup view. Used for initializing the system for operation. Includes UI for calibration, firmware updating/checking, and parameter modifcation.
-        VIEW_TERMINAL,         // Terminal interface. Used for communicating with the remote system, usually in a special configuration input mode.
-        VIEW_LOCAL3D,          // Unused
+        VIEW_UNUSED1,           // Unused (don't remove, or it will screw up saved settigns indices)
+        VIEW_UNUSED2,           // Unused (don't remove, or it will screw up saved settigns indices)
         VIEW_VIDEO,            // Video view mode
         VIEW_EXPERIMENTAL_PLAN,      // Original (Qt Widget) Mission/Map/Plan view mode. Used for setting mission waypoints and high-level system commands.
     } VIEW_SECTIONS;
@@ -285,7 +266,7 @@ protected:
 
     QPointer<QGCUASFileViewMulti> fileWidget;
 
-#ifndef __android__
+#ifndef __mobile__
     JoystickInput* joystick; ///< The joystick manager for QGC
 #endif
 
@@ -317,7 +298,6 @@ protected:
 
     LogCompressor* comp;
     QTimer* videoTimer;
-    QGCFlightGearLink* fgLink;
     QTimer windowNameUpdateTimer;
 
 private slots:
@@ -359,7 +339,6 @@ private:
     static const char* _pfdDockWidgetName;
     static const char* _hudDockWidgetName;
     static const char* _uasInfoViewDockWidgetName;
-    static const char* _debugConsoleDockWidgetName;
 
     static const char* _uasVideoViewDockWidgetName;
 
@@ -402,10 +381,6 @@ private:
 
     QString _getWindowStateKey();
     QString _getWindowGeometryKey();
-
-    // UI Dimension Factors
-    static double _pixelFactor;
-    static double _fontFactor;
 
     QGCVMPlayerManager *vmPlayerManager;
     QGCMultiVideoView *multiVideoView;

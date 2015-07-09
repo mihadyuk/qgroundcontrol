@@ -33,18 +33,22 @@ This file is part of the QGROUNDCONTROL project
 #include <QTimer>
 #include <QHostInfo>
 #include <QSplashScreen>
+#ifndef __mobile__
 #include <QGCHilLink.h>
 #include <QGCHilConfiguration.h>
 #include <QGCHilFlightGearConfiguration.h>
+#endif
 #include <QQuickView>
 #include <QDesktopWidget>
 
 #include "QGC.h"
+#ifndef __ios__
 #include "SerialLink.h"
+#endif
 #include "MAVLinkProtocol.h"
 #include "QGCWaypointListMulti.h"
 #include "MainWindow.h"
-#ifndef __android__
+#ifndef __mobile__
 #include "JoystickWidget.h"
 #endif
 #include "GAudioOutput.h"
@@ -63,8 +67,6 @@ This file is part of the QGROUNDCONTROL project
 //#include "FlightDisplay.h"
 #include "PrimaryFlightDisplay.h"
 #include "SetupView.h"
-#include "SerialSettingsDialog.h"
-#include "terminalconsole.h"
 #include "QGCUASFileViewMulti.h"
 #include "QGCApplication.h"
 #include "QGCFileDialog.h"
@@ -86,26 +88,6 @@ This file is part of the QGROUNDCONTROL project
 
 #include "LogCompressor.h"
 
-// Pixel size, instead of a physical thing is actually a philosophical question when
-// it comes to Qt. Fonts are that and some heavy Kabalistic Voodoo added to the mix.
-// The values below came from actually measuring the elements on the screen on these
-// devices. I have yet to find a constant from Qt so these things can be properly
-// computed at runtime.
-
-#if defined(Q_OS_OSX)
-double MainWindow::_pixelFactor    = 1.0;
-double MainWindow::_fontFactor     = 1.0;
-#elif defined(Q_OS_WIN)
-double MainWindow::_pixelFactor    = 0.86;
-double MainWindow::_fontFactor     = 0.63;
-#elif defined(__android__)
-double MainWindow::_pixelFactor    = 2.0;
-double MainWindow::_fontFactor     = 1.23;
-#elif defined(Q_OS_LINUX)
-double MainWindow::_pixelFactor    = 1.0;
-double MainWindow::_fontFactor     = 0.85;
-#endif
-
 #include <QTextCodec>
 
 /// The key under which the Main Window settings are saved
@@ -126,7 +108,6 @@ const char* MainWindow::_hdd2DockWidgetName = "HEAD_DOWN_DISPLAY_2_DOCKWIDGET";
 const char* MainWindow::_pfdDockWidgetName = "PRIMARY_FLIGHT_DISPLAY_DOCKWIDGET";
 const char* MainWindow::_hudDockWidgetName = "HEAD_UP_DISPLAY_DOCKWIDGET";
 const char* MainWindow::_uasInfoViewDockWidgetName = "UAS_INFO_INFOVIEW_DOCKWIDGET";
-const char* MainWindow::_debugConsoleDockWidgetName = "COMMUNICATION_CONSOLE_DOCKWIDGET";
 
 const char* MainWindow::_uasVideoViewDockWidgetName = "UAS_VIDEO_VIDEOVIEW_DOCKWIDGET";
 
@@ -267,7 +248,7 @@ MainWindow::MainWindow(QSplashScreen* splashScreen)
     connectCommonActions();
     // Connect user interface devices
     emit initStatusChanged(tr("Initializing joystick interface"), Qt::AlignLeft | Qt::AlignBottom, QColor(62, 93, 141));
-#ifndef __android__
+#ifndef __mobile__
     joystick = new JoystickInput();
 #endif
 #ifdef QGC_MOUSE_ENABLED_WIN
@@ -298,7 +279,7 @@ MainWindow::MainWindow(QSplashScreen* splashScreen)
     emit initStatusChanged(tr("Restoring last view state"), Qt::AlignLeft | Qt::AlignBottom, QColor(62, 93, 141));
     // Restore the window setup
     _loadCurrentViewState();
-#ifndef __android__
+#ifndef __mobile__
 
     // Restore the window position and size
     emit initStatusChanged(tr("Restoring last window size"), Qt::AlignLeft | Qt::AlignBottom, QColor(62, 93, 141));
@@ -349,16 +330,14 @@ MainWindow::MainWindow(QSplashScreen* splashScreen)
     _ui.actionPlan->setShortcut(QApplication::translate("MainWindow", "Meta+2", 0));
     _ui.actionFlight->setShortcut(QApplication::translate("MainWindow", "Meta+3", 0));
     _ui.actionAnalyze->setShortcut(QApplication::translate("MainWindow", "Meta+4", 0));
-    _ui.actionTerminalView->setShortcut(QApplication::translate("MainWindow", "Meta+5", 0));
-    _ui.actionSimulationView->setShortcut(QApplication::translate("MainWindow", "Meta+6", 0));
+    _ui.actionSimulationView->setShortcut(QApplication::translate("MainWindow", "Meta+5", 0));
     _ui.actionFullscreen->setShortcut(QApplication::translate("MainWindow", "Meta+Return", 0));
 #else
     _ui.actionSetup->setShortcut(QApplication::translate("MainWindow", "Ctrl+1", 0));
     _ui.actionPlan->setShortcut(QApplication::translate("MainWindow", "Ctrl+2", 0));
     _ui.actionFlight->setShortcut(QApplication::translate("MainWindow", "Ctrl+3", 0));
     _ui.actionAnalyze->setShortcut(QApplication::translate("MainWindow", "Ctrl+4", 0));
-    _ui.actionTerminalView->setShortcut(QApplication::translate("MainWindow", "Ctrl+5", 0));
-    _ui.actionSimulationView->setShortcut(QApplication::translate("MainWindow", "Ctrl+6", 0));
+    _ui.actionSimulationView->setShortcut(QApplication::translate("MainWindow", "Ctrl+5", 0));
     _ui.actionFullscreen->setShortcut(QApplication::translate("MainWindow", "Ctrl+Return", 0));
 #endif
 
@@ -369,7 +348,7 @@ MainWindow::MainWindow(QSplashScreen* splashScreen)
     if (!qgcApp()->runningUnitTests()) {
         _ui.actionStatusBar->setChecked(_showStatusBar);
         showStatusBarCallback(_showStatusBar);
-#ifdef __android__
+#ifdef __mobile__
         menuBar()->hide();
 #endif
         show();
@@ -393,12 +372,12 @@ MainWindow::MainWindow(QSplashScreen* splashScreen)
 
 MainWindow::~MainWindow()
 {
-#ifndef __android__
+#ifndef __mobile__
     if (joystick)
     {
         joystick->shutdown();
         joystick->wait(5000);
-        delete joystick;
+        joystick->deleteLater();
         joystick = NULL;
     }
 #endif
@@ -500,7 +479,7 @@ void MainWindow::_buildCommonWidgets(void)
         { _pfdDockWidgetName,               "Primary Flight Display",   Qt::RightDockWidgetArea },
         { _hudDockWidgetName,               "Video Downlink",           Qt::RightDockWidgetArea },
         { _uasInfoViewDockWidgetName,       "Info View",                Qt::LeftDockWidgetArea },
-        { _debugConsoleDockWidgetName,      "Communications Console",   Qt::LeftDockWidgetArea },
+       
         { _uasVideoViewDockWidgetName,      "Video View",               Qt::LeftDockWidgetArea }
     };
     static const size_t cDockWidgetInfo = sizeof(rgDockWidgetInfo) / sizeof(rgDockWidgetInfo[0]);
@@ -573,19 +552,12 @@ void MainWindow::_buildSimView(void)
     }
 }
 
-void MainWindow::_buildTerminalView(void)
-{
-    if (!_terminalView) {
-        _terminalView = new TerminalConsole(this);
-        _terminalView->setVisible(false);
-    }
-}
-
 /// Shows or hides the specified dock widget, creating if necessary
 void MainWindow::_showDockWidget(const QString& name, bool show)
 {
     if (!_mapName2DockWidget.contains(name)) {
-        qWarning() << "Attempt to show unknown dock widget" << name;
+        // Don't show any sort of warning here. Dock Widgets which have been remove could still be in settings.
+        // Which would cause us to end up here.
         return;
     }
 
@@ -666,8 +638,6 @@ void MainWindow::_createInnerDockWidget(const QString& widgetName)
         widget = headingVideoWidget;
         headingVideoWidget->setVisible(true);
         //vmPlayerManager->sendCmd(true, 3);
-    } else if (widgetName == _debugConsoleDockWidgetName) {
-        widget = new DebugConsole(this);
     } else {
         qWarning() << "Attempt to create unknown Inner Dock Widget" << widgetName;
     }
@@ -680,6 +650,7 @@ void MainWindow::_createInnerDockWidget(const QString& widgetName)
     }
 }
 
+#ifndef __mobile__
 void MainWindow::_showHILConfigurationWidgets(void)
 {
     UASInterface* uas = UASManager::instance()->getActiveUAS();
@@ -719,6 +690,7 @@ void MainWindow::_showHILConfigurationWidgets(void)
         }
     }
 }
+#endif
 
 void MainWindow::fullScreenActionItemCallback(bool)
 {
@@ -775,8 +747,6 @@ void MainWindow::loadSettings()
     _autoReconnect  = settings.value("AUTO_RECONNECT",      _autoReconnect).toBool();
     _lowPowerMode   = settings.value("LOW_POWER_MODE",      _lowPowerMode).toBool();
     _showStatusBar  = settings.value("SHOW_STATUSBAR",      _showStatusBar).toBool();
-    _fontFactor     = settings.value("FONT_SIZE_FACTOR",    _fontFactor).toDouble();
-    _pixelFactor    = settings.value("PIXEL_SIZE_FACTOR",   _pixelFactor).toDouble();
     settings.endGroup();
     // Select the proper view. Default to the flight view or load the last one used if it's supported.
     VIEW_SECTIONS currentViewCandidate = (VIEW_SECTIONS) settings.value("CURRENT_VIEW", _currentView).toInt();
@@ -787,7 +757,6 @@ void MainWindow::loadSettings()
         case VIEW_FLIGHT:
         case VIEW_SIMULATION:
         case VIEW_SETUP:
-        case VIEW_TERMINAL:
         case VIEW_VIDEO:
         
             _currentView = currentViewCandidate;
@@ -807,8 +776,6 @@ void MainWindow::storeSettings()
     settings.setValue("AUTO_RECONNECT",     _autoReconnect);
     settings.setValue("LOW_POWER_MODE",     _lowPowerMode);
     settings.setValue("SHOW_STATUSBAR",     _showStatusBar);
-    settings.setValue("FONT_SIZE_FACTOR",   _fontFactor);
-    settings.setValue("PIXEL_SIZE_FACTOR",  _pixelFactor);
     settings.endGroup();
     settings.setValue(_getWindowGeometryKey(), saveGeometry());
 	
@@ -855,7 +822,6 @@ void MainWindow::connectCommonActions()
     perspectives->addAction(_ui.actionSimulationView);
     perspectives->addAction(_ui.actionPlan);
     perspectives->addAction(_ui.actionSetup);
-    perspectives->addAction(_ui.actionTerminalView);
     perspectives->addAction(_ui.actionExperimentalPlanView);
     perspectives->setExclusive(true);
 
@@ -890,11 +856,6 @@ void MainWindow::connectCommonActions()
         _ui.actionSetup->setChecked(true);
         _ui.actionSetup->activate(QAction::Trigger);
     }
-    if (_currentView == VIEW_TERMINAL)
-    {
-        _ui.actionTerminalView->setChecked(true);
-        _ui.actionTerminalView->activate(QAction::Trigger);
-    }
     if (_currentView == VIEW_VIDEO)
     {
         _ui.actionVideoView->setChecked(true);
@@ -913,6 +874,7 @@ void MainWindow::connectCommonActions()
 
     // Connect internal actions
     connect(UASManager::instance(), SIGNAL(UASCreated(UASInterface*)), this, SLOT(UASCreated(UASInterface*)));
+    connect(UASManager::instance(), SIGNAL(UASDeleted(int)), this, SLOT(UASDeleted(int)));
 
     // Unmanned System controls
     connect(_ui.actionLiftoff, SIGNAL(triggered()), UASManager::instance(), SLOT(launchActiveUAS()));
@@ -927,7 +889,6 @@ void MainWindow::connectCommonActions()
     connect(_ui.actionAnalyze, SIGNAL(triggered()), this, SLOT(loadAnalyzeView()));
     connect(_ui.actionPlan, SIGNAL(triggered()), this, SLOT(loadPlanView()));
     connect(_ui.actionExperimentalPlanView, SIGNAL(triggered()), this, SLOT(loadOldPlanView()));
-    connect(_ui.actionTerminalView,SIGNAL(triggered()),this,SLOT(loadTerminalView()));
 
     connect(_ui.actionVideoView, SIGNAL(triggered()), this, SLOT(loadVideoView()));
 
@@ -981,7 +942,7 @@ void MainWindow::showRoadMap()
 
 void MainWindow::showSettings()
 {
-#ifndef __android__
+#ifndef __mobile__
     SettingsDialog settings(joystick, this);
 #else
     SettingsDialog settings(this);
@@ -1012,7 +973,9 @@ void MainWindow::UASCreated(UASInterface* uas)
     connect(uas, SIGNAL(misconfigurationDetected(UASInterface*)), this, SLOT(handleMisconfiguration(UASInterface*)));
 
     // HIL
+#ifndef __mobile__
     _showHILConfigurationWidgets();
+#endif
 
     if (!linechartWidget)
     {
@@ -1024,6 +987,14 @@ void MainWindow::UASCreated(UASInterface* uas)
     if (_analyzeView != linechartWidget)
     {
         _analyzeView = linechartWidget;
+    }
+}
+
+void MainWindow::UASDeleted(int uasId)
+{
+    if (_mapUasId2HilDockWidget.contains(uasId)) {
+        _mapUasId2HilDockWidget[uasId]->deleteLater();
+        _mapUasId2HilDockWidget.remove(uasId);
     }
 }
 
@@ -1066,20 +1037,20 @@ void MainWindow::_loadCurrentViewState(void)
         case VIEW_ANALYZE:
             _buildAnalyzeView();
             centerView = _analyzeView;
-            defaultWidgets = "MAVLINK_INSPECTOR_DOCKWIDGET,PARAMETER_INTERFACE_DOCKWIDGET,FILE_VIEW_DOCKWIDGET,HEAD_UP_DISPLAY_DOCKWIDGET";
+            defaultWidgets = "PARAMETER_INTERFACE_DOCKWIDGET,FILE_VIEW_DOCKWIDGET";
             break;
 
         case VIEW_FLIGHT:
             _buildFlightView();
             centerView = _flightView;
-            centerView->repaint();//?
+            //centerView->repaint();//?
             defaultWidgets = "COMMUNICATION_CONSOLE_DOCKWIDGET,UAS_INFO_INFOVIEW_DOCKWIDGET";
             break;
 
         case VIEW_PLAN:
             _buildPlanView();
             centerView = _planView;
-            defaultWidgets = "UNMANNED_SYSTEM_LIST_DOCKWIDGET,WAYPOINT_LIST_DOCKWIDGET";
+            defaultWidgets = "WAYPOINT_LIST_DOCKWIDGET";
             break;
 
 
@@ -1087,7 +1058,7 @@ void MainWindow::_loadCurrentViewState(void)
             _buildVideoView();
             centerView = _videoView;
             defaultWidgets = "";
-            centerView->repaint();//?
+            //centerView->repaint();//?
 	        break;
 	    
         case VIEW_EXPERIMENTAL_PLAN:
@@ -1102,11 +1073,6 @@ void MainWindow::_loadCurrentViewState(void)
             defaultWidgets = "UNMANNED_SYSTEM_CONTROL_DOCKWIDGET,WAYPOINT_LIST_DOCKWIDGET,PARAMETER_INTERFACE_DOCKWIDGET,PRIMARY_FLIGHT_DISPLAY_DOCKWIDGET";
             break;
 
-        case VIEW_TERMINAL:
-            _buildTerminalView();
-            centerView = _terminalView;
-            break;
-            
         default:
             Q_ASSERT(false);
             break;
@@ -1149,7 +1115,9 @@ void MainWindow::_loadCurrentViewState(void)
 
     // HIL dock widget are dynamic and don't take part in the saved window state, so this
     // need to happen after we restore state
+#ifndef __mobile__
     _showHILConfigurationWidgets();
+#endif
 
     // There is a bug in Qt where a Canvas element inside a QQuickWidget does not
     // receive update requests. Here we emit a signal for them to get repainted.
@@ -1261,17 +1229,6 @@ void MainWindow::loadSetupView()
     }
 }
 
-void MainWindow::loadTerminalView()
-{
-    if (_currentView != VIEW_TERMINAL)
-    {
-        _storeCurrentViewState();
-        _currentView = VIEW_TERMINAL;
-        _ui.actionTerminalView->setChecked(true);
-        _loadCurrentViewState();
-    }
-}
-
 void MainWindow::loadFlightView()
 {
     if (_currentView != VIEW_FLIGHT)
@@ -1305,7 +1262,7 @@ void MainWindow::hideSplashScreen(void)
 
 void MainWindow::manageLinks()
 {
-#ifndef __android__
+#ifndef __mobile__
     SettingsDialog settings(joystick, this, SettingsDialog::ShowCommLinks);
 #else
     SettingsDialog settings(this, SettingsDialog::ShowCommLinks);
@@ -1342,22 +1299,6 @@ void MainWindow::restoreLastUsedConnection()
 void MainWindow::_linkStateChange(LinkInterface*)
 {
     emit repaintCanvas();
-}
-
-void MainWindow::setPixelSizeFactor(double size) {
-    if(size < 0.1) {
-        size = 0.1;
-    }
-    _pixelFactor = size;
-    emit pixelSizeChanged();
-}
-
-void MainWindow::setFontSizeFactor(double size) {
-    if(size < 0.1) {
-        size = 0.1;
-    }
-    _fontFactor = size;
-    emit fontSizeChanged();
 }
 
 #ifdef QGC_MOUSE_ENABLED_LINUX

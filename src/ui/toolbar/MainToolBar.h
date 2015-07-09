@@ -47,17 +47,7 @@ class MainToolBar : public QGCQmlWidgetHolder
 {
     Q_OBJECT
     Q_ENUMS(ViewType_t)
-    Q_ENUMS(MessageType_t)
 public:
-    MainToolBar(QWidget* parent = NULL);
-    ~MainToolBar();
-
-    typedef enum {
-        MessageNone,
-        MessageNormal,
-        MessageWarning,
-        MessageError
-    } MessageType_t;
 
     typedef enum {
         ViewNone    = -1,
@@ -67,6 +57,9 @@ public:
         ViewSetup  , // MainWindow::VIEW_SETUP
         ViewVideo  , // MainWindow::VIEW_VIDEO
     } ViewType_t;
+
+    MainToolBar(QWidget* parent = NULL);
+    ~MainToolBar();
 
     Q_INVOKABLE void    onSetupView();
     Q_INVOKABLE void    onPlanView();
@@ -80,9 +73,6 @@ public:
 
     Q_PROPERTY(ViewType_t    currentView        MEMBER _currentView             NOTIFY currentViewChanged)
     Q_PROPERTY(QStringList   configList         MEMBER _linkConfigurations      NOTIFY configListChanged)
-    Q_PROPERTY(MessageType_t messageType        MEMBER _currentMessageType      NOTIFY messageTypeChanged)
-    Q_PROPERTY(int           newMessageCount    MEMBER _currentMessageCount     NOTIFY newMessageCountChanged)
-    Q_PROPERTY(int           messageCount       MEMBER _messageCount            NOTIFY messageCountChanged)
     Q_PROPERTY(int           connectionCount    READ connectionCount            NOTIFY connectionCountChanged)
     Q_PROPERTY(QStringList   connectedList      MEMBER _connectedList           NOTIFY connectedListChanged)
     Q_PROPERTY(bool          showGPS            MEMBER _showGPS                 NOTIFY showGPSChanged)
@@ -106,9 +96,6 @@ signals:
     void connectionCountChanged         (int count);
     void currentViewChanged             ();
     void configListChanged              ();
-    void messageTypeChanged             (MessageType_t type);
-    void newMessageCountChanged         (int count);
-    void messageCountChanged            (int count);
     void connectedListChanged           (QStringList connectedList);
     void showGPSChanged                 (bool value);
     void showMavChanged                 (bool value);
@@ -126,10 +113,8 @@ private slots:
     void _updateConfigurations          ();
     void _linkConnected                 (LinkInterface* link);
     void _linkDisconnected              (LinkInterface* link);
-    void _handleTextMessage             (int newCount);
     void _leaveMessageView              ();
     void _setProgressBarValue           (float value);
-    void _updatePixelSize               ();
     void _remoteControlRSSIChanged      (uint8_t rssi);
     void _telemetryChanged              (LinkInterface* link, unsigned rxerrors, unsigned fixed, unsigned rssi, unsigned remrssi, unsigned txbuf, unsigned noise, unsigned remnoise);
 
@@ -143,12 +128,6 @@ private:
     ViewType_t      _currentView;
     QStringList     _linkConfigurations;
     int             _connectionCount;
-    int             _currentMessageCount;
-    int             _messageCount;
-    int             _currentErrorCount;
-    int             _currentWarningCount;
-    int             _currentNormalCount;
-    MessageType_t   _currentMessageType;
     QStringList     _connectedList;
     bool            _showGPS;
     bool            _showMav;
@@ -157,6 +136,7 @@ private:
     bool            _showBattery;
     float           _progressBarValue;
     int             _remoteRSSI;
+    double          _remoteRSSIstore;
     int             _telemetryRRSSI;
     int             _telemetryLRSSI;
 

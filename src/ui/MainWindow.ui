@@ -99,7 +99,6 @@
      <addaction name="separator"/>
     </widget>
     <addaction name="actionExperimentalPlanView"/>
-    <addaction name="actionTerminalView"/>
     <addaction name="actionSimulationView"/>
     <addaction name="separator"/>
     <addaction name="separator"/>
@@ -296,14 +295,6 @@
    </property>
    <property name="text">
     <string>HIL Simulation</string>
-   </property>
-  </action>
-  <action name="actionTerminalView">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
-   <property name="text">
-    <string>Terminal</string>
    </property>
   </action>
   <action name="actionStatusBar">
