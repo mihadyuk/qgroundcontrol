@@ -1,6 +1,6 @@
 #include "QGCVMPlayerManager.h"
 
-#include <zmq.h>
+//#include <zmq.h>
 
 #include <QDebug>
 
@@ -29,12 +29,20 @@ QGCVMPlayerManager::QGCVMPlayerManager(quint32 firstwinid, quint32 secondwinid, 
 
     qDebug()<<"WIN IDS: "<<firstWinID<<secondWinID<<thirdWinID;
 
-    zmq_context = zmq_ctx_new();
+//    zmq_context = zmq_ctx_new();
 
-    zmq_command = zmq_socket(zmq_context, ZMQ_REQ);
+//    zmq_command = zmq_socket(zmq_context, ZMQ_REQ);
 
-    int linger = 0;
-    zmq_setsockopt(zmq_command, ZMQ_LINGER, &linger, sizeof(linger));
+    socket = new ZmqSocket(ZMQ_REQ, this);
+
+
+    connect(socket, &ZmqSocket::readyRead, this, &QGCVMPlayerManager::onSocketAnswer);
+
+
+
+
+//    int linger = 0;
+    //zmq_setsockopt(zmq_command, ZMQ_LINGER, &linger, sizeof(linger));
 //    int rc = zmq_connect(zmq_command, "tcp://localhost:70000");
 //    if (rc != 0)
 //        qFatal("zmq_bind error %s", zmq_strerror(errno));
@@ -78,8 +86,9 @@ QGCVMPlayerManager::~QGCVMPlayerManager()
     if(zmqConnectState == true)
         sendCmdExit();
 
-    zmq_close(zmq_command);
-    zmq_ctx_destroy(zmq_context);
+    delete socket;
+    //zmq_close(zmq_command);
+    //zmq_ctx_destroy(zmq_context);
 
     timer->stop();
 
@@ -132,73 +141,62 @@ bool QGCVMPlayerManager::sendCmd(bool start, int ch)
 {
 //    if(zmqConnectState == true){
 
-
-
-
-
 //    }
 
-    zmq_pollitem_t item =  { zmq_command, 0, ZMQ_POLLIN, 0 };
+//    zmq_pollitem_t item =  { zmq_command, 0, ZMQ_POLLIN, 0 };
 
     QString str = QString("{ \"cmd\": \"%1\", \"channel\": %2 }")
             .arg(start ? "start" : "stop")
             .arg(ch);
-    zmq_send(zmq_command, str.toLatin1().constData(), str.toLatin1().length(), 0);
+
+    socket->send(str.toLatin1().constData());
+
+//    zmq_send(zmq_command, str.toLatin1().constData(), str.toLatin1().length(), 0);
     qDebug() << "Command: " << str;
-    zmq_poll (&item, 1, REQUEST_TIMEOUT);
-//    if (zmq_poll (&item, 1, REQUEST_TIMEOUT) < 0)
-//    {
-//        return false;
+    qDebug() << "Commandb: " << str.toLatin1().constData();
+//    zmq_poll (&item, 1, REQUEST_TIMEOUT);
+
+
+//    if (item.revents & ZMQ_POLLIN){
+
+//        char buf[3];
+//        zmq_recv(zmq_command, buf, sizeof(buf), 0);
+//        //zmq_recv(zmq_command, buf, sizeof(buf), ZMQ_DONTWAIT);
+//        qDebug() << "Answer: " << buf;
+//        return true;
+
 //    }
-
-    if (item.revents & ZMQ_POLLIN){
-
-        char buf[3];
-        zmq_recv(zmq_command, buf, sizeof(buf), 0);
-        //zmq_recv(zmq_command, buf, sizeof(buf), ZMQ_DONTWAIT);
-        qDebug() << "Answer: " << buf;
-        return true;
-
-    }
-    else return false;
-
-//    char buf[3];
-//    //zmq_recv(zmq_command, buf, sizeof(buf), 0);
-//    zmq_recv(zmq_command, buf, sizeof(buf), ZMQ_DONTWAIT);
-//    qDebug() << "Answer: " << buf;
-//    return true;
+//    else return false;
+    return true;
 }
 
 bool QGCVMPlayerManager::sendCmdExit()
 {
-    zmq_pollitem_t item =  { zmq_command, 0, ZMQ_POLLIN, 0 };
+//    zmq_pollitem_t item =  { zmq_command, 0, ZMQ_POLLIN, 0 };
 
-    QString str("{ \"cmd\": \"exit\" }");
-    zmq_send(zmq_command, str.toLatin1().constData(), str.toLatin1().length(), 0);
-    qDebug() << "Command: " << str;
+    //QString str("{ \"cmd\": \"exit\" }");
+    QByteArray ba = "{ \"cmd\": \"exit\" }";
 
-    int resp = 0;
-    resp = zmq_poll (&item, 1, REQUEST_TIMEOUT);
-//    if (resp < 0)
-//    {
-//        return false;
+    socket->send(ba);
+
+ //   zmq_send(zmq_command, str.toLatin1().constData(), str.toLatin1().length(), 0);
+    qDebug() << "Command: " << ba;
+
+//    int resp = 0;
+//    resp = zmq_poll (&item, 1, REQUEST_TIMEOUT);
+
+//    if (item.revents & ZMQ_POLLIN){
+
+//        char buf[3];
+//        zmq_recv(zmq_command, buf, sizeof(buf), 0);
+//        //zmq_recv(zmq_command, buf, sizeof(buf), ZMQ_DONTWAIT);
+//        qDebug() << "Answer: " << buf;
+//        return true;
+
 //    }
 
-    if (item.revents & ZMQ_POLLIN){
-
-        char buf[3];
-        zmq_recv(zmq_command, buf, sizeof(buf), 0);
-        //zmq_recv(zmq_command, buf, sizeof(buf), ZMQ_DONTWAIT);
-        qDebug() << "Answer: " << buf;
-        return true;
-
-    }
-
-    //char buf[3];
-    //zmq_recv(zmq_command, buf, sizeof(buf), 0);
-    //qDebug() << "Answer: " << buf;
-
-    else return false;//?
+//    else return false;
+    return true;
 }
 
 void QGCVMPlayerManager::setFirstWinID(int winid){
@@ -216,21 +214,24 @@ void QGCVMPlayerManager::setThirdWinID(int winid){
 
 void QGCVMPlayerManager::changeConnectState(bool state){
 
+
     qDebug()<<"CHANGING CONNECT STATE";
-    int rc;
+    //int rc;
+    bool rc = false;
     if(state == true){
 
         if(isRunning() == false){
 
-            stopMutex.lock();
+//            stopMutex.lock();
 
-            //connectState = true;
-            p_stop = false;
-            stopMutex.unlock();
+//            //connectState = true;
+//            p_stop = false;
+//            stopMutex.unlock();
 
-            rc = zmq_connect(zmq_command, "tcp://localhost:70000");
-            if (rc != 0)
-                qFatal("zmq_bind error %s", zmq_strerror(errno));
+//            rc = zmq_connect(zmq_command, "tcp://localhost:70000");
+            rc = socket->connectTo("tcp://localhost:70000");
+            if (!rc)
+                qFatal("zmq_bind error"/* %s", zmq_strerror(errno)*/);
             else zmqConnectState = true;
 
             start(LowPriority);
@@ -242,20 +243,19 @@ void QGCVMPlayerManager::changeConnectState(bool state){
     else if(state == false){
 
         if(isRunning() == true){
-            stopMutex.lock();
-            //connectState = false;
-            p_stop = true;
-            stopMutex.unlock();
+//            stopMutex.lock();
+//            //connectState = false;
+//            p_stop = true;
+//            stopMutex.unlock();
 
             quit();
             wait();
 
-
 //            terminate();
 
-            rc = zmq_disconnect(zmq_command, "tcp://localhost:70000");
-            if (rc != 0)
-                qFatal("zmq_bind error %s", zmq_strerror(errno));
+            rc = socket->disconnectOf("tcp://localhost:70000");
+            if (!rc)
+                qFatal("zmq_unbind error"/* %s", zmq_strerror(errno)*/);
             else zmqConnectState = false;
 
             clearCommand();
@@ -263,10 +263,16 @@ void QGCVMPlayerManager::changeConnectState(bool state){
         }
 
     }
-    qDebug()<<"CONNECT STATE CHANGED"<<p_stop<<"isRunning"<<isRunning();
+    qDebug()<<"CONNECT STATE CHANGED"<<!p_stop<<"isRunning"<<isRunning();
 
 }
 
+void QGCVMPlayerManager::onSocketAnswer(){
+    QList<QByteArray> r = socket->recv();
+    for(QList<QByteArray>::const_iterator i=r.constBegin(); i!=r.constEnd(); ++i) {
+      qDebug() << "Received " << *i;
+    }
+}
 
 void QGCVMPlayerManager::clearCommand(){
     comStruct.channelNum = 0;
@@ -276,28 +282,31 @@ void QGCVMPlayerManager::clearCommand(){
 
 void QGCVMPlayerManager::run(){
 
-    forever{
+//    forever{
 
-        if (p_stop) {
-            stopMutex.lock();
-            p_stop = false;
-            stopMutex.unlock();
-            break; // exit the thread
-        }
+//        if (p_stop) {
+//            stopMutex.lock();
+//            p_stop = false;
+//            stopMutex.unlock();
+//            break; // exit the thread
+//        }
 
-        if(comStruct.isValid == true){
-            comMutex.lock();
+//        if(comStruct.isValid == true){
+//            comMutex.lock();
 
-            if(sendCmd(comStruct.start, comStruct.channelNum) == false){
+//            if(sendCmd(comStruct.start, comStruct.channelNum) == false){
 
-                emit commandException("Error", "Error while sending command.");
+//                emit commandException("Error", "Error while sending command.");
 
-            }
-            comStruct.isValid = false;
+//            }
+//            comStruct.isValid = false;
 
-            comMutex.unlock();
+//            comMutex.unlock();
 
-        }
+//        }
+
+        exec();
+
         //msleep(POLL_INTERVAL);
         //QGC::SLEEP::msleep(POLL_INTERVAL);
 
@@ -306,7 +315,7 @@ void QGCVMPlayerManager::run(){
      //   exec();
 //        exit();
 //        continue;
-    }
+//    }
 
 }
 

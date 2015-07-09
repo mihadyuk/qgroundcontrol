@@ -121,9 +121,22 @@ void ZmqSocket::bind(const char *addr_)
   if(0 != zmq_bind(socket_, addr_)) THROW();
 }
 
-void ZmqSocket::connectTo(const char *addr_)
+bool ZmqSocket::connectTo(const char *addr_)
 {
-  if(0 != zmq_connect(socket_, addr_)) THROW();
+  if(0 != zmq_connect(socket_, addr_)) {
+      THROW();
+      return false;
+  }
+  else return true;
+}
+
+bool ZmqSocket::disconnectOf(const char *addr_)
+{
+  if(0 != zmq_disconnect(socket_, addr_)){
+      THROW();
+      return false;
+  }
+  else return true;
 }
 
 QList<QByteArray> ZmqSocket::recv() {

@@ -11,7 +11,11 @@
 #include <QWidget>
 //#include "QGCMessageBox.h"
 
-#include <zmq.h>
+//#include <zmq.h>
+
+#include "ZmqSocket.h"
+#include "ZmqMessage.h"
+
 
 #define VMPLAYER_PATH "/home/stepanenko/vmplayer-dist/src/src/"
 #define VMPLAYER_NAME "vmplayer"
@@ -47,11 +51,16 @@ public slots:
 
     void changeConnectState(bool state);
 
+    bool sendCmd(bool start, int ch);
+
 private:
     QProcess *process;
     QTimer *timer;
-    void *zmq_context;
-    void *zmq_command;
+//    void *zmq_context;
+//    void *zmq_command;
+
+    ZmqSocket *socket;
+///    QByteArray key;
 
 
     quint32 firstWinID;
@@ -78,12 +87,13 @@ private:
 
     void clearCommand();
 
-    bool sendCmd(bool start, int ch);
+    //bool sendCmd(bool start, int ch);
     bool sendCmdExit();
 
 
 private slots:
     void update();
+    void onSocketAnswer();
 
 };
 

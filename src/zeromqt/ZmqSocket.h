@@ -36,13 +36,14 @@ public:
   void unsubscribe(const QByteArray& filter);
 
   void bind(const char *addr_);
-  void connectTo(const char *addr_);
+  bool connectTo(const char *addr_);
+  bool disconnectOf(const char *addr_);
 
   bool send(ZmqMessage& msg, int flags=ZMQ_NOBLOCK) {
     int rc = zmq_msg_send(&msg, socket_, flags);
-    if(0 == rc) return true;
+    if(rc >= 0) return true;
     if(-1 == rc && zmq_errno() == EAGAIN) return false;
-    THROW();
+    //THROW();
   }
 
   bool send(const QByteArray& b) {
@@ -52,9 +53,9 @@ public:
 
   bool recv(ZmqMessage *msg_, int flags=ZMQ_NOBLOCK) {
     int rc = zmq_msg_recv(msg_, socket_, flags);
-    if(0 == rc) return true;
+    if(rc >= 0) return true;
     if(-1 == rc && zmq_errno() == EAGAIN) return false;
-    THROW();
+    //THROW();
   }
 
   QList<QByteArray> recv();

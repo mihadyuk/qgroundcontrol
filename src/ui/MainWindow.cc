@@ -247,10 +247,11 @@ MainWindow::MainWindow(QSplashScreen* splashScreen)
     vmPlayerManager = new QGCVMPlayerManager((quint32)headingVideoWidget->winId(),
                                              multiVideoView->getFirstWinId(),
                                              multiVideoView->getSecondWinId()/*, this*/);
-    connect(multiVideoView, &QGCMultiVideoView::sendCommand, vmPlayerManager, &QGCVMPlayerManager::parseCommand, Qt::QueuedConnection);
+    //connect(multiVideoView, &QGCMultiVideoView::sendCommand, vmPlayerManager, &QGCVMPlayerManager::parseCommand);
+    connect(multiVideoView, &QGCMultiVideoView::sendCommand, vmPlayerManager, &QGCVMPlayerManager::sendCmd, Qt::DirectConnection);
     connect(multiVideoView ,&QGCMultiVideoView::enableConnection, vmPlayerManager, &QGCVMPlayerManager::changeConnectState, Qt::DirectConnection);
     connect(vmPlayerManager, &QGCVMPlayerManager::connectStateChanged, multiVideoView, &QGCMultiVideoView::changeConnectState, Qt::DirectConnection);
-    connect(vmPlayerManager, &QGCVMPlayerManager::commandException, multiVideoView, &QGCMultiVideoView::displayCommandException/*, Qt::QueuedConnection*/);
+    connect(vmPlayerManager, &QGCVMPlayerManager::commandException, multiVideoView, &QGCMultiVideoView::displayCommandException, Qt::DirectConnection);
     multiVideoView->setVisible(false);
 
     // Setup UI state machines
@@ -1058,7 +1059,8 @@ void MainWindow::_loadCurrentViewState(void)
         case VIEW_SETUP:
             _buildSetupView();
             centerView = _setupView;
-            getSetupView()->update();
+            //getSetupView()->update();
+            //getSetupView()->repaint();
             break;
 
         case VIEW_ANALYZE:
