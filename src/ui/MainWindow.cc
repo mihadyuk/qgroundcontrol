@@ -147,6 +147,10 @@ MainWindow::MainWindow(QSplashScreen* splashScreen)
 
     QTextCodec *cyr = QTextCodec::codecForName("UTF-8");
     QTextCodec::setCodecForLocale(cyr);
+    // Qt 4/5 on Ubuntu does place the native menubar correctly so on Linux we revert back to in-window menu bar.
+#ifdef Q_OS_LINUX
+    menuBar()->setNativeMenuBar(false);
+#endif
     
     // Setup user interface
     loadSettings();
@@ -164,13 +168,6 @@ MainWindow::MainWindow(QSplashScreen* splashScreen)
     setDockOptions(AnimatedDocks | AllowTabbedDocks | AllowNestedDocks);
     // Setup corners
     setCorner(Qt::BottomRightCorner, Qt::BottomDockWidgetArea);
-
-    // Qt 4 on Ubuntu does place the native menubar correctly so on Linux we revert back to in-window menu bar.
-    // TODO: Check that this is still necessary on Qt5 on Ubuntu
-
-#ifdef Q_OS_LINUX
-    menuBar()->setNativeMenuBar(false);
-#endif
 
     // On Mobile devices, we don't want any main menus at all.
 #ifdef __mobile__
@@ -400,7 +397,7 @@ void MainWindow::_buildCommonWidgets(void)
 
     // Log player
     // TODO: Make this optional with a preferences setting or under a "View" menu
-    logPlayer = new QGCMAVLinkLogPlayer(MAVLinkProtocol::instance(), statusBar());
+    logPlayer = new QGCMAVLinkLogPlayer(statusBar());
     statusBar()->addPermanentWidget(logPlayer);
 
     // In order for Qt to save and restore state of widgets all widgets must be created ahead of time. We only create the QDockWidget
@@ -630,7 +627,6 @@ void MainWindow::showStatusBarCallback(bool checked)
 {
     _showStatusBar = checked;
     checked ? statusBar()->show() : statusBar()->hide();
-    _ui.actionStatusBar->setText(checked ? "Hide Status Bar" : "Show Status Bar");
 }
 
 void MainWindow::closeEvent(QCloseEvent *event)

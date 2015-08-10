@@ -165,6 +165,8 @@ UAS::UAS(MAVLinkProtocol* protocol, int id) : UASInterface(),
         componentMulti[i] = false;
     }
 
+    connect(this, &UAS::_sendMessageOnThread, this, &UAS::_sendMessage, Qt::QueuedConnection);
+    connect(this, &UAS::_sendMessageOnThreadLink, this, &UAS::_sendMessageLink, Qt::QueuedConnection);
     connect(mavlink, SIGNAL(messageReceived(LinkInterface*,mavlink_message_t)), &fileManager, SLOT(receiveMessage(LinkInterface*,mavlink_message_t)));
 
     // Store a list of available actions for this UAS.
@@ -1729,6 +1731,15 @@ void UAS::setModeArm(uint8_t newBaseMode, uint32_t newCustomMode)
 */
 void UAS::sendMessage(mavlink_message_t message)
 {
+    emit _sendMessageOnThread(message);
+}
+
+/**
+* Send a message to every link that is connected.
+* @param message that is to be sent
+*/
+void UAS::_sendMessage(mavlink_message_t message)
+{
     if (!LinkManager::instance())
     {
         qDebug() << "LINKMANAGER NOT AVAILABLE!";
@@ -1756,6 +1767,16 @@ void UAS::sendMessage(mavlink_message_t message)
 * @message that is to be sent
 */
 void UAS::sendMessage(LinkInterface* link, mavlink_message_t message)
+{
+    emit _sendMessageOnThreadLink(link, message);
+}
+
+/**
+* Send a message to the link that is connected.
+* @param link that the message will be sent to
+* @message that is to be sent
+*/
+void UAS::_sendMessageLink(LinkInterface* link, mavlink_message_t message)
 {
     if(!link) return;
     // Create buffer
@@ -2221,17 +2242,17 @@ void UAS::processParamValueMsg(mavlink_message_t& msg, const QString& paramName,
 
         case MAV_PARAM_TYPE_UINT8:
             if (getAutopilotType() == MAV_AUTOPILOT_ARDUPILOTMEGA) {
-                paramValue = QVariant(QChar((unsigned char)paramUnion.param_float));
+                paramValue = QVariant((unsigned short)paramUnion.param_float);
             } else {
-                paramValue = QVariant(QChar((unsigned char)paramUnion.param_uint8));
+                paramValue = QVariant(paramUnion.param_uint8);
             }
             break;
 
         case MAV_PARAM_TYPE_INT8:
             if (getAutopilotType() == MAV_AUTOPILOT_ARDUPILOTMEGA) {
-                paramValue = QVariant(QChar((char)paramUnion.param_float));
+                paramValue = QVariant((short)paramUnion.param_float);
             } else  {
-                paramValue = QVariant(QChar((char)paramUnion.param_int8));
+                paramValue = QVariant(paramUnion.param_int8);
             }
             break;
 
@@ -3413,4 +3434,15 @@ bool UAS::_containsLink(LinkInterface* link)
     }
 
     return false;
+}
+
+bool UAS::isLogReplay(void)
+{
+    QList<LinkInterface*> links = getLinks();
+    
+    if (links.count() == 1) {
+        return links[0]->isLogReplay();
+    } else {
+        return false;
+    }
 }
