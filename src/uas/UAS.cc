@@ -1515,6 +1515,9 @@ void UAS::startCalibration(UASInterface::StartCalibrationType calType)
         case StartCalibrationEsc:
             escCal = 1;
             break;
+        case StartCalibrationUavcanEsc:
+            escCal = 2;
+            break;
     }
     
     mavlink_message_t msg;
@@ -1552,6 +1555,54 @@ void UAS::stopCalibration(void)
                                   0,                                // accel cal
                                   0,                                // airspeed cal
                                   0);                               // unused
+    sendMessage(msg);
+}
+
+void UAS::startBusConfig(UASInterface::StartBusConfigType calType)
+{
+    int actuatorCal = 0;
+
+    switch (calType) {
+        case StartBusConfigActuators:
+            actuatorCal = 1;
+            break;
+    }
+
+    mavlink_message_t msg;
+    mavlink_msg_command_long_pack(mavlink->getSystemId(),
+                                  mavlink->getComponentId(),
+                                  &msg,
+                                  uasId,
+                                  0,                                // target component
+                                  MAV_CMD_PREFLIGHT_UAVCAN,    // command id
+                                  0,                                // 0=first transmission of command
+                                  actuatorCal,                      // actuators
+                                  0,
+                                  0,
+                                  0,
+                                  0,
+                                  0,
+                                  0);
+    sendMessage(msg);
+}
+
+void UAS::stopBusConfig(void)
+{
+    mavlink_message_t msg;
+    mavlink_msg_command_long_pack(mavlink->getSystemId(),
+                                  mavlink->getComponentId(),
+                                  &msg,
+                                  uasId,
+                                  0,                                // target component
+                                  MAV_CMD_PREFLIGHT_UAVCAN,    // command id
+                                  0,                                // 0=first transmission of command
+                                  0,
+                                  0,
+                                  0,
+                                  0,
+                                  0,
+                                  0,
+                                  0);
     sendMessage(msg);
 }
 
@@ -2879,6 +2930,21 @@ void UAS::enableHilXPlane(bool enable)
         }
         qDebug() << "CREATED NEW XPLANE LINK";
         simulation = new QGCXPlaneLink(this);
+
+        float noise_scaler = 0.1f;
+        xacc_var = noise_scaler * 1.2914f;
+        yacc_var = noise_scaler * 0.7048f;
+        zacc_var = noise_scaler * 1.9577f;
+        rollspeed_var = noise_scaler * 0.8126f;
+        pitchspeed_var = noise_scaler * 0.6145f;
+        yawspeed_var = noise_scaler * 0.5852f;
+        xmag_var = noise_scaler * 0.4786f;
+        ymag_var = noise_scaler * 0.4566f;
+        zmag_var = noise_scaler * 0.3333f;
+        abs_pressure_var = noise_scaler * 1.1604f;
+        diff_pressure_var = noise_scaler * 0.6604f;
+        pressure_alt_var = noise_scaler * 1.1604f;
+        temperature_var = noise_scaler * 2.4290f;
     }
     // Connect X-Plane Link
     if (enable)

@@ -68,7 +68,11 @@ Rectangle {
 
         onShowMessage: {
             toolBarMessage.text = message
-            mainToolBar.height = toolBarHeight + toolBarMessage.contentHeight + verticalMargins
+            if (toolBarMessage.contentHeight > toolBarMessageCloseButton.height) {
+                mainToolBar.height = toolBarHeight + toolBarMessage.contentHeight + (verticalMargins * 2)
+            } else {
+                mainToolBar.height = toolBarHeight + toolBarMessageCloseButton.height + (verticalMargins * 2)
+            }
             toolBarMessageArea.visible = true
         }
     }
@@ -771,32 +775,37 @@ Rectangle {
 
     // Toolbar message area
     Rectangle {
-        id:                 toolBarMessageArea
-        anchors.margins:    horizontalMargins
-        anchors.top:        progressBar.bottom
-        anchors.bottom:     parent.bottom
-        anchors.left:       parent.left
-        anchors.right:      parent.right
-        color:              qgcPal.windowShadeDark
-        visible:            false
+        id:                     toolBarMessageArea
+        anchors.leftMargin:     horizontalMargins
+        anchors.rightMargin:    horizontalMargins
+        anchors.topMargin:      verticalMargins
+        anchors.bottomMargin:   verticalMargins
+        anchors.top:            progressBar.bottom
+        anchors.bottom:         parent.bottom
+        anchors.left:           parent.left
+        anchors.right:          parent.right
+        color:                  qgcPal.windowShadeDark
+        visible:                false
 
         QGCLabel {
             id:             toolBarMessage
             anchors.fill:   parent
             wrapMode:       Text.WordWrap
+			color:			qgcPal.warningText
         }
 
         QGCButton {
             id:                     toolBarMessageCloseButton
             anchors.rightMargin:    horizontalMargins
-            anchors.topMargin:      verticalMargins
             anchors.top:            parent.top
             anchors.right:          parent.right
+			primary:				true
             text:                   "Close Message"
 
             onClicked: {
                 parent.visible = false
                 mainToolBar.height = toolBarHeight
+                mainToolBar.onToolBarMessageClosed()
             }
         }
     }

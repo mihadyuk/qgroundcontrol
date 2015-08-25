@@ -113,6 +113,9 @@ public:
     
     /// Show a non-modal message to the user
     void showToolBarMessage(const QString& message);
+
+	/// @return true: Fake ui into showing mobile interface
+	bool fakeMobile(void) { return _fakeMobile; }
     
 public slots:
     /// You can connect to this slot to show an information message box from a different thread.
@@ -181,6 +184,8 @@ private:
     QTimer              _missingParamsDelayedDisplayTimer;                ///< Timer use to delay missing fact display
     QStringList         _missingParams;                                  ///< List of missing facts to be displayed
     MavManager*         _pMavManager;
+
+	bool				_fakeMobile;	///< true: Fake ui into displaying mobile interface
 
     /// Unit Test have access to creating and destroying singletons
     friend class UnitTest;
