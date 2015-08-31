@@ -32,10 +32,11 @@ import QtQuick.Controls 1.3
 import QtLocation 5.3
 import QtPositioning 5.3
 
-import QGroundControl.Controls 1.0
-import QGroundControl.FlightControls 1.0
-import QGroundControl.ScreenTools 1.0
-import QGroundControl.MavManager 1.0
+import QGroundControl.Controls              1.0
+import QGroundControl.FlightMap        1.0
+import QGroundControl.ScreenTools           1.0
+import QGroundControl.MultiVehicleManager   1.0
+import QGroundControl.Vehicle               1.0
 
 Item {
     id:     root
@@ -47,17 +48,18 @@ Item {
     property real   heading:            0
     property bool   alwaysNorth:        true
     property bool   interactive:        true
-    property bool   showWaypoints:      false
+    property bool   showVehicles:       true
     property string mapName:            'defaultMap'
     property alias  mapItem:            map
-    property alias  waypoints:          polyLine
     property alias  mapMenu:            mapTypeMenu
     property alias  readOnly:           map.readOnly
 
     Component.onCompleted: {
         map.zoomLevel   = 18
-        map.markers     = []
         mapTypeMenu.update();
+        if (showVehicles) {
+            addExistingVehicles()
+        }
     }
 
     //-- Menu to select supported map types
@@ -70,7 +72,7 @@ Item {
             for (var i = 0; i < map.supportedMapTypes.length; i++) {
                 if (mapID === map.supportedMapTypes[i].name) {
                     map.activeMapType = map.supportedMapTypes[i]
-                    MavManager.saveSetting(root.mapName + "/currentMapType", mapID);
+                    multiVehicleManager.saveSetting(root.mapName + "/currentMapType", mapID);
                     return;
                 }
             }
@@ -88,7 +90,7 @@ Item {
             var mapID = ''
             if (map.supportedMapTypes.length > 0)
                 mapID = map.activeMapType.name;
-            mapID = MavManager.loadSetting(root.mapName + "/currentMapType", mapID);
+            mapID = multiVehicleManager.loadSetting(root.mapName + "/currentMapType", mapID);
             for (var i = 0; i < map.supportedMapTypes.length; i++) {
                 var name = map.supportedMapTypes[i].name;
                 addMap(name, mapID === name);
@@ -133,23 +135,41 @@ Item {
         return dist
     }
 
-    function updateWaypoints() {
-        polyLine.path = []
-        // Are we initialized?
-        if (typeof map.markers != 'undefined' && typeof root.longitude != 'undefined') {
-            map.deleteMarkers()
-            if(root.showWaypoints) {
-                for(var i = 0; i < MavManager.waypoints.length; i++) {
-                    var coord = QtPositioning.coordinate(MavManager.waypoints[i].latitude, MavManager.waypoints[i].longitude, MavManager.waypoints[i].altitude);
-                    polyLine.addCoordinate(coord);
-                    map.addMarker(coord, MavManager.waypoints[i].id);
+    property var vehicles: []           ///< List of known vehicles
+    property var vehicleMapItems: []    ///< List of know vehicle map items
+
+    function addVehicle(vehicle) {
+            var qmlItemTemplate = "VehicleMapItem { " +
+                                        "coordinate:    vehicles[%1].coordinate; " +
+                                        "heading:       vehicles[%1].heading " +
+                                    "}"
+
+            var i = vehicles.length
+            qmlItemTemplate = qmlItemTemplate.replace("%1", i)
+            qmlItemTemplate = qmlItemTemplate.replace("%1", i)
+
+            vehicles.push(vehicle)
+            var mapItem = Qt.createQmlObject (qmlItemTemplate, map)
+            vehicleMapItems.push(mapItem)
+
+            mapItem.z = map.z + 1
+            map.addMapItem(mapItem)
+    }
+
+    function removeVehicle(vehicle) {
+            for (var i=0; i<vehicles.length; i++) {
+                if (vehicles[i] == vehicle) {
+                    vehicle[i] = undefined
+                    map.removeMapItem(vehicleMapItems[i])
+                    vehicleMapItems[i] = undefined
+                    break
                 }
-                if (typeof MavManager.waypoints != 'undefined' && MavManager.waypoints.length > 0) {
-                    root.longitude = MavManager.waypoints[0].longitude
-                    root.latitude  = MavManager.waypoints[0].latitude
-                }
-                map.changed = false
             }
+    }
+
+    function addExistingVehicles() {
+        for (var i=0; i<multiVehicleManager.vehicles.length; i++) {
+            addVehicle(multiVehicleManager.vehicles[i])
         }
     }
 
@@ -159,14 +179,10 @@ Item {
     }
 
     Connections {
-        target: MavManager
-        onWaypointsChanged: {
-            root.updateWaypoints();
-        }
-    }
+        target: multiVehicleManager
 
-    onShowWaypointsChanged: {
-        root.updateWaypoints();
+        onVehicleAdded: addVehicle(vehicle)
+        onVehicleRemoved: removeVehicle(vehicle)
     }
 
     Map {
@@ -180,7 +196,6 @@ Item {
         property bool   changed:  false
         property bool   readOnly: false
         property variant scaleLengths: [5, 10, 25, 50, 100, 150, 250, 500, 1000, 2000, 5000, 10000, 20000, 50000, 100000, 200000, 500000, 1000000, 2000000]
-        property variant markers
 
         plugin:     mapPlugin
         width:      1
@@ -225,44 +240,6 @@ Item {
             }
         }
 
-        function updateMarker(coord, wpid)
-        {
-            if(wpid < polyLine.path.length) {
-                var tmpPath = polyLine.path;
-                tmpPath[wpid] = coord;
-                polyLine.path = tmpPath;
-                map.changed = true;
-            }
-        }
-
-        function addMarker(coord, wpid)
-        {
-            var marker = Qt.createQmlObject ('QGCWaypoint {}', map)
-            map.addMapItem(marker)
-            marker.z = map.z + 1
-            marker.coordinate = coord
-            marker.waypointID = wpid
-            // Update list of markers
-            var count = map.markers.length
-            var myArray = []
-            for (var i = 0; i < count; i++){
-                myArray.push(markers[i])
-            }
-            myArray.push(marker)
-            markers = myArray
-        }
-
-        function deleteMarkers()
-        {
-            if (typeof map.markers != 'undefined') {
-                var count = map.markers.length
-                for (var i = 0; i < count; i++) {
-                    map.markers[i].destroy()
-                }
-            }
-            map.markers = []
-        }
-
         function calculateScale() {
             var coord1, coord2, dist, text, f
             f = 0
@@ -287,15 +264,6 @@ Item {
             text = formatDistance(dist)
             scaleImage.width = (scaleImage.sourceSize.width * f) - 2 * scaleImageLeft.sourceSize.width
             scaleText.text = text
-        }
-
-        MapPolyline {
-            id:             polyLine
-            visible:        path.length > 1 && root.showWaypoints
-            line.width:     3
-            line.color:     map.changed ? "#f97a2e" : "#e35cd8"
-            smooth:         true
-            antialiasing:   true
         }
     }
 

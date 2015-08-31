@@ -363,6 +363,7 @@ void LinechartWidget::appendData(int uasId, const QString& curve, const QString&
             timeButton->blockSignals(false);
             if (activePlot) activePlot->enforceGroundTime(true);
         }
+        lastTimestamp = usec;
     }
 
     // Log data

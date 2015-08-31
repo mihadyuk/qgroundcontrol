@@ -71,7 +71,9 @@ This file is part of the QGROUNDCONTROL project
 #include "QGCFileDialog.h"
 #include "QGCMessageBox.h"
 #include "QGCDockWidget.h"
+#include "MultiVehicleManager.h"
 #include "CustomCommandWidget.h"
+#include "HomePositionManager.h"
 
 #ifdef UNITTEST_BUILD
 #include "QmlControls/QmlTestWidget.h"
@@ -151,7 +153,6 @@ MainWindow::MainWindow(QSplashScreen* splashScreen)
 #ifdef Q_OS_LINUX
     menuBar()->setNativeMenuBar(false);
 #endif
-    
     // Setup user interface
     loadSettings();
     emit initStatusChanged(tr("Setting up user interface"), Qt::AlignLeft | Qt::AlignBottom, QColor(62, 93, 141));
@@ -574,13 +575,13 @@ void MainWindow::_createInnerDockWidget(const QString& widgetName)
 #ifndef __mobile__
 void MainWindow::_showHILConfigurationWidgets(void)
 {
-    UASInterface* uas = UASManager::instance()->getActiveUAS();
+    Vehicle* vehicle = MultiVehicleManager::instance()->activeVehicle();
 
-    if (!uas) {
+    if (!vehicle) {
         return;
     }
 
-    UAS* mav = dynamic_cast<UAS*>(uas);
+    UAS* mav = vehicle->uas();
     Q_ASSERT(mav);
 
     int uasId = mav->getUASID();
@@ -659,7 +660,7 @@ void MainWindow::closeEvent(QCloseEvent *event)
     
     _storeCurrentViewState();
     storeSettings();
-    UASManager::instance()->storeSettings();
+    HomePositionManager::instance()->storeSettings();
     event->accept();
 }
 
@@ -762,26 +763,12 @@ void MainWindow::connectCommonActions()
         _ui.actionSetup->activate(QAction::Trigger);
     }
 
-    // The UAS actions are not enabled without connection to system
-    _ui.actionLiftoff->setEnabled(false);
-    _ui.actionLand->setEnabled(false);
-    _ui.actionEmergency_Kill->setEnabled(false);
-    _ui.actionEmergency_Land->setEnabled(false);
-    _ui.actionShutdownMAV->setEnabled(false);
-
     // Connect actions from ui
     connect(_ui.actionAdd_Link, SIGNAL(triggered()), this, SLOT(manageLinks()));
 
     // Connect internal actions
-    connect(UASManager::instance(), SIGNAL(UASCreated(UASInterface*)), this, SLOT(UASCreated(UASInterface*)));
-    connect(UASManager::instance(), SIGNAL(UASDeleted(int)), this, SLOT(UASDeleted(int)));
-
-    // Unmanned System controls
-    connect(_ui.actionLiftoff, SIGNAL(triggered()), UASManager::instance(), SLOT(launchActiveUAS()));
-    connect(_ui.actionLand, SIGNAL(triggered()), UASManager::instance(), SLOT(returnActiveUAS()));
-    connect(_ui.actionEmergency_Land, SIGNAL(triggered()), UASManager::instance(), SLOT(stopActiveUAS()));
-    connect(_ui.actionEmergency_Kill, SIGNAL(triggered()), UASManager::instance(), SLOT(killActiveUAS()));
-    connect(_ui.actionShutdownMAV, SIGNAL(triggered()), UASManager::instance(), SLOT(shutdownActiveUAS()));
+    connect(MultiVehicleManager::instance(), &MultiVehicleManager::vehicleAdded, this, &MainWindow::_vehicleAdded);
+    connect(MultiVehicleManager::instance(), &MultiVehicleManager::vehicleRemoved, this, &MainWindow::_vehicleRemoved);
 
     // Views actions
     connect(_ui.actionFlight, SIGNAL(triggered()), this, SLOT(loadFlightView()));
@@ -858,17 +845,9 @@ void MainWindow::commsWidgetDestroyed(QObject *obj)
     }
 }
 
-void MainWindow::UASCreated(UASInterface* uas)
+void MainWindow::_vehicleAdded(Vehicle* vehicle)
 {
-    // The UAS actions are not enabled without connection to system
-    _ui.actionLiftoff->setEnabled(true);
-    _ui.actionLand->setEnabled(true);
-    _ui.actionEmergency_Kill->setEnabled(true);
-    _ui.actionEmergency_Land->setEnabled(true);
-    _ui.actionShutdownMAV->setEnabled(true);
-
-    connect(uas, SIGNAL(valueChanged(int,QString,QString,QVariant,quint64)), this, SIGNAL(valueChanged(int,QString,QString,QVariant,quint64)));
-    connect(uas, SIGNAL(misconfigurationDetected(UASInterface*)), this, SLOT(handleMisconfiguration(UASInterface*)));
+    connect(vehicle->uas(), SIGNAL(valueChanged(int,QString,QString,QVariant,quint64)), this, SIGNAL(valueChanged(int,QString,QString,QVariant,quint64)));
 
     // HIL
 #ifndef __mobile__
@@ -888,11 +867,13 @@ void MainWindow::UASCreated(UASInterface* uas)
     }
 }
 
-void MainWindow::UASDeleted(int uasId)
+void MainWindow::_vehicleRemoved(Vehicle* vehicle)
 {
-    if (_mapUasId2HilDockWidget.contains(uasId)) {
-        _mapUasId2HilDockWidget[uasId]->deleteLater();
-        _mapUasId2HilDockWidget.remove(uasId);
+    int vehicleId = vehicle->id();
+    
+    if (_mapUasId2HilDockWidget.contains(vehicleId)) {
+        _mapUasId2HilDockWidget[vehicleId]->deleteLater();
+        _mapUasId2HilDockWidget.remove(vehicleId);
     }
 }
 
@@ -1033,33 +1014,6 @@ void MainWindow::_showDockWidgetAction(bool show)
     _showDockWidget(action->data().toString(), show);
 }
 
-
-void MainWindow::handleMisconfiguration(UASInterface* uas)
-{
-    static QTime lastTime;
-    // We have to debounce this signal
-    if (!lastTime.isValid()) {
-        lastTime.start();
-    } else {
-        if (lastTime.elapsed() < 10000) {
-            lastTime.start();
-            return;
-        }
-    }
-    // Ask user if they want to handle this now
-    QMessageBox::StandardButton button =
-        QGCMessageBox::question(
-            tr("Missing or Invalid Onboard Configuration"),
-            tr("The onboard system configuration is missing or incomplete. Do you want to resolve this now?"),
-            QMessageBox::Ok | QMessageBox::Cancel,
-            QMessageBox::Ok);
-    if (button == QMessageBox::Ok) {
-        // They want to handle it, make sure this system is selected
-        UASManager::instance()->setActiveUAS(uas);
-        // Flick to config view
-        loadSetupView();
-    }
-}
 
 void MainWindow::loadAnalyzeView()
 {

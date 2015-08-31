@@ -45,7 +45,6 @@
 // Work around circular header includes
 class QGCSingleton;
 class MainWindow;
-class MavManager;
 
 /**
  * @brief The main application and management class.
@@ -105,12 +104,6 @@ public:
     /// multiple times.
     void reportMissingParameter(int componentId, const QString& name);
 
-    /// When the singleton is created, it sets a pointer for subsequent use
-    void setMavManager(MavManager* pMgr);
-
-    /// MavManager accessor
-    MavManager* getMavManager();
-    
     /// Show a non-modal message to the user
     void showToolBarMessage(const QString& message);
 
@@ -183,7 +176,6 @@ private:
     static const int    _missingParamsDelayedDisplayTimerTimeout = 1000;  ///< Timeout to wait for next missing fact to come in before display
     QTimer              _missingParamsDelayedDisplayTimer;                ///< Timer use to delay missing fact display
     QStringList         _missingParams;                                  ///< List of missing facts to be displayed
-    MavManager*         _pMavManager;
 
 	bool				_fakeMobile;	///< true: Fake ui into displaying mobile interface
 
