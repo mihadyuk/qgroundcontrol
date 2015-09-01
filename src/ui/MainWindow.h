@@ -59,7 +59,7 @@ This file is part of the QGROUNDCONTROL project
 #include "MainToolBar.h"
 #include "LogCompressor.h"
 
-#include "FlightDisplay.h"
+#include "FlightDisplayView.h"
 #include "QGCMAVLinkInspector.h"
 #include "QGCMAVLinkLogPlayer.h"
 #include "MAVLinkDecoder.h"
@@ -74,7 +74,6 @@ class QGCStatusBar;
 class Linecharts;
 class QGCDataPlot2D;
 class QGCUASFileViewMulti;
-class FlightDisplay;
 
 /**
  * @brief Main Application Window
@@ -126,7 +125,7 @@ public:
     MainToolBar* getMainToolBar(void) { return _mainToolBar; }
 
     /// @brief Gets a pointer to the Main Flight Display
-    FlightDisplay* getFlightDisplay() { return dynamic_cast<FlightDisplay*>(_flightView.data()); }
+    FlightDisplayView* getFlightDisplay() { return dynamic_cast<FlightDisplayView*>(_flightView.data()); }
     
     QWidget* getCurrentViewWidget(void) { return _currentViewWidget; }
 
@@ -144,8 +143,6 @@ public slots:
     void loadAnalyzeView();
     /** @brief Load New (QtQuick) Map View (Mission) */
     void loadPlanView();
-    /** @brief Load Old (Qt Widget) Map View (Mission) */
-    void loadOldPlanView();
     /** @brief Manage Links */
     void manageLinks();
 
@@ -216,7 +213,6 @@ protected:
         VIEW_SETUP,             // Setup view. Used for initializing the system for operation. Includes UI for calibration, firmware updating/checking, and parameter modifcation.
         VIEW_UNUSED1,           // Unused (don't remove, or it will screw up saved settigns indices)
         VIEW_UNUSED2,           // Unused (don't remove, or it will screw up saved settigns indices)
-        VIEW_EXPERIMENTAL_PLAN, // Original (Qt Widget) Mission/Map/Plan view mode. Used for setting mission waypoints and high-level system commands.
     } VIEW_SECTIONS;
 
     /** @brief Catch window resize events */
@@ -294,7 +290,6 @@ private:
 
     // Center widgets
     QPointer<QWidget> _planView;
-    QPointer<QWidget> _experimentalPlanView;
     QPointer<QWidget> _flightView;
     QPointer<QWidget> _setupView;
     QPointer<QWidget> _analyzeView;
@@ -323,7 +318,6 @@ private:
     QMap<QDockWidget*, QAction*>    _mapDockWidget2Action;
 
     void _buildPlanView(void);
-    void _buildExperimentalPlanView(void);
     void _buildFlightView(void);
     void _buildSetupView(void);
     void _buildAnalyzeView(void);

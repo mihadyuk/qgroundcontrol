@@ -64,7 +64,8 @@ This file is part of the QGROUNDCONTROL project
 #include "Linecharts.h"
 #include "QGCTabbedInfoView.h"
 #include "UASRawStatusView.h"
-#include "FlightDisplay.h"
+#include "FlightDisplayView.h"
+#include "FlightDisplayWidget.h"
 #include "SetupView.h"
 #include "QGCUASFileViewMulti.h"
 #include "QGCApplication.h"
@@ -444,18 +445,10 @@ void MainWindow::_buildPlanView(void)
     }
 }
 
-void MainWindow::_buildExperimentalPlanView(void)
-{
-    if (!_experimentalPlanView) {
-        _experimentalPlanView = new QGCMapDisplay(this);
-        _experimentalPlanView->setVisible(false);
-    }
-}
-
 void MainWindow::_buildFlightView(void)
 {
     if (!_flightView) {
-        _flightView = new FlightDisplay(this);
+        _flightView = new FlightDisplayView(this);
         _flightView->setVisible(false);
     }
 }
@@ -553,7 +546,7 @@ void MainWindow::_createInnerDockWidget(const QString& widgetName)
 
         widget = hddisplay;
     } else if (widgetName == _pfdDockWidgetName) {
-        widget = new FlightDisplay(this);
+        widget = new FlightDisplayWidget(this);
     } else if (widgetName == _hudDockWidgetName) {
         widget = new HUD(320,240,this);
     } else if (widgetName == _uasInfoViewDockWidgetName) {
@@ -728,7 +721,6 @@ void MainWindow::connectCommonActions()
     perspectives->addAction(_ui.actionSimulationView);
     perspectives->addAction(_ui.actionPlan);
     perspectives->addAction(_ui.actionSetup);
-    perspectives->addAction(_ui.actionExperimentalPlanView);
     perspectives->setExclusive(true);
 
     // Mark the right one as selected
@@ -752,11 +744,6 @@ void MainWindow::connectCommonActions()
         _ui.actionPlan->setChecked(true);
         _ui.actionPlan->activate(QAction::Trigger);
     }
-    if (_currentView == VIEW_EXPERIMENTAL_PLAN)
-    {
-        _ui.actionExperimentalPlanView->setChecked(true);
-        _ui.actionExperimentalPlanView->activate(QAction::Trigger);
-    }
     if (_currentView == VIEW_SETUP)
     {
         _ui.actionSetup->setChecked(true);
@@ -775,7 +762,6 @@ void MainWindow::connectCommonActions()
     connect(_ui.actionSimulationView, SIGNAL(triggered()), this, SLOT(loadSimulationView()));
     connect(_ui.actionAnalyze, SIGNAL(triggered()), this, SLOT(loadAnalyzeView()));
     connect(_ui.actionPlan, SIGNAL(triggered()), this, SLOT(loadPlanView()));
-    connect(_ui.actionExperimentalPlanView, SIGNAL(triggered()), this, SLOT(loadOldPlanView()));
 
     // Help Actions
     connect(_ui.actionOnline_Documentation, SIGNAL(triggered()), this, SLOT(showHelp()));
@@ -929,12 +915,6 @@ void MainWindow::_loadCurrentViewState(void)
             defaultWidgets = "WAYPOINT_LIST_DOCKWIDGET";
             break;
 
-        case VIEW_EXPERIMENTAL_PLAN:
-            _buildExperimentalPlanView();
-            centerView = _experimentalPlanView;
-            defaultWidgets.clear();
-            break;
-
         case VIEW_SIMULATION:
             _buildSimView();
             centerView = _simView;
@@ -1033,17 +1013,6 @@ void MainWindow::loadPlanView()
         _storeCurrentViewState();
         _currentView = VIEW_PLAN;
         _ui.actionPlan->setChecked(true);
-        _loadCurrentViewState();
-    }
-}
-
-void MainWindow::loadOldPlanView()
-{
-    if (_currentView != VIEW_EXPERIMENTAL_PLAN)
-    {
-        _storeCurrentViewState();
-        _currentView = VIEW_EXPERIMENTAL_PLAN;
-        _ui.actionExperimentalPlanView->setChecked(true);
         _loadCurrentViewState();
     }
 }

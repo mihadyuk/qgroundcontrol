@@ -145,12 +145,12 @@ INCLUDEPATH += \
     src/audio \
     src/AutoPilotPlugins \
     src/comm \
+    src/FlightDisplay \
     src/input \
     src/lib/qmapcontrol \
     src/QmlControls \
     src/uas \
     src/ui \
-    src/ui/flightdisplay \
     src/ui/linechart \
     src/ui/map \
     src/ui/mapdisplay \
@@ -244,6 +244,8 @@ HEADERS += \
     src/comm/QGCMAVLink.h \
     src/comm/TCPLink.h \
     src/comm/UDPLink.h \
+    src/FlightDisplay/FlightDisplayWidget.h \
+    src/FlightDisplay/FlightDisplayView.h \
     src/GAudioOutput.h \
     src/HomePositionManager.h \
     src/LogCompressor.h \
@@ -262,6 +264,7 @@ HEADERS += \
     src/QGCQuickWidget.h \
     src/QGCSingleton.h \
     src/QGCTemporaryFile.h \
+    src/QmlControls/MavlinkQmlSingleton.h \
     src/QmlControls/ParameterEditorController.h \
     src/QmlControls/ScreenToolsController.h \
     src/SerialPortIds.h \
@@ -270,7 +273,6 @@ HEADERS += \
     src/uas/UASInterface.h \
     src/uas/UASMessageHandler.h \
     src/uas/UASWaypointManager.h \
-    src/ui/flightdisplay/FlightDisplay.h \
     src/ui/HDDisplay.h \
     src/ui/HSIDisplay.h \
     src/ui/HUD.h \
@@ -341,10 +343,9 @@ HEADERS += \
     src/ViewWidgets/CustomCommandWidgetController.h \
     src/ViewWidgets/ParameterEditorWidget.h \
     src/ViewWidgets/ViewWidgetController.h \
-    src/Waypoint.h \
     src/ui/uas/UASQuickTabView.h \
-    src/AutoPilotPlugins/PX4/PX4AirframeLoader.h \
-
+    src/MissionItem.h \
+    src/AutoPilotPlugins/PX4/PX4AirframeLoader.h
 
 !iOSBuild {
 HEADERS += \
@@ -381,6 +382,8 @@ SOURCES += \
     src/comm/MockLinkMissionItemHandler.cc \
     src/comm/TCPLink.cc \
     src/comm/UDPLink.cc \
+    src/FlightDisplay/FlightDisplayWidget.cc \
+    src/FlightDisplay/FlightDisplayView.cc \
     src/GAudioOutput.cc \
     src/HomePositionManager.cc \
     src/LogCompressor.cc \
@@ -402,7 +405,6 @@ SOURCES += \
     src/uas/UAS.cc \
     src/uas/UASMessageHandler.cc \
     src/uas/UASWaypointManager.cc \
-    src/ui/flightdisplay/FlightDisplay.cc \
     src/ui/HDDisplay.cc \
     src/ui/HSIDisplay.cc \
     src/ui/HUD.cc \
@@ -473,9 +475,9 @@ SOURCES += \
     src/ViewWidgets/CustomCommandWidgetController.cc \
     src/ViewWidgets/ParameterEditorWidget.cc \
     src/ViewWidgets/ViewWidgetController.cc \
-    src/Waypoint.cc \
-    src/ui/uas/UASQuickTabView.cpp \
-    src/AutoPilotPlugins/PX4/PX4AirframeLoader.cc \
+	src/ui/uas/UASQuickTabView.cpp \
+    src/MissionItem.cc \
+    src/AutoPilotPlugins/PX4/PX4AirframeLoader.cc
 
 
 !iOSBuild {
