@@ -53,6 +53,7 @@ Item {
     property alias  mapMenu:            mapTypeMenu
     property bool   showVehicles:       false
     property bool   showMissionItems:   false
+    property bool   isSatelliteMap:     false
 
     Component.onCompleted: {
         map.zoomLevel   = 18
@@ -60,6 +61,15 @@ Item {
         addExistingVehicles()
         updateMissionItemsConnections()
         updateMissionItems()
+    }
+
+    function updateMapType(type) {
+        var isSatellite = (type === MapType.SatelliteMapDay || type === MapType.SatelliteMapNight)
+        if(isSatelliteMap !== isSatellite) {
+            isSatelliteMap = isSatellite;
+            removeAllVehicles()
+            addExistingVehicles()
+        }
     }
 
     //-- Menu to select supported map types
@@ -72,6 +82,7 @@ Item {
             for (var i = 0; i < map.supportedMapTypes.length; i++) {
                 if (mapID === map.supportedMapTypes[i].name) {
                     map.activeMapType = map.supportedMapTypes[i]
+                    updateMapType(map.supportedMapTypes[i].style)
                     multiVehicleManager.saveSetting(root.mapName + "/currentMapType", mapID);
                     return;
                 }
@@ -164,7 +175,8 @@ Item {
         
         var qmlItemTemplate = "VehicleMapItem { " +
                                     "coordinate:    _vehicles[%1].coordinate; " +
-                                    "heading:       _vehicles[%1].heading " +
+                                    "heading:       _vehicles[%1].heading; " +
+                                    "isSatellite:   root.isSatelliteMap; " +
                                 "}"
 
         var i = _vehicles.length
@@ -191,6 +203,18 @@ Item {
                 _vehicleMapItems[i] = undefined
                 break
             }
+        }
+    }
+
+    function removeAllVehicles() {
+        if (!showVehicles) {
+            return
+        }
+
+        for (var i=0; i<_vehicles.length; i++) {
+            _vehicles[i] = undefined
+            map.removeMapItem(_vehicleMapItems[i])
+            _vehicleMapItems[i] = undefined
         }
     }
 
@@ -374,20 +398,46 @@ Item {
 */
     }
     
-    /// Mission item list
-    Row {
-        anchors.margins:    ScreenTools.defaultFontPixelWidth
-        anchors.left:       parent.left
-        anchors.right:      controlWidgets.left
-        anchors.bottom:     parent.bottom
-        spacing:            ScreenTools.defaultFontPixelWidth
+    // Mission item list
+    ScrollView {
+        id:                         missionItemScroll
+        anchors.margins:            ScreenTools.defaultFontPixelWidth
+        anchors.left:               parent.left
+        anchors.right:              controlWidgets.left
+        anchors.bottom:             parent.bottom
+        height:                     missionItemRow.height + _scrollBarHeightAdjust
+        verticalScrollBarPolicy:    Qt.ScrollBarAlwaysOff
+        opacity:                    0.75
         
-        Repeater {
-            model: multiVehicleManager.activeVehicle ? multiVehicleManager.activeVehicle.missionItems : 0
+        property bool _scrollBarShown: missionItemRow.width > missionItemScroll.width
+        property real _scrollBarHeightAdjust: _scrollBarShown ? (scrollBarHeight.height - scrollBarHeight.viewport.height) + 5 : 0
+        
+        Row {
+            id:         missionItemRow
+            spacing:    ScreenTools.defaultFontPixelWidth
             
-            MissionItemSummary {
-                missionItem:        modelData
+            Repeater {
+                model: multiVehicleManager.activeVehicle ? multiVehicleManager.activeVehicle.missionItems : 0
+                
+                MissionItemSummary {
+                    opacity:        0.75
+                    missionItem:    modelData
+                }
             }
+        }
+    }
+    
+    // This is used to determine the height of a horizontal scroll bar
+    ScrollView {
+        id:     scrollBarHeight
+        x:      10000
+        y:      10000
+        width:  100
+        height: 100
+        
+        Rectangle {
+            height: 50
+            width:  200
         }
     }
 
