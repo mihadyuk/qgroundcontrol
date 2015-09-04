@@ -31,6 +31,7 @@
 #include "Vehicle.h"
 
 Q_DECLARE_LOGGING_CATEGORY(JoystickLog)
+Q_DECLARE_LOGGING_CATEGORY(JoystickValuesLog)
 
 class Joystick : public QThread
 {
@@ -65,7 +66,6 @@ public:
     Q_PROPERTY(QString name READ name CONSTANT)
     
     Q_PROPERTY(bool calibrated MEMBER _calibrated NOTIFY calibratedChanged)
-    Q_PROPERTY(bool enabled READ enabled WRITE setEnabled NOTIFY enabledChanged)
     
     Q_PROPERTY(int buttonCount MEMBER _buttonCount CONSTANT)
     Q_PROPERTY(int axisCount MEMBER _axisCount CONSTANT)
@@ -79,7 +79,7 @@ public:
     Q_PROPERTY(int throttleMode READ throttleMode WRITE setThrottleMode NOTIFY throttleModeChanged)
     
     /// Start the polling thread which will in turn emit joystick signals
-    void startPolling(void);
+    void startPolling(Vehicle* vehicle);
     void stopPolling(void);
     
     void setCalibration(int axis, Calibration_t& calibration);
@@ -96,11 +96,11 @@ public:
     int throttleMode(void);
     void setThrottleMode(int mode);
     
-    bool enabled(void);
-    void setEnabled(bool enabled);
+    /// Calibration is about to start
+    void startCalibration(void);
     
-    bool calibrating(void) { return _calibrating; }
-    void setCalibrating(bool calibrating) { _calibrating = calibrating; }
+    /// Calibration has ended
+    void stopCalibration(void);
     
 signals:
     void calibratedChanged(bool calibrated);
@@ -139,7 +139,6 @@ private:
     bool    _exitThread;    ///< true: signal thread to exit
     
     QString _name;
-    bool    _enabled;
     bool    _calibrated;
     bool    _calibrating;
     int     _axisCount;
@@ -156,6 +155,9 @@ private:
     quint16             _lastButtonBits;
     
     ThrottleMode_t      _throttleMode;
+    
+    Vehicle*            _activeVehicle;
+    bool                _pollingStartedForCalibration;
 #endif // __mobile__
     
 private:
@@ -165,7 +167,6 @@ private:
     static const char* _calibratedSettingsKey;
     static const char* _buttonActionSettingsKey;
     static const char* _throttleModeSettingsKey;
-    static const char* _enabledSettingsKey;
 };
     
 #endif
