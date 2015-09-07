@@ -57,10 +57,9 @@ Joystick::Joystick(const QString& name, int axisCount, int buttonCount, int sdlI
     : _sdlIndex(sdlIndex)
     , _exitThread(false)
     , _name(name)
-    , _calibrated(false)
-    , _calibrating(false)
     , _axisCount(axisCount)
     , _buttonCount(buttonCount)
+    , _calibrationMode(CalibrationModeOff)
     , _lastButtonBits(0)
     , _throttleMode(ThrottleModeCenterZero)
     , _activeVehicle(NULL)
@@ -273,7 +272,7 @@ void Joystick::run(void)
             }
         }
         
-        if (_calibrated && !_calibrating) {
+        if (_calibrationMode != CalibrationModeCalibrating) {
             int     axis = _rgFunctionAxis[rollFunction];
             float   roll = _adjustRange(_rgAxisValues[axis], _rgCalibration[axis]);
             
@@ -286,14 +285,15 @@ void Joystick::run(void)
                     axis = _rgFunctionAxis[throttleFunction];
             float   throttle = _adjustRange(_rgAxisValues[axis], _rgCalibration[axis]);
 
-            roll =      std::max(-1.0f, std::min(roll, 1.0f));
-            pitch =     std::max(-1.0f, std::min(pitch, 1.0f));
-            yaw =       std::max(-1.0f, std::min(yaw, 1.0f));
-            throttle =  std::max(-1.0f, std::min(throttle, 1.0f));
+            // Map from unit circle to linear range and limit
+            roll =      std::max(-1.0f, std::min(tanf(asinf(roll)), 1.0f));
+            pitch =     std::max(-1.0f, std::min(tanf(asinf(pitch)), 1.0f));
+            yaw =       std::max(-1.0f, std::min(tanf(asinf(yaw)), 1.0f));
+            throttle =  std::max(-1.0f, std::min(tanf(asinf(throttle)), 1.0f));
             
             // Adjust throttle to 0:1 range
             if (_throttleMode == ThrottleModeCenterZero) {
-                throttle =  std::max(0.0f, throttle);
+                throttle = std::max(0.0f, throttle);
             } else {                
                 throttle = (throttle + 1.0f) / 2.0f;
             }
@@ -312,14 +312,13 @@ void Joystick::run(void)
             for (int buttonIndex=0; buttonIndex<_buttonCount; buttonIndex++) {
                 quint16 buttonBit = 1 << buttonIndex;
                 
-                if (_rgButtonValues[buttonIndex]) {
-                    // Button pressed down, just record it
+                if (!_rgButtonValues[buttonIndex]) {
+                    // Button up, just record it
                     newButtonBits |= buttonBit;
                 } else {
                     if (_lastButtonBits & buttonBit) {
-                        // Button was down last time through, but is now up which indicates a button press
+                        // Button was up last time through, but is now down which indicates a button press
                         qCDebug(JoystickLog) << "button triggered" << buttonIndex;
-                        
                         
                         if (buttonIndex >= reservedButtonCount) {
                             // Button is above firmware reserved set
@@ -328,13 +327,11 @@ void Joystick::run(void)
                                 qCDebug(JoystickLog) << "buttonActionTriggered" << buttonAction;
                                 emit buttonActionTriggered(buttonAction);
                             }
-                        } else {
-                            // Button is within firmware reserved set
-                            // Record the button press for manualControl signal
-                            buttonPressedBits |= buttonBit;
-                            qCDebug(JoystickLog) << "button press recorded for manualControl" << buttonIndex;
                         }
                     }
+
+                    // Mark the button as pressed as long as its pressed
+                    buttonPressedBits |= buttonBit;
                 }
             }
             
@@ -355,8 +352,14 @@ void Joystick::run(void)
 void Joystick::startPolling(Vehicle* vehicle)
 {
     if (isRunning()) {
-        if (_calibrating && vehicle != _activeVehicle) {
+        if (vehicle != _activeVehicle) {
             // Joystick was previously disabled, but now enabled from config screen
+            
+            if (_calibrationMode == CalibrationModeOff) {
+                qWarning() << "Incorrect usage pattern";
+                return;
+            }
+            
             _activeVehicle = vehicle;
             _pollingStartedForCalibration = false;
         }
@@ -489,9 +492,14 @@ void Joystick::setThrottleMode(int mode)
     emit throttleModeChanged(_throttleMode);
 }
 
-void Joystick::startCalibration(void)
+void Joystick::startCalibrationMode(CalibrationMode_t mode)
 {
-    _calibrating = true;
+    if (mode == CalibrationModeOff) {
+        qWarning() << "Incorrect mode CalibrationModeOff";
+        return;
+    }
+    
+    _calibrationMode = mode;
     
     if (!isRunning()) {
         _pollingStartedForCalibration = true;
@@ -499,11 +507,20 @@ void Joystick::startCalibration(void)
     }
 }
 
-void Joystick::stopCalibration(void)
+void Joystick::stopCalibrationMode(CalibrationMode_t mode)
 {
-    if (_calibrating) {
-        _calibrating = false;
-        
+    if (mode == CalibrationModeOff) {
+        qWarning() << "Incorrect mode: CalibrationModeOff";
+        return;
+    } else if (mode != _calibrationMode) {
+        qWarning() << "Incorrect mode sequence request:active" << mode << _calibrationMode;
+        return;
+    }
+    
+    if (mode == CalibrationModeCalibrating) {
+        _calibrationMode = CalibrationModeMonitor;
+    } else {
+        _calibrationMode = CalibrationModeOff;
         if (_pollingStartedForCalibration) {
             stopPolling();
         }

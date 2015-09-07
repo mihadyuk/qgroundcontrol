@@ -73,7 +73,7 @@ JoystickConfigController::JoystickConfigController(void)
     _activeJoystickChanged(joystickManager->activeJoystick());
     _loadSettings();
     _resetInternalCalibrationValues();
-    _activeJoystick->startCalibration();
+    _activeJoystick->startCalibrationMode(Joystick::CalibrationModeMonitor);
 }
 
 void JoystickConfigController::start(void)
@@ -84,7 +84,7 @@ void JoystickConfigController::start(void)
 
 JoystickConfigController::~JoystickConfigController()
 {
-    _activeJoystick->stopCalibration();
+    _activeJoystick->stopCalibrationMode(Joystick::CalibrationModeMonitor);
     _storeSettings();
 }
 
@@ -411,7 +411,7 @@ void JoystickConfigController::_inputCenterWait(Joystick::AxisFunction_t functio
 void JoystickConfigController::_resetInternalCalibrationValues(void)
 {
     // Set all raw axiss to not reversed and center point values
-    for (size_t i=0; i<_axisMax; i++) {
+    for (int i=0; i<_axisMax; i++) {
         struct AxisInfo* info = &_rgAxisInfo[i];
         info->function = Joystick::maxFunction;
         info->reversed = false;
@@ -435,7 +435,7 @@ void JoystickConfigController::_setInternalCalibrationValuesFromSettings(void)
     
     // Initialize all function mappings to not set
     
-    for (size_t i=0; i<_axisMax; i++) {
+    for (int i=0; i<_axisMax; i++) {
         struct AxisInfo* info = &_rgAxisInfo[i];
         info->function = Joystick::maxFunction;
     }
@@ -548,6 +548,7 @@ void JoystickConfigController::_startCalibration(void)
 {
     Q_ASSERT(_axisCount >= _axisMinimum);
     
+    _activeJoystick->startCalibrationMode(Joystick::CalibrationModeCalibrating);
     _resetInternalCalibrationValues();
     
     _nextButton->setProperty("text", "Next");
@@ -562,6 +563,7 @@ void JoystickConfigController::_stopCalibration(void)
 {
     _currentStep = -1;
     
+    _activeJoystick->stopCalibrationMode(Joystick::CalibrationModeCalibrating);
     _setInternalCalibrationValuesFromSettings();
     
     _statusText->setProperty("text", "");
@@ -578,7 +580,7 @@ void JoystickConfigController::_stopCalibration(void)
 void JoystickConfigController::_calSaveCurrentValues(void)
 {
 	qCDebug(JoystickConfigControllerLog) << "_calSaveCurrentValues";
-    for (unsigned i = 0; i < _axisMax; i++) {
+    for (int i = 0; i < _axisMax; i++) {
         _axisValueSave[i] = _axisRawValue[i];
     }
 }
