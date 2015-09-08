@@ -708,7 +708,7 @@ void Vehicle::_updateWaypointViewOnly(int, MissionItem* /*wp*/)
     /*
      bool changed = false;
      for(int i = 0; i < _waypoints.count(); i++) {
-     if(_waypoints[i].getId() == wp->getId()) {
+     if(_waypoints[i].sequenceNumber() == wp->sequenceNumber()) {
      _waypoints[i] = *wp;
      changed = true;
      break;
@@ -729,6 +729,7 @@ void Vehicle::_waypointViewOnlyListChanged()
         for(int i = 0; i < newMisionItems.count(); i++) {
             MissionItem* itemToCopy = newMisionItems[i];
             MissionItem* item = new MissionItem(*itemToCopy);
+            item->setParent(this);
             _missionItems.append(item);
         }
     }
