@@ -150,6 +150,7 @@ INCLUDEPATH += \
     src/Joystick \
     src/lib/qmapcontrol \
     src/MissionEditor \
+    src/MissionManager \
     src/QmlControls \
     src/uas \
     src/ui \
@@ -252,6 +253,7 @@ HEADERS += \
     src/LogCompressor.h \
     src/MG.h \
     src/MissionEditor/MissionEditor.h \
+    src/MissionManager/MissionManager.h \
     src/QGC.h \
     src/QGCApplication.h \
     src/QGCComboBox.h \
@@ -391,6 +393,7 @@ SOURCES += \
     src/LogCompressor.cc \
     src/main.cc \
     src/MissionEditor/MissionEditor.cc \
+    src/MissionManager/MissionManager.cc \
     src/QGC.cc \
     src/QGCApplication.cc \
     src/QGCComboBox.cc \
@@ -677,12 +680,14 @@ INCLUDEPATH += \
 HEADERS += \
     src/VideoStreaming/VideoItem.h \
     src/VideoStreaming/VideoReceiver.h \
+    src/VideoStreaming/VideoStreaming.h \
     src/VideoStreaming/VideoSurface.h \
     src/VideoStreaming/VideoSurface_p.h \
 
 SOURCES += \
     src/VideoStreaming/VideoItem.cc \
     src/VideoStreaming/VideoReceiver.cc \
+    src/VideoStreaming/VideoStreaming.cc \
     src/VideoStreaming/VideoSurface.cc \
 
 contains (DEFINES, DISABLE_VIDEOSTREAMING) {

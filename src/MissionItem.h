@@ -53,7 +53,7 @@ public:
                 int             frame = MAV_FRAME_GLOBAL,
                 int             action = MAV_CMD_NAV_WAYPOINT);
 
-    MissionItem(const MissionItem& other);
+    MissionItem(const MissionItem& other, QObject* parent = NULL);
     ~MissionItem();
 
     const MissionItem& operator=(const MissionItem& other);
@@ -69,6 +69,7 @@ public:
     Q_PROPERTY(QStringList          valueStrings        READ valueStrings                                   NOTIFY valueStringsChanged)
     Q_PROPERTY(int                  commandByIndex      READ commandByIndex         WRITE setCommandByIndex NOTIFY commandChanged)
     Q_PROPERTY(QmlObjectListModel*  facts               READ facts                                          NOTIFY commandChanged)
+    Q_PROPERTY(int                  factCount           READ factCount                                      NOTIFY commandChanged)
     Q_PROPERTY(MavlinkQmlSingleton::Qml_MAV_CMD command READ command                WRITE setCommand        NOTIFY commandChanged)
     
     // Property accesors
@@ -90,13 +91,14 @@ public:
     int commandByIndex(void);
     void setCommandByIndex(int index);
     
-    MavlinkQmlSingleton::Qml_MAV_CMD command(void) { return (MavlinkQmlSingleton::Qml_MAV_CMD)getAction(); };
+    MavlinkQmlSingleton::Qml_MAV_CMD command(void) { return (MavlinkQmlSingleton::Qml_MAV_CMD)_command; };
     void setCommand(MavlinkQmlSingleton::Qml_MAV_CMD command) { setAction(command); }
     
     QStringList valueLabels(void);
     QStringList valueStrings(void);
     
     QmlObjectListModel* facts(void);
+    int factCount(void);
     
     double yawDegrees(void) const;
     void setYawDegrees(double yaw);
@@ -122,56 +124,55 @@ public:
     double yawRadians(void) const;
     void setYawRadians(double yaw);
     
-    bool getAutoContinue() const {
+    bool autoContinue() const {
         return _autocontinue;
     }
-    double getLoiterOrbit() const {
-        return _orbit;
+    double loiterOrbitRadius() const {
+        return _loiterOrbitRadiusFact->value().toDouble();
     }
-    double getAcceptanceRadius() const {
-        return _param2;
+    double acceptanceRadius() const {
+        return param2();
     }
-    double getHoldTime() const {
-        return _param1;
+    double holdTime() const {
+        return param1();
     }
-    double getParam1() const {
-        return _param1;
+    double param1() const {
+        return _param1Fact->value().toDouble();
     }
-    double getParam2() const {
-        return _param2;
+    double param2() const {
+        return _param2Fact->value().toDouble();
     }
-    double getParam3() const {
-        return _orbit;
+    double param3() const {
+        return loiterOrbitRadius();
     }
-    double getParam4() const {
+    double param4() const {
         return yawRadians();
     }
-    double getParam5() const {
+    double param5() const {
         return latitude();
     }
-    double getParam6() const {
+    double param6() const {
         return longitude();
     }
-    double getParam7() const {
+    double param7() const {
         return altitude();
     }
     // MAV_FRAME
-    int getFrame() const {
+    int frame() const {
         return _frame;
     }
     // MAV_CMD
-    int getAction() const {
-        return _action;
+    int command() const {
+        return _command;
     }
     /** @brief Returns true if x, y, z contain reasonable navigation data */
     bool isNavigationType();
 
     /** @brief Get the time this waypoint was reached */
-    quint64 getReachedTime() const { return _reachedTime; }
+    quint64 reachedTime() const { return _reachedTime; }
 
     void save(QTextStream &saveStream);
     bool load(QTextStream &loadStream);
-    
     
 signals:
     void sequenceNumberChanged(int sequenceNumber);
@@ -195,7 +196,7 @@ public:
     void setFrame       (int _frame);
     void setAutocontinue(bool autoContinue);
     void setCurrent     (bool _current);
-    void setLoiterOrbit (double _orbit);
+    void setLoiterOrbitRadius (double radius);
     void setParam1      (double _param1);
     void setParam2      (double _param2);
     void setParam3      (double param3);
@@ -224,29 +225,22 @@ private:
         const char* name;
     } MavCmd2Name_t;
     
-    int             _sequenceNumber;
-    QGeoCoordinate  _coordinate;
-    double          _yawRadians;
-    int             _frame;
-    int             _action;
-    bool            _autocontinue;
-    bool            _isCurrentItem;
-    double          _orbit;
-    double          _param1;
-    double          _param2;
-    quint64         _reachedTime;
+    int                                 _sequenceNumber;
+    QGeoCoordinate                      _coordinate;
+    int                                 _frame;
+    MavlinkQmlSingleton::Qml_MAV_CMD    _command;
+    bool                                _autocontinue;
+    bool                                _isCurrentItem;
+    quint64                             _reachedTime;
     
-    Fact*           _yawFact;
-    Fact*           _pitchFact;
-    Fact*           _loiterRadiusFact;
+    Fact*           _yawRadiansFact;
+    Fact*           _loiterOrbitRadiusFact;
     Fact*           _param1Fact;
     Fact*           _param2Fact;
     
-    FactMetaData*   _yawMetaData;
     FactMetaData*   _pitchMetaData;
     FactMetaData*   _acceptanceRadiusMetaData;
     FactMetaData*   _holdTimeMetaData;
-    FactMetaData*   _loiterRadiusMetaData;
     FactMetaData*   _loiterTurnsMetaData;
     FactMetaData*   _loiterSecondsMetaData;
     FactMetaData*   _delaySecondsMetaData;
