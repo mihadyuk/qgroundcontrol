@@ -11,13 +11,23 @@ import QGroundControl.Palette       1.0
 
 /// Mission item edit control
 Rectangle {
+    id: _root
+
     property var    missionItem
 
-    height: ((missionItem.factCount + 3) * (latitudeField.height + _margin)) + commandPicker.height + (_margin * 5)
+    signal clicked
+    signal remove
+    signal moveUp
+    signal moveDown
+
+    height: missionItem.isCurrentItem ?
+                (missionItem.textFieldFacts.count * (measureTextField.height + _margin)) +
+                    (missionItem.checkboxFacts.count * (measureCheckbox.height + _margin)) +
+                    commandPicker.height + deleteButton.height + (_margin * 9) :
+                commandPicker.height + (_margin * 2)
     color:  missionItem.isCurrentItem ? qgcPal.buttonHighlight : qgcPal.windowShade
 
-
-    readonly property real _editFieldWidth:     ScreenTools.defaultFontPixelWidth * 13
+    readonly property real _editFieldWidth:     ScreenTools.defaultFontPixelWidth * 16
     readonly property real _margin:             ScreenTools.defaultFontPixelWidth / 3
 
     QGCPalette {
@@ -25,19 +35,38 @@ Rectangle {
         colorGroupEnabled: enabled
     }
 
+    QGCTextField {
+        id:         measureTextField
+        visible:    false
+    }
+
+    QGCCheckBox {
+        id:         measureCheckbox
+        visible:    false
+    }
+
     Item {
         anchors.margins:    _margin
         anchors.fill:       parent
 
         MissionItemIndexLabel {
-            id:             label
-            isCurrentItem:  missionItem.isCurrentItem
-            label:          missionItem.sequenceNumber
+            id:                     label
+            anchors.verticalCenter: commandPicker.verticalCenter
+            isCurrentItem:          missionItem.isCurrentItem
+            label:                  missionItem.sequenceNumber
         }
+
+        MouseArea {
+            anchors.fill:   parent
+            visible:        !missionItem.isCurrentItem
+
+            onClicked: _root.clicked()
+        }
+
 
         QGCComboBox {
             id:                 commandPicker
-            anchors.leftMargin: ScreenTools.defaultFontPixelWidth * 4
+            anchors.leftMargin: ScreenTools.defaultFontPixelWidth * 10
             anchors.left:       label.right
             anchors.right:      parent.right
             currentIndex:       missionItem.commandByIndex
@@ -47,87 +76,30 @@ Rectangle {
         }
 
         Rectangle {
-            anchors.margins:    _margin
+            anchors.topMargin:  _margin
             anchors.top:        commandPicker.bottom
             anchors.bottom:     parent.bottom
             anchors.left:       parent.left
             anchors.right:      parent.right
             color:              qgcPal.windowShadeDark
+            visible:            missionItem.isCurrentItem
 
             Item {
                 anchors.margins:    _margin
                 anchors.fill:   parent
 
-                QGCTextField {
-                    id:             latitudeField
-                    anchors.right:  parent.right
-                    width:          _editFieldWidth
-                    text:           missionItem.coordinate.latitude
-                    visible:        missionItem.specifiesCoordinate
-
-                    onAccepted:     missionItem.coordinate.latitude = text
-                }
-
-                QGCTextField {
-                    id:                 longitudeField
-                    anchors.topMargin:  _margin
-                    anchors.top:        latitudeField.bottom
-                    anchors.right:      parent.right
-                    width:              _editFieldWidth
-                    text:               missionItem.coordinate.longitude
-                    visible:            missionItem.specifiesCoordinate
-
-                    onAccepted:         missionItem.coordinate.longtitude = text
-                }
-
-                QGCTextField {
-                    id:                 altitudeField
-                    anchors.topMargin:  _margin
-                    anchors.top:        longitudeField.bottom
-                    anchors.right:      parent.right
-                    width:              _editFieldWidth
-                    text:               missionItem.coordinate.altitude
-                    visible:            missionItem.specifiesCoordinate
-                    showUnits:          true
-                    unitsLabel:         "meters"
-
-                    onAccepted:     missionItem.coordinate.altitude = text
-                }
-
-                QGCLabel {
-                    anchors.left:       parent.left
-                    anchors.baseline:   latitudeField.baseline
-                    text:               "Lat:"
-                    visible:            missionItem.specifiesCoordinate
-                }
-
-                QGCLabel {
-                    anchors.left:       parent.left
-                    anchors.baseline:   longitudeField.baseline
-                    text:               "Long:"
-                    visible:            missionItem.specifiesCoordinate
-                }
-
-                QGCLabel {
-                    anchors.left:       parent.left
-                    anchors.baseline:   altitudeField.baseline
-                    text:               "Alt:"
-                    visible:            missionItem.specifiesCoordinate
-                }
-
                 Column {
-                    id:                 valueColumn
-                    anchors.topMargin:  _margin
-                    anchors.left:       parent.left
-                    anchors.right:      parent.right
-                    anchors.top:        missionItem.specifiesCoordinate ? altitudeField.bottom : commandPicker.bottom
-                    spacing:            _margin
+                    id:             valuesColumn
+                    anchors.left:   parent.left
+                    anchors.right:  parent.right
+                    anchors.top:    parent.top
+                    spacing:        _margin
 
                     Repeater {
-                        model: missionItem.facts
+                        model: missionItem.textFieldFacts
 
                         Item {
-                            width:  valueColumn.width
+                            width:  valuesColumn.width
                             height: textField.height
 
                             QGCLabel {
@@ -144,7 +116,57 @@ Rectangle {
                             }
                         }
                     }
-                } // Column - Values column
+
+                    Item {
+                        width:  10
+                        height: missionItem.textFieldFacts.count ? _margin : 0
+                    }
+
+                    Repeater {
+                        model: missionItem.checkboxFacts
+
+                        FactCheckBox {
+                            id:     textField
+                            text:   object.name
+                            fact:   object
+                        }
+                    }
+
+                    Item {
+                        width:  10
+                        height: missionItem.checkboxFacts.count ? _margin : 0
+                    }
+
+                    Row {
+                        width:      parent.width
+                        spacing:    _margin
+
+                        readonly property real buttonWidth: (width - (_margin * 2)) / 3
+
+                        QGCButton {
+                            id:     deleteButton
+                            width:  parent.buttonWidth
+                            text:   "Delete"
+
+                            onClicked: _root.remove()
+                        }
+
+                        QGCButton {
+                            width:  parent.buttonWidth
+                            text:   "Up"
+
+                            onClicked: _root.moveUp()
+                        }
+
+                        QGCButton {
+                            width:  parent.buttonWidth
+                            text:   "Down"
+
+                            onClicked: _root.moveDown()
+                        }
+                    }
+
+                } // Column
             } // Item
         } // Rectangle
     } // Item

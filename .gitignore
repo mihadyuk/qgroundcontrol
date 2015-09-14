@@ -64,5 +64,7 @@ ui_*
 *.so*
 *.moc
 *.prl
-*.gitattributes
-/create_msvc_project.bat
+
+# android
+android/local.properties
+android/gradle.properties
