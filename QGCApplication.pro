@@ -123,18 +123,6 @@ include(libs/qextserialport/src/qextserialport.pri)
 include(QGCExternalLibs.pri)
 
 #
-# Post link configuration
-#
-
-include(QGCSetup.pri)
-
-#
-# Installer targets
-#
-
-include(QGCInstaller.pri)
-
-#
 # Main QGroundControl portion of project file
 #
 
@@ -711,4 +699,19 @@ AndroidBuild {
         $$PWD/android/src/org/qgroundcontrol/qgchelper/UsbIoManager.java
 }
 
+
 CONFIG += c++11
+
+#-------------------------------------------------------------------------------------
+#
+# Post link configuration
+#
+
+include(QGCSetup.pri)
+
+#
+# Installer targets
+#
+
+include(QGCInstaller.pri)
+
