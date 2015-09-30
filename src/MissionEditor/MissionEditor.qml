@@ -77,7 +77,7 @@ QGCView {
                 longitude:      _homePositionCoordinate.longitude
 
                 QGCLabel {
-                    anchors.right: parent.right
+                    anchors.bottom: parent.bottom
                     text: "WIP: Danger, do not fly with this!"; font.pixelSize: ScreenTools.largeFontPixelSize }
 
 
@@ -98,9 +98,105 @@ QGCView {
                     }
                 }
 
+                DropButton {
+                    id:                     centerMapButton
+                    anchors.rightMargin:    ScreenTools.defaultFontPixelHeight
+                    anchors.right:          mapTypeButton.left
+                    anchors.top:            mapTypeButton.top
+                    dropDirection:          dropDown
+                    buttonImage:            "/qmlimages/MapCenter.svg"
+                    viewportMargins:        ScreenTools.defaultFontPixelWidth / 2
+
+                    dropDownComponent: Component {
+                        Row {
+                            spacing: ScreenTools.defaultFontPixelWidth
+
+                            QGCButton {
+                                text: "Home"
+
+                                onClicked: {
+                                    centerMapButton.hideDropDown()
+                                    editorMap.center = QtPositioning.coordinate(_homePositionCoordinate.latitude, _homePositionCoordinate.longitude)
+                                    _showHomePositionManager = true
+                                }
+                            }
+
+/*
+
+This code will need to wait for Qml 5.5 support since Map.visibleRegion is only in Qt 5.5
+
+                            QGCButton {
+                                text: "All Items"
+
+                                onClicked: {
+                                    centerMapButton.hideDropDown()
+
+                                    // Begin with only the home position in the region
+                                    var region = QtPositioning.rectangle(QtPositioning.coordinate(_homePositionCoordinate.latitude, _homePositionCoordinate.longitude),
+                                                                         QtPositioning.coordinate(_homePositionCoordinate.latitude, _homePositionCoordinate.longitude))
+
+                                    // Now expand the region to include all mission items
+                                    for (var i=0; i<_missionItems.count; i++) {
+                                        var missionItem = _missionItems.get(i)
+
+                                        region.topLeft.latitude = Math.max(missionItem.coordinate.latitude, region.topLeft.latitude)
+                                        region.topLeft.longitude = Math.min(missionItem.coordinate.longitude, region.topLeft.longitude)
+
+                                        region.topRight.latitude = Math.max(missionItem.coordinate.latitude, region.topRight.latitude)
+                                        region.topRight.longitude = Math.max(missionItem.coordinate.longitude, region.topRight.longitude)
+
+                                        region.bottomLeft.latitude = Math.min(missionItem.coordinate.latitude, region.bottomLeft.latitude)
+                                        region.bottomLeft.longitude = Math.min(missionItem.coordinate.longitude, region.bottomLeft.longitude)
+
+                                        region.bottomRight.latitude = Math.min(missionItem.coordinate.latitude, region.bottomRight.latitude)
+                                        region.bottomRight.longitude = Math.max(missionItem.coordinate.longitude, region.bottomRight.longitude)
+                                    }
+
+                                    editorMap.visibleRegion = region
+                                }
+                            }
+*/
+                        }
+                    }
+                }
+
+                DropButton {
+                    id:                 mapTypeButton
+                    anchors.margins:    ScreenTools.defaultFontPixelHeight
+                    anchors.top:        parent.top
+                    anchors.right:      parent.right
+                    dropDirection:      dropDown
+                    buttonImage:        "/qmlimages/MapType.svg"
+                    viewportMargins:    ScreenTools.defaultFontPixelWidth / 2
+
+                    dropDownComponent: Component {
+                        Row {
+                            spacing: ScreenTools.defaultFontPixelWidth
+
+                            Repeater {
+                                model: QGroundControl.flightMapSettings.mapTypes
+
+                                QGCButton {
+                                    checkable:  true
+                                    checked:    editorMap.mapType == text
+                                    text:       modelData
+
+                                    onClicked: {
+                                        editorMap.mapType = text
+                                        mapTypeButton.hideDropDown()
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
                 MissionItemIndicator {
                     label:          "H"
+                    isCurrentItem:  _showHomePositionManager
                     coordinate:     _homePositionCoordinate
+
+                    onClicked: _showHomePositionManager = true
                 }
 
                 // Add the mission items to the map
@@ -110,10 +206,13 @@ QGCView {
                     delegate:
                         MissionItemIndicator {
                             label:          object.sequenceNumber
-                            isCurrentItem:  object.isCurrentItem
+                            isCurrentItem:  !_showHomePositionManager && object.isCurrentItem
                             coordinate:     object.coordinate
 
-                            onClicked: setCurrentItem(object.sequenceNumber)
+                            onClicked: {
+                                _showHomePositionManager = false
+                                setCurrentItem(object.sequenceNumber)
+                            }
 
                             Component.onCompleted: console.log("Indicator", object.coordinate)
                         }
