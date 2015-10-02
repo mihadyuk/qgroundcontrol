@@ -26,6 +26,7 @@ QGCMapWidget::QGCMapWidget(QWidget *parent) :
     waypointLines.insert(0, new QGraphicsItemGroup(map));
     connect(currWPManager, SIGNAL(waypointEditableListChanged(int)), this, SLOT(updateWaypointList(int)));
     connect(currWPManager, SIGNAL(waypointEditableChanged(int, Waypoint*)), this, SLOT(updateWaypoint(int,Waypoint*)));
+
     connect(this, SIGNAL(waypointCreated(Waypoint*)), currWPManager, SLOT(addWaypointEditable(Waypoint*)));
     connect(this, SIGNAL(waypointChanged(Waypoint*)), currWPManager, SLOT(notifyOfChangeEditable(Waypoint*)));
     offlineMode = true;
@@ -323,6 +324,9 @@ void QGCMapWidget::mouseDoubleClickEvent(QMouseEvent* event)
         wp->setLongitude(pos.Lng());
         wp->setFrame((MAV_FRAME)currWPManager->getFrameRecommendation());
         wp->setAltitude(currWPManager->getAltitudeRecommendation());
+        qDebug()<<"NEW WP!";
+        qDebug()<<"pos.Lat()"<<pos.Lat();
+        qDebug()<<"pos.Lng()"<<pos.Lng();
     }
 
     OPMapWidget::mouseDoubleClickEvent(event);
@@ -703,19 +707,53 @@ void QGCMapWidget::updateWaypoint(int uas, Waypoint* wp)
                     QList<Waypoint* > wps = currWPManager->getGlobalFrameAndNavTypeWaypointList();
                     Waypoint* wp1 = wps.at(wpindex-1);
                     mapcontrol::WayPointItem* prevIcon = waypointsToIcons.value(wp1, NULL);
-                    // If we got a valid graphics item, continue
-                    if (prevIcon)
+                    qDebug()<<"WPS LENGTH:"<<wps.length();
+                    qDebug()<<"WP INDEX:"<<wpindex;
+                    qDebug()<<"WP INDEX + 1:"<<wpindex + 1;
+                    qDebug()<<"WP INDEX + 2:"<<wpindex + 2;
+                    if((wps.length() > (wpindex + 1)) && (wpindex >= 1))
                     {
-                        mapcontrol::WaypointLineItem* line = new mapcontrol::WaypointLineItem(prevIcon, icon, wpColor, map);
-                        line->setParentItem(map);
-                        QGraphicsItemGroup* group = waypointLines.value(uas, NULL);
-                        if (group)
+                        Waypoint* wp3 = wps.at(wpindex + 1);
+                        mapcontrol::WayPointItem* nextIcon = waypointsToIcons.value(wp3, NULL);
+                        // If we got a valid graphics item, continue
+                        if (prevIcon && icon && nextIcon)
                         {
-                            group->addToGroup(line);
-                            group->setParentItem(map);
+                            //mapcontrol::WaypointLineItem* line = new mapcontrol::WaypointLineItem(prevIcon, icon, wpColor, map);
+                            qDebug()<<"prevIcon->Coord():"<<prevIcon->Coord().Lat()<<prevIcon->Coord().Lng();
+                            qDebug()<<"icon->Coord():"<<icon->Coord().Lat()<<icon->Coord().Lng();
+                            qDebug()<<"nextIcon->Coord():"<<nextIcon->Coord().Lat()<<nextIcon->Coord().Lng();
+                            mapcontrol::WaypointRoundLineItem* line = new mapcontrol::WaypointRoundLineItem(prevIcon, icon, nextIcon, 40, wpColor, map);
+                            line->setParentItem(map);
+                            QGraphicsItemGroup* group = waypointLines.value(uas, NULL);
+                            if (group)
+                            {
+                                group->addToGroup(line);
+                                group->setParentItem(map);
+                            }
                         }
                     }
                 }
+//                if (wpindex > 0)
+//                {
+//                    // Get predecessor of this WP
+//                    QList<Waypoint* > wps = currWPManager->getGlobalFrameAndNavTypeWaypointList();
+//                    Waypoint* wp1 = wps.at(wpindex-1);
+//                    mapcontrol::WayPointItem* prevIcon = waypointsToIcons.value(wp1, NULL);
+//                    // If we got a valid graphics item, continue
+//                    if (prevIcon)
+//                    {
+//                        mapcontrol::WaypointLineItem* line = new mapcontrol::WaypointLineItem(prevIcon, icon, wpColor, map);
+//                        //mapcontrol::WaypointRoundLineItem* line = new mapcontrol::WaypointRoundLineItem(prevIcon, icon, wpColor, map);
+//                        line->setParentItem(map);
+//                        QGraphicsItemGroup* group = waypointLines.value(uas, NULL);
+//                        if (group)
+//                        {
+//                            group->addToGroup(line);
+//                            group->setParentItem(map);
+//                        }
+//                    }
+//                }
+
             }
             else
             {
@@ -824,17 +862,42 @@ void QGCMapWidget::updateWaypointList(int uas)
 
         // Add line element if this is NOT the first waypoint
         mapcontrol::WayPointItem* prevIcon = NULL;
-        foreach (Waypoint* wp, wps)
+        mapcontrol::WayPointItem* nextIcon = NULL;
+        //foreach (Waypoint* wp, wps)
+        Waypoint* wp;
+        for(int i = 0; i < wps.size(); i++)
         {
+            qDebug()<<"i:"<<i;
+            wp = wps.at(i);
             mapcontrol::WayPointItem* currIcon = waypointsToIcons.value(wp, NULL);
+
+
+            //if(wps.length() > (wps.lastIndexOf(wp)+1))
+
+            if((wps.length() > 2) && (i > 0) && (i < (wps.length() - 1)))
+            {
+                //nextIcon = waypointsToIcons.value(wps.at(wps.lastIndexOf(wp)+1), NULL);
+                nextIcon = waypointsToIcons.value(wps.at(i+1), NULL);
+                prevIcon = waypointsToIcons.value(wps.at(i-1), NULL);
+            }
+            else
+            {
+                nextIcon = NULL;
+                prevIcon = NULL;//only in test version
+            }
+
             // Do not work on first waypoint, but only increment counter
             // do not continue if icon is invalid
-            if (prevIcon && currIcon)
+            if (prevIcon && currIcon && nextIcon)
             {
                 // If we got a valid graphics item, continue
                 QColor wpColor(Qt::red);
                 if (uasInstance) wpColor = uasInstance->getColor();
-                mapcontrol::WaypointLineItem* line = new mapcontrol::WaypointLineItem(prevIcon, currIcon, wpColor, map);
+                //mapcontrol::WaypointLineItem* line = new mapcontrol::WaypointLineItem(prevIcon, currIcon, wpColor, map);
+                qDebug()<<"prevIcon->Coord():"<<prevIcon->Coord().Lat()<<prevIcon->Coord().Lng();
+                qDebug()<<"currIcon->Coord():"<<currIcon->Coord().Lat()<<currIcon->Coord().Lng();
+                qDebug()<<"nextIcon->Coord():"<<nextIcon->Coord().Lat()<<nextIcon->Coord().Lng();
+                mapcontrol::WaypointRoundLineItem* line = new mapcontrol::WaypointRoundLineItem(prevIcon, currIcon, nextIcon, 40, wpColor, map);
                 line->setParentItem(map);
                 QGraphicsItemGroup* group = waypointLines.value(uas, NULL);
                 if (group)
@@ -843,8 +906,31 @@ void QGCMapWidget::updateWaypointList(int uas)
                     group->setParentItem(map);
                 }
             }
-            prevIcon = currIcon;
+            //prevIcon = currIcon;
         }
+
+//        foreach (Waypoint* wp, wps)
+//        {
+//            mapcontrol::WayPointItem* currIcon = waypointsToIcons.value(wp, NULL);
+//            // Do not work on first waypoint, but only increment counter
+//            // do not continue if icon is invalid
+//            if (prevIcon && currIcon)
+//            {
+//                // If we got a valid graphics item, continue
+//                QColor wpColor(Qt::red);
+//                if (uasInstance) wpColor = uasInstance->getColor();
+//                mapcontrol::WaypointLineItem* line = new mapcontrol::WaypointLineItem(prevIcon, currIcon, wpColor, map);
+//                //mapcontrol::WaypointRoundLineItem* line = new mapcontrol::WaypointRoundLineItem(prevIcon, currIcon, wpColor, map);
+//                line->setParentItem(map);
+//                QGraphicsItemGroup* group = waypointLines.value(uas, NULL);
+//                if (group)
+//                {
+//                    group->addToGroup(line);
+//                    group->setParentItem(map);
+//                }
+//            }
+//            prevIcon = currIcon;
+//        }
     }
 }
 

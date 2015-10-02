@@ -228,7 +228,6 @@ FORMS += \
     src/ui/WaypointEditableView.ui \
     src/ui/WaypointList.ui \
     src/ui/WaypointViewOnlyView.ui \
-    src/ui/uas/UASQuickTabView.ui \
     src/ui/qgcvideoview.ui \
     src/ui/QGCMultiVideoView.ui
 

@@ -61,7 +61,8 @@ HEADERS += $$PWD/opmapcontrol.h \
            $$PWD/src/internals/projections/mercatorprojectionyandex.h \
            $$PWD/src/internals/projections/platecarreeprojection.h \
            $$PWD/src/internals/projections/platecarreeprojectionpergo.h \
-           $$PWD/src/mapwidget/waypointlineitem.h
+           $$PWD/src/mapwidget/waypointlineitem.h \
+           $$PWD/src/mapwidget/waypointroundlineitem.h
 
 FORMS += $$PWD/src/mapwidget/mapripform.ui
 
@@ -108,6 +109,7 @@ SOURCES += $$PWD/src/core/alllayersoftype.cpp \
            $$PWD/src/internals/projections/mercatorprojectionyandex.cpp \
            $$PWD/src/internals/projections/platecarreeprojection.cpp \
            $$PWD/src/internals/projections/platecarreeprojectionpergo.cpp \
-           $$PWD/src/mapwidget/waypointlineitem.cpp
+           $$PWD/src/mapwidget/waypointlineitem.cpp \
+           $$PWD/src/mapwidget/waypointroundlineitem.cpp
 
 RESOURCES += $$PWD/src/mapwidget/mapresources.qrc

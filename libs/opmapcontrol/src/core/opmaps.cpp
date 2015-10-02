@@ -204,8 +204,6 @@ namespace core {
                     break;
                 }
                 reply=network.get(qheader);
-                qDebug()<<"QHeader: "<<qheader.url();
-                qDebug()<<"Reply: "<<reply->readAll();
                 tT.start(Timeout);
                 q.exec();
 
