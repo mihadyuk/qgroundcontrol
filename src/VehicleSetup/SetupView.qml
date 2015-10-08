@@ -51,10 +51,14 @@ Rectangle {
     property string messagePanelText:           "missing message panel text"
     readonly property string armedVehicleText:  "This operation cannot be performed while vehicle is armed."
 
+    property bool fullParameterVehicleAvailable: multiVehicleManager.parameterReadyVehicleAvailable && !multiVehicleManager.activeVehicle.missingParameters
+
     function showSummaryPanel()
     {
-        if (multiVehicleManager.parameterReadyVehicleAvailable) {
+        if (fullParameterVehicleAvailable) {
             panelLoader.source = "VehicleSummary.qml";
+        } else if (multiVehicleManager.parameterReadyVehicleAvailable) {
+            panelLoader.sourceComponent = missingParametersVehicleSummaryComponent
         } else {
             panelLoader.sourceComponent = disconnectedVehicleSummaryComponent
         }
@@ -63,7 +67,7 @@ Rectangle {
     function showFirmwarePanel()
     {
         if (!ScreenTools.isMobile) {
-            if (multiVehicleManager.activeVehicleAvailable && multiVehicleManager.activeVehicle.autopilot.armed) {
+            if (multiVehicleManager.activeVehicleAvailable && multiVehicleManager.activeVehicle.armed) {
                 messagePanelText = armedVehicleText
                 panelLoader.sourceComponent = messagePanelComponent
             } else {
@@ -74,7 +78,7 @@ Rectangle {
 
     function showJoystickPanel()
     {
-        if (multiVehicleManager.activeVehicleAvailable && multiVehicleManager.activeVehicle.autopilot.armed) {
+        if (multiVehicleManager.activeVehicleAvailable && multiVehicleManager.activeVehicle.armed) {
             messagePanelText = armedVehicleText
             panelLoader.sourceComponent = messagePanelComponent
         } else {
@@ -89,7 +93,7 @@ Rectangle {
 
     function showVehicleComponentPanel(vehicleComponent)
     {
-        if (multiVehicleManager.activeVehicle.autopilot.armed) {
+        if (multiVehicleManager.activeVehicle.armed) {
             messagePanelText = armedVehicleText
             panelLoader.sourceComponent = messagePanelComponent
         } else {
@@ -131,6 +135,27 @@ Rectangle {
                                             "If you are using the <font color=\"orange\"><a href=\"https://pixhawk.org/choice\">PX4 Flight Stack</a></font>, you also get full support for setting up and calibrating your vehicle. "+
                                             "Otherwise you will only get support for flying a vehicle which has been setup and calibrated using other means. " +
                                             "Use the Connect button above to connect to your vehicle."
+
+                onLinkActivated: Qt.openUrlExternally(link)
+            }
+        }
+    }
+
+    Component {
+        id: missingParametersVehicleSummaryComponent
+
+        Rectangle {
+            color: palette.windowShade
+
+            QGCLabel {
+                anchors.margins:        defaultTextWidth * 2
+                anchors.fill:           parent
+                verticalAlignment:      Text.AlignVCenter
+                horizontalAlignment:    Text.AlignHCenter
+                wrapMode:               Text.WordWrap
+                font.pixelSize:         ScreenTools.mediumFontPixelSize
+                text:                   "You are currently connected to a vehicle, but that vehicle did not return back the full parameter list. " +
+                                            "Because of this the full set of vehicle setup options are not available."
 
                 onLinkActivated: Qt.openUrlExternally(link)
             }
@@ -194,14 +219,14 @@ Rectangle {
                 setupIndicator: true
                 setupComplete:  joystickManager.activeJoystick ? joystickManager.activeJoystick.calibrated : false
                 exclusiveGroup: setupButtonGroup
-                visible:        multiVehicleManager.parameterReadyVehicleAvailable && joystickManager.joysticks.length != 0
+                visible:        fullParameterVehicleAvailable && joystickManager.joysticks.length != 0
                 text:           "JOYSTICK"
 
                 onClicked: showJoystickPanel()
             }
 
             Repeater {
-                model: multiVehicleManager.parameterReadyVehicleAvailable ? multiVehicleManager.activeVehicle.autopilot.vehicleComponents : 0
+                model: fullParameterVehicleAvailable ? multiVehicleManager.activeVehicle.autopilot.vehicleComponents : 0
 
                 SubMenuButton {
                     width:          buttonWidth

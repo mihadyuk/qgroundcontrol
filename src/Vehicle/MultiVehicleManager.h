@@ -58,7 +58,7 @@ public:
     /// @return true: continue further processing of this message, false: disregard this message
     bool notifyHeartbeatInfo(LinkInterface* link, int vehicleId, mavlink_heartbeat_t& heartbeat);
     
-    Vehicle* getVehicleById(int vehicleId);
+    Q_INVOKABLE Vehicle* getVehicleById(int vehicleId);
     
     void setHomePositionForAllVehicles(double lat, double lon, double alt);
     
@@ -92,7 +92,7 @@ private slots:
     void _deleteVehiclePhase1(Vehicle* vehicle);
     void _deleteVehiclePhase2(void);
     void _setActiveVehiclePhase2(void);
-    void _autopilotPluginReadyChanged(bool pluginReady);
+    void _autopilotParametersReadyChanged(bool parametersReady);
     
 private:
     /// All access to singleton is through MultiVehicleManager::instance
