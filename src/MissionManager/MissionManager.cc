@@ -130,6 +130,8 @@ void MissionManager::_retryRead(void)
     mavlink_message_t               message;
     mavlink_mission_request_list_t  request;
     
+    _clearMissionItems();
+    
     request.target_system = _vehicle->id();
     request.target_component = MAV_COMP_ID_MISSIONPLANNER;
     
@@ -137,7 +139,6 @@ void MissionManager::_retryRead(void)
     
     _vehicle->sendMessage(message);
     _startAckTimeout(AckMissionCount);
-    emit inProgressChanged(true);
 }
 
 void MissionManager::_ackTimeout(void)
@@ -153,8 +154,8 @@ void MissionManager::_ackTimeout(void)
     }
     
     if (!_retrySequence(timedOutAck)) {
-        qCDebug(MissionManagerLog) << "_ackTimeout failed after max retries _retryAck:_retryCount" << timedOutAck << _retryCount;
-        _sendError(AckTimeoutError, QString("Vehicle did not respond to mission item communication: %1").arg(timedOutAck));
+        qCDebug(MissionManagerLog) << "_ackTimeout failed after max retries _retryAck:_retryCount" << _ackTypeToString(timedOutAck) << _retryCount;
+        _sendError(AckTimeoutError, QString("Vehicle did not respond to mission item communication: %1").arg(_ackTypeToString(timedOutAck)));
     }
 }
 
@@ -174,10 +175,10 @@ bool MissionManager::_stopAckTimeout(AckType_t expectedAck)
     _ackTimeoutTimer->stop();
     
     if (savedRetryAck != expectedAck) {
-        qCDebug(MissionManagerLog) << "Invalid ack sequence _retryAck:expectedAck" << savedRetryAck << expectedAck;
+        qCDebug(MissionManagerLog) << "Invalid ack sequence _retryAck:expectedAck" << _ackTypeToString(savedRetryAck) << _ackTypeToString(expectedAck);
         
         if (_retrySequence(expectedAck)) {
-            _sendError(ProtocolOrderError, QString("Vehicle responded incorrectly to mission item protocol sequence: %1:%2").arg(savedRetryAck).arg(expectedAck));
+            _sendError(ProtocolOrderError, QString("Vehicle responded incorrectly to mission item protocol sequence: %1:%2").arg(_ackTypeToString(savedRetryAck)).arg(_ackTypeToString(expectedAck)));
         }
         success = false;
     } else {
@@ -356,29 +357,60 @@ void MissionManager::_handleMissionAck(const mavlink_message_t& message)
 {
     mavlink_mission_ack_t missionAck;
     
-    if (!_stopAckTimeout(AckMissionRequest)) {
+    // Save th retry ack before calling _stopAckTimeout since we'll need it to determine what
+    // type of a protocol sequence we are in.
+    AckType_t savedRetryAck = _retryAck;
+    
+    // We can get a MISSION_ACK with an error at any time, so if the Acks don't match it is not
+    // a protocol sequence error. Call _stopAckTimeout with _retryAck so it will succeed no
+    // matter what.
+    if (!_stopAckTimeout(_retryAck)) {
         return;
     }
     
     mavlink_msg_mission_ack_decode(&message, &missionAck);
     
     qCDebug(MissionManagerLog) << "_handleMissionAck type:" << missionAck.type;
-    
-    if (missionAck.type == MAV_MISSION_ACCEPTED) {
-        if (_expectedSequenceNumber == _missionItems.count()) {
-            qCDebug(MissionManagerLog) << "_handleMissionAck write sequence complete";
-            emit inProgressChanged(false);
-        } else {
-            qCDebug(MissionManagerLog) << "_handleMissionAck vehicle did not reqeust all items: _expectedSequenceNumber:_missionItems.count" << _expectedSequenceNumber << _missionItems.count();
-            if (!_retrySequence(AckMissionRequest)) {
-                _sendError(MissingRequestsError, QString("Vehicle did not request all items during write sequence %1:%2").arg(_expectedSequenceNumber).arg(_missionItems.count()));
+
+    switch (savedRetryAck) {
+        case AckNone:
+            // State machine is idle. Vehicle is confused.
+            qCDebug(MissionManagerLog) << "_handleMissionAck vehicle sent ack while state machine is idle: error:" << missionAck.type;
+            _sendError(VehicleError, QString("Vehicle sent unexpected MISSION_ACK message, error: %1").arg(_missionResultToString((MAV_MISSION_RESULT)missionAck.type)));
+            break;
+        case AckMissionCount:
+            // MISSION_COUNT message expected
+            qCDebug(MissionManagerLog) << "_handleMissionAck vehicle sent ack when MISSION_COUNT expected: error:" << missionAck.type;
+            if (!_retrySequence(AckMissionCount)) {
+                _sendError(VehicleError, QString("Vehicle returned error: %1. Partial list of mission items may have been returned.").arg(_missionResultToString((MAV_MISSION_RESULT)missionAck.type)));
             }
-        }
-    } else {
-        qCDebug(MissionManagerLog) << "_handleMissionAck ack error:" << missionAck.type;
-        if (!_retrySequence(AckMissionRequest)) {
-            _sendError(VehicleError, QString("Vehicle returned error: %1").arg(missionAck.type));
-        }
+            break;
+        case AckMissionItem:
+            // MISSION_ITEM expected
+            qCDebug(MissionManagerLog) << "_handleMissionAck vehicle sent ack when MISSION_ITEM expected: error:" << missionAck.type;
+            if (!_retrySequence(AckMissionItem)) {
+                _sendError(VehicleError, QString("Vehicle returned error: %1. Partial list of mission items may have been returned.").arg(_missionResultToString((MAV_MISSION_RESULT)missionAck.type)));
+            }
+            break;
+        case AckMissionRequest:
+            // MISSION_REQUEST is expected, or MISSION_ACK to end sequence
+            if (missionAck.type == MAV_MISSION_ACCEPTED) {
+                if (_expectedSequenceNumber == _missionItems.count()) {
+                    qCDebug(MissionManagerLog) << "_handleMissionAck write sequence complete";
+                    emit inProgressChanged(false);
+                } else {
+                    qCDebug(MissionManagerLog) << "_handleMissionAck vehicle did not reqeust all items: _expectedSequenceNumber:_missionItems.count" << _expectedSequenceNumber << _missionItems.count();
+                    if (!_retrySequence(AckMissionRequest)) {
+                        _sendError(MissingRequestsError, QString("Vehicle did not request all items during write sequence %1:%2. Vehicle only has partial list of mission items.").arg(_expectedSequenceNumber).arg(_missionItems.count()));
+                    }
+                }
+            } else {
+                qCDebug(MissionManagerLog) << "_handleMissionAck ack error:" << missionAck.type;
+                if (!_retrySequence(AckMissionRequest)) {
+                    _sendError(VehicleError, QString("Vehicle returned error: %1.  Vehicle only has partial list of mission items.").arg(_missionResultToString((MAV_MISSION_RESULT)missionAck.type)));
+                }
+            }
+            break;
     }
 }
 
@@ -433,28 +465,104 @@ void MissionManager::_sendError(ErrorCode_t errorCode, const QString& errorMsg)
 /// @return true: sequence retried, false: out of retries
 bool MissionManager::_retrySequence(AckType_t ackType)
 {
-    qCDebug(MissionManagerLog) << "_retrySequence ackType:" << ackType << "_retryCount" << _retryCount;
+    qCDebug(MissionManagerLog) << "_retrySequence ackType:" << _ackTypeToString(ackType) << "_retryCount" << _retryCount;
     
-    if (++_retryCount <= _maxRetryCount) {
-        switch (ackType) {
-            case AckMissionCount:
-            case AckMissionItem:
+    switch (ackType) {
+        case AckMissionCount:
+        case AckMissionItem:
+            if (++_retryCount <= _maxRetryCount) {
                 // We are in the middle of a read sequence, start over
                 _retryRead();
                 return true;
-                break;
-            case AckMissionRequest:
+            } else {
+                // Read sequence failed, signal for what we have up to this point
+                emit newMissionItemsAvailable();
+                return false;
+            }
+            break;
+        case AckMissionRequest:
+            if (++_retryCount <= _maxRetryCount) {
                 // We are in the middle of a write sequence, start over
                 _retryWrite();
                 return true;
-                break;
-            default:
-                qCWarning(MissionManagerLog) << "_retrySequence fell through switch: ackType:" << ackType;
-                _sendError(InternalError, QString("Internal error occured during Mission Item communication: _retrySequence fell through switch: ackType:").arg(ackType));
+            } else {
                 return false;
-        }
-    } else {
-        qCDebug(MissionManagerLog) << "Retries exhausted";
-        return false;
+            }
+            break;
+        default:
+            qCWarning(MissionManagerLog) << "_retrySequence fell through switch: ackType:" << _ackTypeToString(ackType);
+            _sendError(InternalError, QString("Internal error occured during Mission Item communication: _retrySequence fell through switch: ackType:").arg(_ackTypeToString(ackType)));
+            return false;
+    }
+}
+
+QString MissionManager::_ackTypeToString(AckType_t ackType)
+{
+    switch (ackType) {
+        case AckNone:   // State machine is idle
+            return QString("No Ack");
+        case AckMissionCount:   // MISSION_COUNT message expected
+            return QString("MISSION_COUNT");
+        case AckMissionItem:  ///< MISSION_ITEM expected
+            return QString("MISSION_ITEM");
+        case AckMissionRequest: ///< MISSION_REQUEST is expected, or MISSION_ACK to end sequence
+            return QString("MISSION_REQUEST");
+        default:
+            qWarning(MissionManagerLog) << "Fell off end of switch statement";
+            return QString("QGC Internal Error");
+    }    
+}
+
+QString MissionManager::_missionResultToString(MAV_MISSION_RESULT result)
+{
+    switch (result) {
+        case MAV_MISSION_ACCEPTED:
+            return QString("Mission accepted (MAV_MISSION_ACCEPTED)");
+            break;
+        case MAV_MISSION_ERROR:
+            return QString("Unspecified error (MAV_MISSION_ERROR)");
+            break;
+        case MAV_MISSION_UNSUPPORTED_FRAME:
+            return QString("Coordinate frame is not supported (MAV_MISSION_UNSUPPORTED_FRAME)");
+            break;
+        case MAV_MISSION_UNSUPPORTED:
+            return QString("Command is not supported (MAV_MISSION_UNSUPPORTED)");
+            break;
+        case MAV_MISSION_NO_SPACE:
+            return QString("Mission item exceeds storage space (MAV_MISSION_NO_SPACE)");
+            break;
+        case MAV_MISSION_INVALID:
+            return QString("One of the parameters has an invalid value (MAV_MISSION_INVALID)");
+            break;
+        case MAV_MISSION_INVALID_PARAM1:
+            return QString("Param1 has an invalid value (MAV_MISSION_INVALID_PARAM1)");
+            break;
+        case MAV_MISSION_INVALID_PARAM2:
+            return QString("Param2 has an invalid value (MAV_MISSION_INVALID_PARAM2)");
+            break;
+        case MAV_MISSION_INVALID_PARAM3:
+            return QString("param3 has an invalid value (MAV_MISSION_INVALID_PARAM3)");
+            break;
+        case MAV_MISSION_INVALID_PARAM4:
+            return QString("Param4 has an invalid value (MAV_MISSION_INVALID_PARAM4)");
+            break;
+        case MAV_MISSION_INVALID_PARAM5_X:
+            return QString("X/Param5 has an invalid value (MAV_MISSION_INVALID_PARAM5_X)");
+            break;
+        case MAV_MISSION_INVALID_PARAM6_Y:
+            return QString("Y/Param6 has an invalid value (MAV_MISSION_INVALID_PARAM6_Y)");
+            break;
+        case MAV_MISSION_INVALID_PARAM7:
+            return QString("Param7 has an invalid value (MAV_MISSION_INVALID_PARAM7)");
+            break;
+        case MAV_MISSION_INVALID_SEQUENCE:
+            return QString("Received mission item out of sequence (MAV_MISSION_INVALID_SEQUENCE)");
+            break;
+        case MAV_MISSION_DENIED:
+            return QString("Not accepting any mission commands (MAV_MISSION_DENIED)");
+            break;
+        default:
+            qWarning(MissionManagerLog) << "Fell off end of switch statement";
+            return QString("QGC Internal Error");
     }
 }

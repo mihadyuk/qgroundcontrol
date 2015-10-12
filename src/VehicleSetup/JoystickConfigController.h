@@ -182,7 +182,7 @@ private:
     void _skipFlaps(void);
     void _saveAllTrims(void);
     
-    bool _stickSettleComplete(int value);
+    bool _stickSettleComplete(int axis, int value);
     
     void _validateCalibration(void);
     void _writeCalibration(void);
@@ -196,9 +196,6 @@ private:
     void _calSaveCurrentValues(void);
     
     void _setHelpImage(const char* imageFile);
-    
-    void _loadSettings(void);
-    void _storeSettings(void);
     
     void _signalAllAttiudeValueChanges(void);
     
@@ -215,8 +212,6 @@ private:
     static const char* _imageRollRight;
     static const char* _imagePitchUp;
     static const char* _imagePitchDown;
-    
-    static const char* _settingsGroup;
     
     static const int _updateInterval;   ///< Interval for ui update timer
     

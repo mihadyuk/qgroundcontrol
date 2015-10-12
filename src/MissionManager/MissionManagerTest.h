@@ -29,6 +29,8 @@
 #include "MissionManager.h"
 #include "MultiSignalSpy.h"
 
+#include <QGeoCoordinate>
+
 class MissionManagerTest : public UnitTest
 {
     Q_OBJECT
@@ -40,14 +42,16 @@ private slots:
     void init(void);
     void cleanup(void);
     
-    void _readEmptyVehicle(void);
-    void _roundTripItems(void);
     void _testWriteFailureHandling(void);
+    void _testReadFailureHandling(void);
     
 private:
     void _checkInProgressValues(bool inProgress);
+    void _roundTripItems(MockLinkMissionItemHandler::FailureMode_t failureMode, MissionManager::ErrorCode_t errorCode, bool failFirstTimeOnly);
     void _writeItems(MockLinkMissionItemHandler::FailureMode_t failureMode, MissionManager::ErrorCode_t errorCode, bool failFirstTimeOnly);
-
+    
+    void _readEmptyVehicle(void);
+    
     MockLink*       _mockLink;
     MissionManager* _missionManager;
     
@@ -89,6 +93,7 @@ private:
     } TestCase_t;
 
     static const TestCase_t _rgTestCases[];
+    static const int        _signalWaitTime = MissionManager::_ackTimeoutMilliseconds * MissionManager::_maxRetryCount * 2;
 };
 
 #endif

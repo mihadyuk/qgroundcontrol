@@ -171,23 +171,9 @@ FORMS += \
     src/ui/Linechart.ui \
     src/ui/LogReplayLinkConfigurationWidget.ui \
     src/ui/MainWindow.ui \
-    src/ui/map/QGCMapTool.ui \
-    src/ui/map/QGCMapToolBar.ui \
     src/ui/mavlink/QGCMAVLinkMessageSender.ui \
     src/ui/MAVLinkSettingsWidget.ui \
-    src/ui/mission/QGCMissionConditionDelay.ui \
-    src/ui/mission/QGCMissionDoFinishSearch.ui \
-    src/ui/mission/QGCMissionDoJump.ui \
-    src/ui/mission/QGCMissionDoStartSearch.ui \
-    src/ui/mission/QGCMissionNavLand.ui \
-    src/ui/mission/QGCMissionNavLoiterTime.ui \
-    src/ui/mission/QGCMissionNavLoiterTurns.ui \
-    src/ui/mission/QGCMissionNavLoiterUnlim.ui \
-    src/ui/mission/QGCMissionNavReturnToLaunch.ui \
-    src/ui/mission/QGCMissionNavSweep.ui \
-    src/ui/mission/QGCMissionNavTakeoff.ui \
-    src/ui/mission/QGCMissionNavWaypoint.ui \
-    src/ui/mission/QGCMissionOther.ui \
+    src/ui/MultiVehicleDockWidget.ui \
     src/ui/QGCCommConfiguration.ui \
     src/ui/QGCDataPlot2D.ui \
     src/ui/QGCLinkConfiguration.ui \
@@ -200,7 +186,6 @@ FORMS += \
     src/ui/QGCUASFileView.ui \
     src/ui/QGCUASFileViewMulti.ui \
     src/ui/QGCUDPLinkConfiguration.ui \
-    src/ui/QGCWaypointListMulti.ui \
     src/ui/SettingsDialog.ui \
     src/ui/uas/QGCUnconnectedInfoWidget.ui \
     src/ui/uas/UASMessageView.ui \
@@ -209,9 +194,6 @@ FORMS += \
     src/ui/uas/UASQuickTabView.ui \
     src/ui/UASInfo.ui \
     src/ui/UASRawStatusView.ui \
-    src/ui/WaypointEditableView.ui \
-    src/ui/WaypointList.ui \
-    src/ui/WaypointViewOnlyView.ui \
 
 !iOSBuild {
 FORMS += \
@@ -266,9 +248,11 @@ HEADERS += \
     src/QGCQuickWidget.h \
     src/QGCSingleton.h \
     src/QGCTemporaryFile.h \
+    src/QmlControls/CoordinateVector.h \
     src/QmlControls/MavlinkQmlSingleton.h \
     src/QmlControls/ParameterEditorController.h \
     src/QmlControls/ScreenToolsController.h \
+    src/QmlControls/QGCQGeoCoordinate.h \
     src/QmlControls/QGroundControlQmlGlobal.h \
     src/QmlControls/QmlObjectListModel.h \
     src/SerialPortIds.h \
@@ -276,7 +260,6 @@ HEADERS += \
     src/uas/UAS.h \
     src/uas/UASInterface.h \
     src/uas/UASMessageHandler.h \
-    src/uas/UASWaypointManager.h \
     src/ui/linechart/ChartPlot.h \
     src/ui/linechart/IncrementalPlot.h \
     src/ui/linechart/LinechartPlot.h \
@@ -286,28 +269,10 @@ HEADERS += \
     src/ui/linechart/ScrollZoomer.h \
     src/ui/LogReplayLinkConfigurationWidget.h \
     src/ui/MainWindow.h \
-    src/ui/map/MAV2DIcon.h \
-    src/ui/map/QGCMapTool.h \
-    src/ui/map/QGCMapToolBar.h \
-    src/ui/map/QGCMapWidget.h \
-    src/ui/map/Waypoint2DIcon.h \
-    src/ui/mapdisplay/QGCMapDisplay.h \
     src/ui/mavlink/QGCMAVLinkMessageSender.h \
     src/ui/MAVLinkDecoder.h \
     src/ui/MAVLinkSettingsWidget.h \
-    src/ui/mission/QGCMissionConditionDelay.h \
-    src/ui/mission/QGCMissionDoFinishSearch.h \
-    src/ui/mission/QGCMissionDoJump.h \
-    src/ui/mission/QGCMissionDoStartSearch.h \
-    src/ui/mission/QGCMissionNavLand.h \
-    src/ui/mission/QGCMissionNavLoiterTime.h \
-    src/ui/mission/QGCMissionNavLoiterTurns.h \
-    src/ui/mission/QGCMissionNavLoiterUnlim.h \
-    src/ui/mission/QGCMissionNavReturnToLaunch.h \
-    src/ui/mission/QGCMissionNavSweep.h \
-    src/ui/mission/QGCMissionNavTakeoff.h \
-    src/ui/mission/QGCMissionNavWaypoint.h \
-    src/ui/mission/QGCMissionOther.h \
+    src/ui/MultiVehicleDockWidget.h \
     src/ui/QGCCommConfiguration.h \
     src/ui/QGCDataPlot2D.h \
     src/ui/QGCLinkConfiguration.h \
@@ -321,7 +286,6 @@ HEADERS += \
     src/ui/QGCUASFileView.h \
     src/ui/QGCUASFileViewMulti.h \
     src/ui/QGCUDPLinkConfiguration.h \
-    src/ui/QGCWaypointListMulti.h \
     src/ui/SettingsDialog.h \
     src/ui/toolbar/MainToolBar.h \
     src/ui/uas/QGCUnconnectedInfoWidget.h \
@@ -333,9 +297,6 @@ HEADERS += \
     src/ui/uas/UASQuickViewItemSelect.h \
     src/ui/uas/UASQuickViewTextItem.h \
     src/ui/UASRawStatusView.h \
-    src/ui/WaypointEditableView.h \
-    src/ui/WaypointList.h \
-    src/ui/WaypointViewOnlyView.h \
     src/ViewWidgets/CustomCommandWidget.h \
     src/ViewWidgets/CustomCommandWidgetController.h \
     src/ViewWidgets/ViewWidgetController.h \
@@ -356,6 +317,7 @@ HEADERS += \
     src/comm/QGCJSBSimLink.h \
     src/comm/QGCXPlaneLink.h \
     src/ui/CameraView.h \
+    src/ui/HILDockWidget.h \
     src/ui/QGCHilConfiguration.h \
     src/ui/QGCHilFlightGearConfiguration.h \
     src/ui/QGCHilJSBSimConfiguration.h \
@@ -397,14 +359,15 @@ SOURCES += \
     src/QGCQuickWidget.cc \
     src/QGCSingleton.cc \
     src/QGCTemporaryFile.cc \
+    src/QmlControls/CoordinateVector.cc \
     src/QmlControls/ParameterEditorController.cc \
     src/QmlControls/ScreenToolsController.cc \
+    src/QmlControls/QGCQGeoCoordinate.cc \
     src/QmlControls/QGroundControlQmlGlobal.cc \
     src/QmlControls/QmlObjectListModel.cc \
     src/uas/FileManager.cc \
     src/uas/UAS.cc \
     src/uas/UASMessageHandler.cc \
-    src/uas/UASWaypointManager.cc \
     src/ui/linechart/ChartPlot.cc \
     src/ui/linechart/IncrementalPlot.cc \
     src/ui/linechart/LinechartPlot.cc \
@@ -414,28 +377,10 @@ SOURCES += \
     src/ui/linechart/ScrollZoomer.cc \
     src/ui/LogReplayLinkConfigurationWidget.cc \
     src/ui/MainWindow.cc \
-    src/ui/map/MAV2DIcon.cc \
-    src/ui/map/QGCMapTool.cc \
-    src/ui/map/QGCMapToolBar.cc \
-    src/ui/map/QGCMapWidget.cc \
-    src/ui/map/Waypoint2DIcon.cc \
-    src/ui/mapdisplay/QGCMapDisplay.cc \
     src/ui/mavlink/QGCMAVLinkMessageSender.cc \
     src/ui/MAVLinkDecoder.cc \
     src/ui/MAVLinkSettingsWidget.cc \
-    src/ui/mission/QGCMissionConditionDelay.cc \
-    src/ui/mission/QGCMissionDoFinishSearch.cc \
-    src/ui/mission/QGCMissionDoJump.cc \
-    src/ui/mission/QGCMissionDoStartSearch.cc \
-    src/ui/mission/QGCMissionNavLand.cc \
-    src/ui/mission/QGCMissionNavLoiterTime.cc \
-    src/ui/mission/QGCMissionNavLoiterTurns.cc \
-    src/ui/mission/QGCMissionNavLoiterUnlim.cc \
-    src/ui/mission/QGCMissionNavReturnToLaunch.cc \
-    src/ui/mission/QGCMissionNavSweep.cc \
-    src/ui/mission/QGCMissionNavTakeoff.cc \
-    src/ui/mission/QGCMissionNavWaypoint.cc \
-    src/ui/mission/QGCMissionOther.cc \
+    src/ui/MultiVehicleDockWidget.cc \
     src/ui/QGCCommConfiguration.cc \
     src/ui/QGCDataPlot2D.cc \
     src/ui/QGCLinkConfiguration.cc \
@@ -449,7 +394,6 @@ SOURCES += \
     src/ui/QGCUASFileView.cc \
     src/ui/QGCUASFileViewMulti.cc \
     src/ui/QGCUDPLinkConfiguration.cc \
-    src/ui/QGCWaypointListMulti.cc \
     src/ui/SettingsDialog.cc \
     src/ui/toolbar/MainToolBar.cc \
     src/ui/uas/QGCUnconnectedInfoWidget.cc \
@@ -461,9 +405,6 @@ SOURCES += \
     src/ui/uas/UASQuickViewItemSelect.cc \
     src/ui/uas/UASQuickViewTextItem.cc \
     src/ui/UASRawStatusView.cpp \
-    src/ui/WaypointEditableView.cc \
-    src/ui/WaypointList.cc \
-    src/ui/WaypointViewOnlyView.cc \
     src/ViewWidgets/CustomCommandWidget.cc \
     src/ViewWidgets/CustomCommandWidgetController.cc \
     src/ViewWidgets/ViewWidgetController.cc \
@@ -484,6 +425,7 @@ SOURCES += \
     src/comm/QGCJSBSimLink.cc \
     src/comm/QGCXPlaneLink.cc \
     src/ui/CameraView.cc \
+    src/ui/HILDockWidget.cc \
     src/ui/QGCHilConfiguration.cc \
     src/ui/QGCHilFlightGearConfiguration.cc \
     src/ui/QGCHilJSBSimConfiguration.cc \
@@ -586,6 +528,7 @@ HEADERS+= \
     src/FirmwarePlugin/FirmwarePluginManager.h \
     src/FirmwarePlugin/FirmwarePlugin.h \
     src/FirmwarePlugin/APM/APMFirmwarePlugin.h \
+    src/FirmwarePlugin/APM/ArduCopterFirmwarePlugin.h \
     src/FirmwarePlugin/Generic/GenericFirmwarePlugin.h \
     src/FirmwarePlugin/PX4/PX4FirmwarePlugin.h \
     src/Vehicle/MultiVehicleManager.h \
@@ -623,6 +566,7 @@ SOURCES += \
     src/AutoPilotPlugins/PX4/SensorsComponent.cc \
     src/AutoPilotPlugins/PX4/SensorsComponentController.cc \
     src/FirmwarePlugin/APM/APMFirmwarePlugin.cc \
+    src/FirmwarePlugin/APM/ArduCopterFirmwarePlugin.cc \
     src/FirmwarePlugin/FirmwarePluginManager.cc \
     src/FirmwarePlugin/Generic/GenericFirmwarePlugin.cc \
     src/FirmwarePlugin/PX4/PX4FirmwarePlugin.cc \
