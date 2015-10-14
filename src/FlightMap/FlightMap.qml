@@ -85,7 +85,8 @@ Map {
         anchors.bottom:     parent.bottom
         spacing:            ScreenTools.defaultFontPixelWidth / 2
         z:                  1000    // Must be on top for clicking
-        visible:            !ScreenTools.isMobile
+        // Pinch zoom doesn't seem to be working, so zoom buttons in mobile on for now
+        //visible:            !ScreenTools.isMobile
 
         Row {
             layoutDirection:    Qt.RightToLeft
@@ -288,4 +289,11 @@ Map {
         }
     }
 */
+
+    MouseArea {
+        //-- TODO: Check if this is still needed when we switch to 5.5.1
+        //-- Workaround for QTBUG-46388 (Pinch zoom doesn't work without it on mobile)
+        anchors.fill: parent
+    }
+
 } // Map
