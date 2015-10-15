@@ -1,6 +1,7 @@
 #include "QGCTabbedInfoView.h"
 
-QGCTabbedInfoView::QGCTabbedInfoView(QWidget *parent) : QWidget(parent)
+QGCTabbedInfoView::QGCTabbedInfoView(const QString& title, QAction* action, QWidget *parent)
+    : QGCDockWidget(title, action, parent)
 {
     ui.setupUi(this);
     messageView = new UASMessageViewWidget(this);
@@ -15,6 +16,8 @@ QGCTabbedInfoView::QGCTabbedInfoView(QWidget *parent) : QWidget(parent)
     //ui.tabWidget->addTab(actionsWidget,"Actions");
     //ui.tabWidget->addTab(rawView,"Status");
     ui.tabWidget->addTab(messageView,tr("Messages"));
+    
+    loadSettings();
 }
 void QGCTabbedInfoView::addSource(MAVLinkDecoder *decoder)
 {
