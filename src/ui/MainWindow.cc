@@ -32,12 +32,12 @@ This file is part of the QGROUNDCONTROL project
 #include <QDebug>
 #include <QTimer>
 #include <QHostInfo>
-#include <QSplashScreen>
 #include <QQuickView>
 #include <QDesktopWidget>
 #include <QScreen>
 #include <QDesktopServices>
 #include <QDockWidget>
+#include <QMenuBar>
 
 #include "QGC.h"
 #include "MAVLinkProtocol.h"
@@ -46,14 +46,11 @@ This file is part of the QGROUNDCONTROL project
 #include "QGCMAVLinkLogPlayer.h"
 #include "SettingsDialog.h"
 #include "MAVLinkDecoder.h"
-#include "FlightDisplayView.h"
-#include "SetupView.h"
 #include "QGCApplication.h"
 #include "QGCFileDialog.h"
 #include "QGCMessageBox.h"
 #include "MultiVehicleManager.h"
 #include "HomePositionManager.h"
-#include "MissionEditor.h"
 #include "LogCompressor.h"
 #include "UAS.h"
 
@@ -103,10 +100,10 @@ const char* MainWindow::_visibleWidgetsKey =                "VisibleWidgets";
 
 static MainWindow* _instance = NULL;   ///< @brief MainWindow singleton
 
-MainWindow* MainWindow::_create(QSplashScreen* splashScreen)
+MainWindow* MainWindow::_create()
 {
     Q_ASSERT(_instance == NULL);
-    new MainWindow(splashScreen);
+    new MainWindow();
     // _instance is set in constructor
     Q_ASSERT(_instance);
     return _instance;
@@ -125,22 +122,14 @@ void MainWindow::deleteInstance(void)
 /// @brief Private constructor for MainWindow. MainWindow singleton is only ever created
 ///         by MainWindow::_create method. Hence no other code should have access to
 ///         constructor.
-MainWindow::MainWindow(QSplashScreen* splashScreen)
+MainWindow::MainWindow()
     : _autoReconnect(false)
     , _lowPowerMode(false)
     , _showStatusBar(false)
-    , _centerStackActionGroup(new QActionGroup(this))
-    , _centralLayout(NULL)
-    , _currentViewWidget(NULL)
-    , _splashScreen(splashScreen)
-    , _currentView(VIEW_SETUP)
+    , _mainQmlWidgetHolder(NULL)
 {
     Q_ASSERT(_instance == NULL);
     _instance = this;
-
-    if (splashScreen) {
-        connect(this, &MainWindow::initStatusChanged, splashScreen, &QSplashScreen::showMessage);
-    }
 
     QTextCodec *cyr = QTextCodec::codecForName("UTF-8");
     QTextCodec::setCodecForLocale(cyr);
@@ -151,6 +140,7 @@ MainWindow::MainWindow(QSplashScreen* splashScreen)
     // Setup user interface
     loadSettings();
     emit initStatusChanged(tr("Setting up user interface"), Qt::AlignLeft | Qt::AlignBottom, QColor(62, 93, 141));
+
     _ui.setupUi(this);
     // Make sure tool bar elements all fit before changing minimum width
     setMinimumWidth(1008);
@@ -158,10 +148,18 @@ MainWindow::MainWindow(QSplashScreen* splashScreen)
 
     // Setup central widget with a layout to hold the views
     _centralLayout = new QVBoxLayout();
-    _centralLayout->setContentsMargins(0,0,0,0);
+    _centralLayout->setContentsMargins(0, 0, 0, 0);
     centralWidget()->setLayout(_centralLayout);
+
+    _mainQmlWidgetHolder = new QGCQmlWidgetHolder(QString(), NULL, this);
+    _centralLayout->addWidget(_mainQmlWidgetHolder);
+    _mainQmlWidgetHolder->setVisible(true);
+
+    _mainQmlWidgetHolder->setContextPropertyObject("controller", this);
+    _mainQmlWidgetHolder->setSource(QUrl::fromUserInput("qrc:qml/MainWindow.qml"));
+
     // Set dock options
-    setDockOptions(AnimatedDocks | AllowTabbedDocks | AllowNestedDocks);
+    setDockOptions(0);
     // Setup corners
     setCorner(Qt::BottomRightCorner, Qt::BottomDockWidgetArea);
 
@@ -170,26 +168,12 @@ MainWindow::MainWindow(QSplashScreen* splashScreen)
     menuBar()->setNativeMenuBar(false);
 #endif
 
-#ifndef __mobile__
 #ifdef UNITTEST_BUILD
     QAction* qmlTestAction = new QAction("Test QML palette and controls", NULL);
     connect(qmlTestAction, &QAction::triggered, this, &MainWindow::_showQmlTestWidget);
     _ui.menuWidgets->addAction(qmlTestAction);
 #endif
-#endif
 
-    // Load QML Toolbar
-    QDockWidget* widget = new QDockWidget(this);
-    widget->setObjectName("ToolBarDockWidget");
-    qmlRegisterType<MainToolBar>("QGroundControl.MainToolBar", 1, 0, "MainToolBar");
-    _mainToolBar = new MainToolBar(widget);
-    widget->setWidget(_mainToolBar);
-    widget->setFeatures(QDockWidget::NoDockWidgetFeatures);
-    widget->setTitleBarWidget(new QWidget(this)); // Disables the title bar
-    addDockWidget(Qt::TopDockWidgetArea, widget);
-
-    // Setup UI state machines
-    _centerStackActionGroup->setExclusive(true);
     // Status Bar
     setStatusBar(new QStatusBar(this));
     statusBar()->setSizeGripEnabled(true);
@@ -229,8 +213,7 @@ MainWindow::MainWindow(QSplashScreen* splashScreen)
     // Set low power mode
     enableLowPowerMode(_lowPowerMode);
     emit initStatusChanged(tr("Restoring last view state"), Qt::AlignLeft | Qt::AlignBottom, QColor(62, 93, 141));
-    // Restore the window setup
-    _loadCurrentViewState();
+
 #ifndef __mobile__
 
     // Restore the window position and size
@@ -289,6 +272,8 @@ MainWindow::MainWindow(QSplashScreen* splashScreen)
     _ui.actionFullscreen->setShortcut(QApplication::translate("MainWindow", "Ctrl+Return", 0));
 #endif
 
+    _ui.actionFlight->setChecked(true);
+
     connect(&windowNameUpdateTimer, SIGNAL(timeout()), this, SLOT(configureWindowName()));
     windowNameUpdateTimer.start(15000);
     emit initStatusChanged(tr("Done"), Qt::AlignLeft | Qt::AlignBottom, QColor(62, 93, 141));
@@ -324,22 +309,7 @@ MainWindow::MainWindow(QSplashScreen* splashScreen)
 
 MainWindow::~MainWindow()
 {
-    // Delete all UAS objects
-    for (int i=0;i<_commsWidgetList.size();i++)
-    {
-        _commsWidgetList[i]->deleteLater();
-    }
     _instance = NULL;
-}
-
-void MainWindow::resizeEvent(QResizeEvent * event)
-{
-    QMainWindow::resizeEvent(event);
-}
-
-QString MainWindow::_getWindowStateKey()
-{
-	return QString::number(_currentView)+"_windowstate_";
 }
 
 QString MainWindow::_getWindowGeometryKey()
@@ -450,30 +420,6 @@ void MainWindow::_showDockWidgetAction(bool show)
 }
 #endif
 
-void MainWindow::_buildMissionEditorView(void)
-{
-    if (!_missionEditorView) {
-        _missionEditorView = new MissionEditor(this);
-        _missionEditorView->setVisible(false);
-    }
-}
-
-void MainWindow::_buildFlightView(void)
-{
-    if (!_flightView) {
-        _flightView = new FlightDisplayView(this);
-        _flightView->setVisible(false);
-    }
-}
-
-void MainWindow::_buildSetupView(void)
-{
-    if (!_setupView) {
-        _setupView = new SetupView(this);
-        _setupView->setVisible(false);
-    }
-}
-
 void MainWindow::fullScreenActionItemCallback(bool)
 {
     _ui.actionNormal->setChecked(false);
@@ -517,7 +463,14 @@ void MainWindow::closeEvent(QCloseEvent *event)
     
     // Should not be any active connections
     Q_ASSERT(!LinkManager::instance()->anyConnectedLinks());
-    
+
+    // We have to pull out the QmlWidget from the main window and delete it here, before
+    // the MainWindow ends up getting deleted. Otherwise the Qml has a reference to MainWindow
+    // inside it which in turn causes a shutdown crash.
+    _centralLayout->removeWidget(_mainQmlWidgetHolder);
+    delete _mainQmlWidgetHolder;
+    _mainQmlWidgetHolder = NULL;
+
     _storeCurrentViewState();
     storeSettings();
     event->accept();
@@ -543,10 +496,6 @@ void MainWindow::storeSettings()
     settings.setValue("SHOW_STATUSBAR",     _showStatusBar);
     settings.endGroup();
     settings.setValue(_getWindowGeometryKey(), saveGeometry());
-	
-    // Save the last current view in any case
-    settings.setValue("CURRENT_VIEW", _currentView);
-    settings.setValue(_getWindowStateKey(), saveState());
     
 #ifndef __mobile__
     _storeVisibleWidgetsSettings();
@@ -557,6 +506,11 @@ void MainWindow::configureWindowName()
 {
     QList<QHostAddress> hostAddresses = QNetworkInterface::allAddresses();
     QString windowname = qApp->applicationName() + " " + qApp->applicationVersion();
+
+    // XXX we do have UDP MAVLink heartbeat broadcast now in SITL and will have it on the
+    // WIFI radio, so people should not be in need any more of knowing their IP.
+    // this can go once we are certain its not needed any more.
+    #if 0
     bool prevAddr = false;
     windowname.append(" (" + QHostInfo::localHostName() + ": ");
     for (int i = 0; i < hostAddresses.size(); i++)
@@ -570,6 +524,7 @@ void MainWindow::configureWindowName()
         }
     }
     windowname.append(")");
+    #endif
     setWindowTitle(windowname);
 }
 
@@ -584,42 +539,8 @@ void MainWindow::enableAutoReconnect(bool enabled)
 **/
 void MainWindow::connectCommonActions()
 {
-    // Bind together the perspective actions
-    QActionGroup* perspectives = new QActionGroup(_ui.menuPerspectives);
-    perspectives->addAction(_ui.actionPlan);
-    perspectives->addAction(_ui.actionSetup);
-    perspectives->setExclusive(true);
-
-    if (_currentView == VIEW_FLIGHT)
-    {
-        _ui.actionFlight->setChecked(true);
-        _ui.actionFlight->activate(QAction::Trigger);
-    }
-    if (_currentView == VIEW_MISSIONEDITOR)
-    {
-        _ui.actionPlan->setChecked(true);
-        _ui.actionPlan->activate(QAction::Trigger);
-    }
-    if (_currentView == VIEW_SETUP)
-    {
-        _ui.actionSetup->setChecked(true);
-        _ui.actionSetup->activate(QAction::Trigger);
-    }
-
     // Connect actions from ui
     connect(_ui.actionAdd_Link, SIGNAL(triggered()), this, SLOT(manageLinks()));
-
-    // Connect internal actions
-    connect(MultiVehicleManager::instance(), &MultiVehicleManager::vehicleAdded, this, &MainWindow::_vehicleAdded);
-
-    // Views actions
-    connect(_ui.actionFlight,           SIGNAL(triggered()), this, SLOT(loadFlightView()));
-    connect(_ui.actionPlan,             SIGNAL(triggered()), this, SLOT(loadPlanView()));
-    
-    // Help Actions
-    connect(_ui.actionOnline_Documentation, SIGNAL(triggered()), this, SLOT(showHelp()));
-    connect(_ui.actionDeveloper_Credits, SIGNAL(triggered()), this, SLOT(showCredits()));
-    connect(_ui.actionProject_Roadmap, SIGNAL(triggered()), this, SLOT(showRoadMap()));
 
     // Audio output
     _ui.actionMuteAudioOutput->setChecked(GAudioOutput::instance()->isMuted());
@@ -629,8 +550,13 @@ void MainWindow::connectCommonActions()
     // Application Settings
     connect(_ui.actionSettings, SIGNAL(triggered()), this, SLOT(showSettings()));
 
-    // Update Tool Bar
-    _mainToolBar->setCurrentView(_currentView);
+    // Views actions
+    connect(_ui.actionFlight,   &QAction::triggered,    this, &MainWindow::showFlyView);
+    connect(_ui.actionPlan,     &QAction::triggered,    this, &MainWindow::showPlanView);
+    connect(_ui.actionSetup,    &QAction::triggered,    this, &MainWindow::showSetupView);
+
+    // Connect internal actions
+    connect(MultiVehicleManager::instance(), &MultiVehicleManager::vehicleAdded, this, &MainWindow::_vehicleAdded);
 }
 
 void MainWindow::_openUrl(const QString& url, const QString& errorMessage)
@@ -643,41 +569,10 @@ void MainWindow::_openUrl(const QString& url, const QString& errorMessage)
     }
 }
 
-void MainWindow::showHelp()
-{
-    _openUrl(
-        "http://qgroundcontrol.org/users/start",
-        tr("To get to the online help, please open http://qgroundcontrol.org/user_guide in a browser."));
-}
-
-void MainWindow::showCredits()
-{
-    _openUrl(
-        "http://qgroundcontrol.org/credits",
-        tr("To get to the credits, please open http://qgroundcontrol.org/credits in a browser."));
-}
-
-void MainWindow::showRoadMap()
-{
-    _openUrl(
-        "http://qgroundcontrol.org/dev/roadmap",
-        tr("To get to the online help, please open http://qgroundcontrol.org/roadmap in a browser."));
-}
-
 void MainWindow::showSettings()
 {
     SettingsDialog settings(this);
     settings.exec();
-}
-
-void MainWindow::commsWidgetDestroyed(QObject *obj)
-{
-    // Do not dynamic cast or de-reference QObject, since object is either in destructor or may have already
-    // been destroyed.
-    if (_commsWidgetList.contains(obj))
-    {
-        _commsWidgetList.removeOne(obj);
-    }
 }
 
 void MainWindow::_vehicleAdded(Vehicle* vehicle)
@@ -694,102 +589,7 @@ void MainWindow::_storeCurrentViewState(void)
     }
 #endif
     
-    settings.setValue(_getWindowStateKey(), saveState());
     settings.setValue(_getWindowGeometryKey(), saveGeometry());
-}
-
-/// Restores the state of the toolbar, status bar and widgets associated with the current view
-void MainWindow::_loadCurrentViewState(void)
-{
-    QWidget* centerView = NULL;
-
-    switch (_currentView) {
-        case VIEW_SETUP:
-            _buildSetupView();
-            centerView = _setupView;
-            break;
-
-        case VIEW_FLIGHT:
-            _buildFlightView();
-            centerView = _flightView;
-            break;
-
-        case VIEW_MISSIONEDITOR:
-            _buildMissionEditorView();
-            centerView = _missionEditorView;
-            break;
-
-        default:
-            Q_ASSERT(false);
-            break;
-    }
-
-    // Remove old view
-    if (_currentViewWidget) {
-        _currentViewWidget->setVisible(false);
-        Q_ASSERT(_centralLayout->count() == 1);
-        QLayoutItem *child = _centralLayout->takeAt(0);
-        Q_ASSERT(child);
-        delete child;
-    }
-
-    // Add the new one
-    Q_ASSERT(centerView);
-    Q_ASSERT(_centralLayout->count() == 0);
-    _currentViewWidget = centerView;
-    _centralLayout->addWidget(_currentViewWidget);
-    _centralLayout->setContentsMargins(0, 0, 0, 0);
-    _currentViewWidget->setVisible(true);
-
-    if (settings.contains(_getWindowStateKey())) {
-        restoreState(settings.value(_getWindowStateKey()).toByteArray());
-    }
-
-    // There is a bug in Qt where a Canvas element inside a QQuickWidget does not
-    // receive update requests. Here we emit a signal for them to get repainted.
-    emit repaintCanvas();
-}
-
-void MainWindow::loadPlanView()
-{
-    if (_currentView != VIEW_MISSIONEDITOR)
-    {
-        _storeCurrentViewState();
-        _currentView = VIEW_MISSIONEDITOR;
-        _ui.actionPlan->setChecked(true);
-        _loadCurrentViewState();
-    }
-}
-
-void MainWindow::loadSetupView()
-{
-    if (_currentView != VIEW_SETUP)
-    {
-        _storeCurrentViewState();
-        _currentView = VIEW_SETUP;
-        _ui.actionSetup->setChecked(true);
-        _loadCurrentViewState();
-    }
-}
-
-void MainWindow::loadFlightView()
-{
-    if (_currentView != VIEW_FLIGHT)
-    {
-        _storeCurrentViewState();
-        _currentView = VIEW_FLIGHT;
-        _ui.actionFlight->setChecked(true);
-        _loadCurrentViewState();
-    }
-}
-
-/// @brief Hides the spash screen if it is currently being shown
-void MainWindow::hideSplashScreen(void)
-{
-    if (_splashScreen) {
-        _splashScreen->hide();
-        _splashScreen = NULL;
-    }
 }
 
 void MainWindow::manageLinks()

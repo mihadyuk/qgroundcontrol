@@ -55,10 +55,17 @@ Map {
     property real   lon: (longitude >= -180 && longitude <= 180) ? longitude : 0
     property real   lat: (latitude  >=  -90 && latitude  <=  90) ? latitude  : 0
 
-    zoomLevel:  18
-    center:     QtPositioning.coordinate(lat, lon)
-    gesture.flickDeceleration: 3000
-    gesture.enabled: interactive
+    readonly property real zOrderTopMost:   1000    ///< z order for top most items, toolbar, main window sub view
+    readonly property real zOrderWidgets:   100     ///< z order value to widgets, for example: zoom controls, hud widgetss
+    readonly property real zOrderMapItems:  50      ///< z order value for map items, for example: mission item indicators
+
+    readonly property real maxZoomLevel:    20
+
+    zoomLevel:                  18
+    center:                     QtPositioning.coordinate(lat, lon)
+    gesture.flickDeceleration:  3000
+    gesture.enabled:            interactive
+    gesture.activeGestures:     MapGestureArea.ZoomGesture | MapGestureArea.PanGesture | MapGestureArea.FlickGesture
 
     plugin: Plugin { name: "QGroundControl" }
 
@@ -115,6 +122,7 @@ Map {
 
             QGCButton {
                 width:  parent._buttonWidth
+                z:      zOrderWidgets
                 //iconSource: "/qmlimages/ZoomPlus.svg"
                 text:   "+"
                 
@@ -131,6 +139,7 @@ Map {
             
             QGCButton {
                 width:  parent._buttonWidth
+                z:      zOrderWidgets
                 //iconSource: "/qmlimages/ZoomMinus.svg"
                 text:   "-"
                 
@@ -289,11 +298,4 @@ Map {
         }
     }
 */
-
-    MouseArea {
-        //-- TODO: Check if this is still needed when we switch to 5.5.1
-        //-- Workaround for QTBUG-46388 (Pinch zoom doesn't work without it on mobile)
-        anchors.fill: parent
-    }
-
 } // Map

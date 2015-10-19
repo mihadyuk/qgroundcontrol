@@ -18,9 +18,10 @@
 # -------------------------------------------------
 
 include(QGCCommon.pri)
+include(git_version.pri)
 
 TARGET = qgroundcontrol
-TEMPLATE =  app
+TEMPLATE = app
 
 # Load additional config flags from user_config.pri
 exists(user_config.pri):infile(user_config.pri, CONFIG) {
@@ -170,6 +171,7 @@ FORMS += \
     src/ui/LogReplayLinkConfigurationWidget.ui \
     src/ui/MainWindow.ui \
     src/ui/MAVLinkSettingsWidget.ui \
+    src/ui/MockLinkConfiguration.ui \
     src/ui/QGCCommConfiguration.ui \
     src/ui/QGCLinkConfiguration.ui \
     src/ui/QGCMapRCToParamDialog.ui \
@@ -222,7 +224,7 @@ HEADERS += \
     src/comm/TCPLink.h \
     src/comm/UDPLink.h \
     src/FlightDisplay/FlightDisplayWidget.h \
-    src/FlightDisplay/FlightDisplayView.h \
+    src/FlightDisplay/FlightDisplayViewController.h \
     src/FlightMap/FlightMapSettings.h \
     src/GAudioOutput.h \
     src/HomePositionManager.h \
@@ -230,7 +232,7 @@ HEADERS += \
     src/Joystick/JoystickManager.h \
     src/LogCompressor.h \
     src/MG.h \
-    src/MissionEditor/MissionEditor.h \
+    src/MissionEditor/MissionEditorController.h \
     src/MissionManager/MissionManager.h \
     src/QGC.h \
     src/QGCApplication.h \
@@ -262,6 +264,7 @@ HEADERS += \
     src/ui/MainWindow.h \
     src/ui/MAVLinkDecoder.h \
     src/ui/MAVLinkSettingsWidget.h \
+    src/ui/MockLinkConfiguration.h \
     src/ui/QGCCommConfiguration.h \
     src/ui/QGCLinkConfiguration.h \
     src/ui/QGCMapRCToParamDialog.h \
@@ -270,12 +273,18 @@ HEADERS += \
     src/ui/QGCTCPLinkConfiguration.h \
     src/ui/QGCUDPLinkConfiguration.h \
     src/ui/SettingsDialog.h \
-    src/ui/toolbar/MainToolBar.h \
+    src/ui/toolbar/MainToolBarController.h \
     src/ui/uas/QGCUnconnectedInfoWidget.h \
     src/ui/uas/UASMessageView.h \
     src/ui/uas/UASQuickTabView.h \
     src/MissionItem.h \
     src/AutoPilotPlugins/PX4/PX4AirframeLoader.h
+
+WindowsBuild {
+    PRECOMPILED_HEADER += src/stable_headers.h
+    HEADERS += src/stable_headers.h
+}
+
 
 !iOSBuild {
 HEADERS += \
@@ -334,7 +343,7 @@ SOURCES += \
     src/comm/TCPLink.cc \
     src/comm/UDPLink.cc \
     src/FlightDisplay/FlightDisplayWidget.cc \
-    src/FlightDisplay/FlightDisplayView.cc \
+    src/FlightDisplay/FlightDisplayViewController.cc \
     src/FlightMap/FlightMapSettings.cc \
     src/GAudioOutput.cc \
     src/HomePositionManager.cc \
@@ -342,7 +351,7 @@ SOURCES += \
     src/Joystick/JoystickManager.cc \
     src/LogCompressor.cc \
     src/main.cc \
-    src/MissionEditor/MissionEditor.cc \
+    src/MissionEditor/MissionEditorController.cc \
     src/MissionManager/MissionManager.cc \
     src/QGC.cc \
     src/QGCApplication.cc \
@@ -368,6 +377,7 @@ SOURCES += \
     src/ui/MainWindow.cc \
     src/ui/MAVLinkDecoder.cc \
     src/ui/MAVLinkSettingsWidget.cc \
+    src/ui/MockLinkConfiguration.cc \
     src/ui/QGCCommConfiguration.cc \
     src/ui/QGCLinkConfiguration.cc \
     src/ui/QGCMapRCToParamDialog.cpp \
@@ -376,7 +386,7 @@ SOURCES += \
     src/ui/QGCTCPLinkConfiguration.cc \
     src/ui/QGCUDPLinkConfiguration.cc \
     src/ui/SettingsDialog.cc \
-    src/ui/toolbar/MainToolBar.cc \
+    src/ui/toolbar/MainToolBarController.cc \
     src/ui/uas/QGCUnconnectedInfoWidget.cc \
     src/ui/uas/UASMessageView.cc \
 	src/ui/uas/UASQuickTabView.cpp \
@@ -456,7 +466,6 @@ HEADERS += \
     src/qgcunittest/FileManagerTest.h \
     src/qgcunittest/FlightGearTest.h \
     src/qgcunittest/LinkManagerTest.h \
-    src/qgcunittest/MainWindowTest.h \
     src/qgcunittest/MavlinkLogTest.h \
     src/qgcunittest/MessageBoxTest.h \
     src/qgcunittest/MultiSignalSpy.h \
@@ -476,7 +485,6 @@ SOURCES += \
     src/qgcunittest/FileManagerTest.cc \
     src/qgcunittest/FlightGearTest.cc \
     src/qgcunittest/LinkManagerTest.cc \
-    src/qgcunittest/MainWindowTest.cc \
     src/qgcunittest/MavlinkLogTest.cc \
     src/qgcunittest/MessageBoxTest.cc \
     src/qgcunittest/MultiSignalSpy.cc \
@@ -485,6 +493,19 @@ SOURCES += \
     src/qgcunittest/TCPLoopBackServer.cc \
     src/qgcunittest/UnitTest.cc \
     src/VehicleSetup/SetupViewTest.cc \
+
+!WindowsDebugAndRelease {
+# This specific unit test seems to create havoc on Windows. Likely due to
+# creating/destroying a main window multiple times without destorying the
+# QApplication. The Qml destruction sequence is quite odd in that it is
+# all delayed until it gets back the event loop. Which likely has something
+# to do with the issue.
+HEADERS += \
+    src/qgcunittest/MainWindowTest.h \
+
+SOURCES += \
+    src/qgcunittest/MainWindowTest.cc \
+}
 
 } # DebugBuild|WindowsDebugAndRelease
 } # MobileBuild
@@ -523,11 +544,12 @@ HEADERS+= \
     src/FirmwarePlugin/FirmwarePlugin.h \
     src/FirmwarePlugin/APM/APMFirmwarePlugin.h \
     src/FirmwarePlugin/APM/ArduCopterFirmwarePlugin.h \
+    src/FirmwarePlugin/APM/ArduPlaneFirmwarePlugin.h \
+    src/FirmwarePlugin/APM/ArduRoverFirmwarePlugin.h \
     src/FirmwarePlugin/Generic/GenericFirmwarePlugin.h \
     src/FirmwarePlugin/PX4/PX4FirmwarePlugin.h \
     src/Vehicle/MultiVehicleManager.h \
     src/Vehicle/Vehicle.h \
-    src/VehicleSetup/SetupView.h \
     src/VehicleSetup/VehicleComponent.h \
 
 !MobileBuild {
@@ -561,12 +583,13 @@ SOURCES += \
     src/AutoPilotPlugins/PX4/SensorsComponentController.cc \
     src/FirmwarePlugin/APM/APMFirmwarePlugin.cc \
     src/FirmwarePlugin/APM/ArduCopterFirmwarePlugin.cc \
+    src/FirmwarePlugin/APM/ArduPlaneFirmwarePlugin.cc \
+    src/FirmwarePlugin/APM/ArduRoverFirmwarePlugin.cc \
     src/FirmwarePlugin/FirmwarePluginManager.cc \
     src/FirmwarePlugin/Generic/GenericFirmwarePlugin.cc \
     src/FirmwarePlugin/PX4/PX4FirmwarePlugin.cc \
     src/Vehicle/MultiVehicleManager.cc \
     src/Vehicle/Vehicle.cc \
-    src/VehicleSetup/SetupView.cc \
     src/VehicleSetup/VehicleComponent.cc \
 
 !MobileBuild {

@@ -67,6 +67,12 @@ union px4_custom_mode {
     float data_float;
 };
 
+float MockLink::_vehicleLatitude =  47.633033f;
+float MockLink::_vehicleLongitude = -122.08794f;
+float MockLink::_vehicleAltitude =  2.5f;
+
+const char* MockConfiguration::_firmwareTypeKey = "FirmwareType";
+
 MockLink::MockLink(MockConfiguration* config)
     : _missionItemHandler(this)
     , _name("MockLink")
@@ -81,6 +87,10 @@ MockLink::MockLink(MockConfiguration* config)
     , _fileServer(NULL)
 {
     _config = config;
+    if (_config) {
+        _autopilotType = config->firmwareType();
+    }
+
     union px4_custom_mode   px4_cm;
 
     px4_cm.data = 0;
@@ -164,6 +174,7 @@ void MockLink::_run1HzTasks(void)
 void MockLink::_run10HzTasks(void)
 {
     if (_mavlinkStarted && _connected) {
+        _sendGpsRawInt();
     }
 }
 
@@ -696,7 +707,7 @@ void MockLink::setMissionItemFailureMode(MockLinkMissionItemHandler::FailureMode
 
 void MockLink::_sendHomePosition(void)
 {
-    mavlink_message_t   msg;
+    mavlink_message_t msg;
     
     float bogus[4];
     bogus[0] = 0.0f;
@@ -707,11 +718,79 @@ void MockLink::_sendHomePosition(void)
     mavlink_msg_home_position_pack(_vehicleSystemId,
                                    _vehicleComponentId,
                                    &msg,
-                                   (int32_t)(47.633033f * 1E7),
-                                   (int32_t)(-122.08794f * 1E7),
-                                   (int32_t)(2.0f * 1000),
+                                   (int32_t)(_vehicleLatitude * 1E7),
+                                   (int32_t)(_vehicleLongitude * 1E7),
+                                   (int32_t)(_vehicleAltitude * 1000),
                                    0.0f, 0.0f, 0.0f,
                                    &bogus[0],
                                    0.0f, 0.0f, 0.0f);
     respondWithMavlinkMessage(msg);
+}
+
+void MockLink::_sendGpsRawInt(void)
+{
+    static uint64_t timeTick = 0;
+    mavlink_message_t msg;
+
+    mavlink_msg_gps_raw_int_pack(_vehicleSystemId,
+                                 _vehicleComponentId,
+                                 &msg,
+                                 timeTick++,                            // time since boot
+                                 3,                                     // 3D fix
+                                 (int32_t)(_vehicleLatitude * 1E7),
+                                 (int32_t)(_vehicleLongitude * 1E7),
+                                 (int32_t)(_vehicleAltitude * 1000),
+                                 UINT16_MAX, UINT16_MAX,                // HDOP/VDOP not known
+                                 UINT16_MAX,                            // velocity not known
+                                 UINT16_MAX,                            // course over ground not known
+                                 8);                                    // satellite count
+    respondWithMavlinkMessage(msg);
+}
+
+MockConfiguration::MockConfiguration(const QString& name)
+    : LinkConfiguration(name)
+    , _firmwareType(MAV_AUTOPILOT_PX4)
+{
+
+}
+
+MockConfiguration::MockConfiguration(MockConfiguration* source)
+    : LinkConfiguration(source)
+{
+    _firmwareType = source->_firmwareType;
+}
+
+void MockConfiguration::copyFrom(LinkConfiguration *source)
+{
+    LinkConfiguration::copyFrom(source);
+    MockConfiguration* usource = dynamic_cast<MockConfiguration*>(source);
+    Q_ASSERT(usource != NULL);
+    _firmwareType = usource->_firmwareType;
+}
+
+void MockConfiguration::saveSettings(QSettings& settings, const QString& root)
+{
+    settings.beginGroup(root);
+    settings.setValue(_firmwareTypeKey, (int)_firmwareType);
+    settings.sync();
+    settings.endGroup();
+}
+
+void MockConfiguration::loadSettings(QSettings& settings, const QString& root)
+{
+    settings.beginGroup(root);
+    _firmwareType = (MAV_AUTOPILOT)settings.value(_firmwareTypeKey, (int)MAV_AUTOPILOT_PX4).toInt();
+    settings.endGroup();
+}
+
+void MockConfiguration::updateSettings()
+{
+    if (_link) {
+        MockLink* ulink = dynamic_cast<MockLink*>(_link);
+        if (ulink) {
+            // Restart connect not supported
+            Q_ASSERT(false);
+            //ulink->_restartConnection();
+        }
+    }
 }

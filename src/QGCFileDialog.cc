@@ -24,6 +24,7 @@
 #include "QGCFileDialog.h"
 #include "QGCApplication.h"
 #include "MainWindow.h"
+
 #ifdef QT_DEBUG
 #ifndef __mobile__
 #include "UnitTest.h"
@@ -227,6 +228,5 @@ void QGCFileDialog::_validate(Options& options)
     options |= DontUseNativeDialog;
 #endif
     if (MainWindow::instance()) {
-        MainWindow::instance()->hideSplashScreen();
     }
 }
