@@ -52,6 +52,7 @@ QGCView {
     readonly property real      _rightPanelOpacity: 0.8
     readonly property int       _toolButtonCount:   6
     readonly property string    _autoSyncKey:       "AutoSync"
+    readonly property string    _showHelpKey:       "ShowHelp"
     readonly property int       _addMissionItemsButtonAutoOffTimeout:   10000
 
     property var    _missionItems:              controller.missionItems
@@ -67,11 +68,17 @@ QGCView {
     property bool _syncNeeded:                  controller.missionItems.dirty
     property bool _syncInProgress:              _activeVehicle ? _activeVehicle.missionManager.inProgress : false
 
+    property bool _showHelp:                    QGroundControl.flightMapSettings.loadBoolMapSetting(editorMap.mapName, _showHelpKey, true)
+
     MissionEditorController {
         id:         controller
+/*
+        FIXME: autoSync is temporarily disconnected since it's still buggy
+
         autoSync:   QGroundControl.flightMapSettings.loadMapSetting(editorMap.mapName, _autoSyncKey, true)
 
         onAutoSyncChanged:      QGroundControl.flightMapSettings.saveMapSetting(editorMap.mapName, _autoSyncKey, autoSync)
+*/
 
         onMissionItemsChanged:  {
             updateHomePosition()
@@ -98,6 +105,7 @@ QGCView {
     function updateHomePosition() {
         homePosition = liveHomePositionAvailable ? liveHomePosition : offlineHomePosition
         _missionItems.get(0).coordinate = homePosition
+        _missionItems.get(0).homePositionValid = true
     }
 
     Component.onCompleted:              updateHomePosition()
@@ -222,20 +230,9 @@ QGCView {
                 }
 
                 // Add lines between waypoints
-                MapItemView {
-                    model: controller.waypointLines
-
-                    delegate:
-                        MapPolyline {
-                            line.width: 3
-                            line.color: qgcPal.mapButtonHighlight
-                            z:          editorMap.zOrderMapItems - 1 // Under item indicators
-
-                            path: [
-                                { latitude: object.coordinate1.latitude, longitude: object.coordinate1.longitude },
-                                { latitude: object.coordinate2.latitude, longitude: object.coordinate2.longitude },
-                            ]
-                        }
+                MissionLineView {
+                    model:          controller.waypointLines
+                    zOrderMapItems: editorMap.zOrderMapItems
                 }
 
                 // Mission Item Editor
@@ -245,7 +242,7 @@ QGCView {
                     anchors.bottom: parent.bottom
                     anchors.right:  parent.right
                     width:          _rightPanelWidth
-                    visible:        !helpButton.checked && !homePositionManagerButton.checked && _missionItems.count > 1
+                    visible:        !homePositionManagerButton.checked && _missionItems.count > 1
                     opacity:        _rightPanelOpacity
                     z:              editorMap.zOrderTopMost
 
@@ -560,15 +557,37 @@ QGCView {
 
                 // Help Panel
                 Rectangle {
-                    id:             helpPanel
-                    anchors.top:    parent.top
-                    anchors.bottom: parent.bottom
-                    anchors.right:  parent.right
-                    width:          _rightPanelWidth
-                    visible:        !homePositionManagerButton.checked && (_missionItems.count == 1 || helpButton.checked)
-                    color:          qgcPal.window
-                    opacity:        _rightPanelOpacity
-                    z:              editorMap.zOrderTopMost
+                    id:                 helpPanel
+                    anchors.margins:    margins
+                    anchors.top:        parent.top
+                    anchors.bottom:     parent.bottom
+                    anchors.left:       addMissionItemsButton.right
+                    anchors.right:      missionItemEditor.left
+                    width:              parent.width - (margins * 2) - _rightPanelWidth
+                    visible:            helpButton.checked
+                    color:              qgcPal.window
+                    opacity:            _rightPanelOpacity
+                    radius:             ScreenTools.defaultFontPixelHeight
+                    z:                  editorMap.zOrderTopMost
+
+                    readonly property real margins:  ScreenTools.defaultFontPixelHeight
+
+                    Image {
+                        anchors.margins:    ScreenTools.defaultFontPixelHeight
+                        anchors.top:        parent.top
+                        anchors.right:      parent.right
+                        width:              ScreenTools.defaultFontPixelHeight * 1.5
+                        height:             ScreenTools.defaultFontPixelHeight * 1.5
+                        source:             (qgcPal.globalTheme === QGCPalette.Light) ? "/qmlimages/XDeleteBlack.svg" : "/qmlimages/XDelete.svg"
+                        fillMode:           Image.PreserveAspectFit
+                        mipmap:             true
+                        smooth:             true
+
+                        MouseArea {
+                            anchors.fill:   parent
+                            onClicked:      helpButton.checked = false
+                        }
+                    }
 
                     Item {
                         anchors.margins:    _margin
@@ -597,7 +616,7 @@ QGCView {
                             fillMode:           Image.PreserveAspectFit
                             mipmap:             true
                             smooth:             true
-                            source:             "/qmlimages/MapAddMission.svg"
+                            source:             (qgcPal.globalTheme === QGCPalette.Light) ? "/qmlimages/MapAddMissionBlack.svg" : "/qmlimages/MapAddMission.svg"
                         }
 
                         QGCLabel {
@@ -612,14 +631,36 @@ QGCView {
                         }
 
                         Image {
-                            id:                 homePositionManagerHelpIcon
+                            id:                 deleteHelpIcon
                             anchors.topMargin:  ScreenTools.defaultFontPixelHeight
                             anchors.top:        addMissionItemsHelpText.bottom
                             width:              ScreenTools.defaultFontPixelHeight * 3
                             fillMode:           Image.PreserveAspectFit
                             mipmap:             true
                             smooth:             true
-                            source:             "/qmlimages/MapHome.svg"
+                            source:             (qgcPal.globalTheme === QGCPalette.Light) ? "/qmlimages/TrashDeleteBlack.svg" : "/qmlimages/TrashDelete.svg"
+                        }
+
+                        QGCLabel {
+                            id:                 deleteHelpText
+                            anchors.leftMargin: ScreenTools.defaultFontPixelHeight
+                            anchors.left:       mapTypeHelpIcon.right
+                            anchors.right:      parent.right
+                            anchors.top:        deleteHelpIcon.top
+                            wrapMode:           Text.WordWrap
+                            text:               "<b>Delete Mission Item</b><br>" +
+                                                "Delete the currently selected mission item."
+                        }
+
+                        Image {
+                            id:                 homePositionManagerHelpIcon
+                            anchors.topMargin:  ScreenTools.defaultFontPixelHeight
+                            anchors.top:        deleteHelpText.bottom
+                            width:              ScreenTools.defaultFontPixelHeight * 3
+                            fillMode:           Image.PreserveAspectFit
+                            mipmap:             true
+                            smooth:             true
+                            source:             (qgcPal.globalTheme === QGCPalette.Light) ? "/qmlimages/MapHomeBlack.svg" : "/qmlimages/MapHome.svg"
                         }
 
                         QGCLabel {
@@ -642,7 +683,7 @@ QGCView {
                             fillMode:           Image.PreserveAspectFit
                             mipmap:             true
                             smooth:             true
-                            source:             "/qmlimages/MapCenter.svg"
+                            source:             (qgcPal.globalTheme === QGCPalette.Light) ? "/qmlimages/MapCenterBlack.svg" : "/qmlimages/MapCenter.svg"
                         }
 
                         QGCLabel {
@@ -664,7 +705,7 @@ QGCView {
                             fillMode:           Image.PreserveAspectFit
                             mipmap:             true
                             smooth:             true
-                            source:             "/qmlimages/MapSync.svg"
+                            source:             (qgcPal.globalTheme === QGCPalette.Light) ? "/qmlimages/MapSyncBlack.svg" : "/qmlimages/MapSync.svg"
                         }
 
                         QGCLabel {
@@ -686,7 +727,7 @@ QGCView {
                             fillMode:           Image.PreserveAspectFit
                             mipmap:             true
                             smooth:             true
-                            source:             "/qmlimages/MapType.svg"
+                            source:             (qgcPal.globalTheme === QGCPalette.Light) ? "/qmlimages/MapTypeBlack.svg" : "/qmlimages/MapType.svg"
                         }
 
                         QGCLabel {
@@ -698,6 +739,16 @@ QGCView {
                             wrapMode:           Text.WordWrap
                             text:               "<b>Map Type</b><br>" +
                                                 "Map type options."
+                        }
+
+                        QGCCheckBox {
+                            anchors.left:       parent.left
+                            anchors.bottom:     parent.bottom
+                            anchors.margins:    _margin
+                            checked:            !_showHelp
+                            text:               "Don't show me again"
+
+                            onClicked:          QGroundControl.flightMapSettings.saveBoolMapSetting(editorMap.mapName, _showHelpKey, !checked)
                         }
                     } // Item - margin
                 } // Item - Help Panel
@@ -859,6 +910,7 @@ QGCView {
                     buttonImage:        "/qmlimages/Help.svg"
                     exclusiveGroup:     _dropButtonsExclusiveGroup
                     z:                  editorMap.zOrderWidgets
+                    checked:            _showHelp
                 }
             } // FlightMap
         } // Item - split view container
@@ -880,7 +932,7 @@ QGCView {
             }
 
             Row {
-                visible:    autoSyncCheckBox.enabled && autoSyncCheckBox.checked
+                visible:    true //autoSyncCheckBox.enabled && autoSyncCheckBox.checked
                 spacing:    ScreenTools.defaultFontPixelWidth
 
                 QGCButton {
@@ -925,6 +977,8 @@ QGCView {
                     }
                 }
             }
+/*
+        FIXME: autoSync is temporarily disconnected since it's still buggy
 
             QGCLabel {
                 id:         autoSyncDisallowedLabel
@@ -940,6 +994,7 @@ QGCView {
 
                 onClicked: controller.autoSync = checked
             }
+*/
         }
     }
 } // QGCVIew
