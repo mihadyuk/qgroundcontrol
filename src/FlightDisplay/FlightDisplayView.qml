@@ -43,7 +43,11 @@ Item {
 
     QGCPalette { id: qgcPal; colorGroupEnabled: enabled }
 
-    property var _activeVehicle: multiVehicleManager.activeVehicle
+    property real avaiableHeight: parent.height
+
+    readonly property bool isBackgroundDark: _mainIsMap ? (_flightMap ? _flightMap.isSatelliteMap : true) : true
+
+    property var _activeVehicle:  multiVehicleManager.activeVehicle
 
     readonly property var  _defaultVehicleCoordinate:   QtPositioning.coordinate(37.803784, -122.462276)
     readonly property real _defaultRoll:                0
@@ -57,8 +61,10 @@ Item {
     readonly property string _mapName:                  "FlightDisplayView"
     readonly property string _showMapBackgroundKey:     "/showMapBackground"
     readonly property string _mainIsMapKey:             "MainFlyWindowIsMap"
+    readonly property string _PIPVisibleKey:            "IsPIPVisible"
 
-    property bool _mainIsMap:           QGroundControl.loadBoolGlobalSetting(_mainIsMapKey, true)
+    property bool _mainIsMap:           QGroundControl.loadBoolGlobalSetting(_mainIsMapKey,  true)
+    property bool _isPipVisible:        QGroundControl.loadBoolGlobalSetting(_PIPVisibleKey, true)
 
     property real _roll:                _activeVehicle ? (isNaN(_activeVehicle.roll)    ? _defaultRoll    : _activeVehicle.roll)    : _defaultRoll
     property real _pitch:               _activeVehicle ? (isNaN(_activeVehicle.pitch)   ? _defaultPitch   : _activeVehicle.pitch)   : _defaultPitch
@@ -75,14 +81,9 @@ Item {
     property var  _flightVideo:         null
     property var  _savedZoomLevel:      0
 
-    property real _pipSize:             ScreenTools.isAndroid ? ScreenTools.defaultFontPixelSize * (8) : ScreenTools.defaultFontPixelSize * (9)
+    property real _pipSize:             mainWindow.width * 0.2
 
     FlightDisplayViewController { id: _controller }
-
-    MissionController {
-        id: _missionController
-        Component.onCompleted: start(false /* editMode */)
-    }
 
     function reloadContents() {
         if(_flightVideo) {
@@ -116,7 +117,6 @@ Item {
                 _flightMap.updateMapPosition(true /* force */)
             } else {
                 _flightVideo = item
-                _flightVideo.visible = true
             }
         }
     }
@@ -124,44 +124,79 @@ Item {
     //-- PIP Window
     Rectangle {
         id:                 pip
-        visible:            _controller.hasVideo
+        visible:            _controller.hasVideo && _isPipVisible
         anchors.margins:    ScreenTools.defaultFontPixelHeight
         anchors.left:       parent.left
         anchors.bottom:     parent.bottom
-        height:             _pipSize
-        width:              _pipSize * (16/9)
+        width:              _pipSize
+        height:             _pipSize * (9/16)
         color:              "#000010"
-        border.width:       4
-        radius:             4
-        border.color: {
-            if(_mainIsMap && _flightMap != null)
-                return _flightMap.isSatelliteMap ? Qt.rgba(1,1,1,0.75) :  Qt.rgba(0,0,0,0.75)
-            else
-                return Qt.rgba(0,0,0,0.75)
-        }
+        border.color:       isBackgroundDark ? Qt.rgba(1,1,1,0.75) : Qt.rgba(0,0,0,0.75)
         Loader {
             id:                 pipLoader
             anchors.fill:       parent
-            anchors.margins:    2
             onLoaded: {
                 if(_mainIsMap) {
                     _flightVideo = item
-                    _flightVideo.visible = true
                 } else {
                     _flightMap = item
                     _savedZoomLevel = _flightMap.zoomLevel
                     _flightMap.zoomLevel = _savedZoomLevel - 3
                 }
-                pip.visible = _controller.hasVideo
             }
         }
         MouseArea {
             anchors.fill: parent
             onClicked: {
                 _mainIsMap = !_mainIsMap
-                pip.visible = false
                 reloadContents();
                 QGroundControl.saveBoolGlobalSetting(_mainIsMapKey, _mainIsMap)
+            }
+        }
+        Image {
+            id:             closePIP
+            source:         "/qmlimages/PiP.svg"
+            mipmap:         true
+            fillMode:       Image.PreserveAspectFit
+            anchors.left:   parent.left
+            anchors.bottom: parent.bottom
+            height:         ScreenTools.defaultFontPixelSize * 2.5
+            width:          ScreenTools.defaultFontPixelSize * 2.5
+            MouseArea {
+                anchors.fill: parent
+                onClicked: {
+                    _isPipVisible = false
+                    QGroundControl.saveBoolGlobalSetting(_PIPVisibleKey, false)
+                }
+            }
+        }
+    }
+
+    //-- Show PIP
+    Rectangle {
+        id:                     openPIP
+        anchors.left :          parent.left
+        anchors.bottom:         parent.bottom
+        anchors.margins:        ScreenTools.defaultFontPixelHeight
+        height:                 ScreenTools.defaultFontPixelSize * 2
+        width:                  ScreenTools.defaultFontPixelSize * 2
+        radius:                 ScreenTools.defaultFontPixelSize / 3
+        visible:                _controller.hasVideo && !_isPipVisible
+        color:                  isBackgroundDark ? Qt.rgba(1,1,1,0.5) : Qt.rgba(0,0,0,0.5)
+        Image {
+            width:              parent.width  * 0.75
+            height:             parent.height * 0.75
+            source:             "/qmlimages/buttonRight.svg"
+            mipmap:             true
+            fillMode:           Image.PreserveAspectFit
+            anchors.verticalCenter:     parent.verticalCenter
+            anchors.horizontalCenter:   parent.horizontalCenter
+        }
+        MouseArea {
+            anchors.fill: parent
+            onClicked: {
+                _isPipVisible = true
+                QGroundControl.saveBoolGlobalSetting(_PIPVisibleKey, true)
             }
         }
     }
@@ -169,6 +204,10 @@ Item {
     //-- Widgets
     Loader {
         id:                 widgetsLoader
-        anchors.fill:       parent
+        anchors.right:      parent.right
+        anchors.left:       parent.left
+        anchors.bottom:     parent.bottom
+        height:             avaiableHeight
     }
+
 }

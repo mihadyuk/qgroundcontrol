@@ -134,6 +134,15 @@ protected slots:
      */
     void showStatusBarCallback(bool checked);
 
+    /**
+     * @brief Disable the other QActions that trigger view mode changes
+     *
+     * When a user hits Ctrl+1, Ctrl+2, Ctrl+3  - only one view is set to active
+     * (and in the QML file for the MainWindow the others are set to have
+     * visibility = false), but on the Menu all of them would be selected making
+     * this incoherent.
+     */
+    void handleActiveViewActionState(bool triggered);
 signals:
     // Signals the Qml to show the specified view
     void showFlyView(void);
@@ -153,6 +162,9 @@ signals:
     void valueChanged(const int uasId, const QString& name, const QString& unit, const QVariant& value, const quint64 msec);
     /** Emitted when any the Canvas elements within QML wudgets need updating */
     void repaintCanvas();
+
+    // Used for unit tests to know when the main window closes
+    void mainWindowClosed(void);
 
 #ifdef QGC_MOUSE_ENABLED_LINUX
     /** @brief Forward X11Event to catch 3DMouse inputs */
@@ -227,15 +239,6 @@ private:
     QPointer<QWidget> _missionEditorView;
 
 #ifndef __mobile__
-    // Dock widget names
-    static const char* _mavlinkDockWidgetName;
-    static const char* _customCommandWidgetName;
-    static const char* _filesDockWidgetName;
-    static const char* _uasStatusDetailsDockWidgetName;
-    static const char* _uasInfoViewDockWidgetName;
-    static const char* _hilDockWidgetName;
-    static const char* _analyzeDockWidgetName;
-
     QMap<QString, QGCDockWidget*>   _mapName2DockWidget;
     QMap<QString, QAction*>         _mapName2Action;
 #endif
@@ -250,8 +253,6 @@ private:
     void _showDockWidget(const QString &name, bool show);
     void _loadVisibleWidgetsSettings(void);
     void _storeVisibleWidgetsSettings(void);
-
-    static const char* _visibleWidgetsKey;
 #endif
 
     bool                    _autoReconnect;

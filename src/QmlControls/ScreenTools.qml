@@ -1,7 +1,8 @@
 pragma Singleton
 
-import QtQuick 2.2
+import QtQuick 2.4
 import QtQuick.Controls 1.2
+import QtQuick.Window 2.2
 
 import QGroundControl.ScreenToolsController 1.0
 
@@ -13,6 +14,12 @@ Item {
     readonly property real defaultFontPixelWidth:   _textMeasure.fontWidth
     readonly property real smallFontPixelSize:      defaultFontPixelSize * ScreenToolsController.smallFontPixelSizeRatio
 
+    // To proportionally scale fonts
+
+    readonly property real  _defaultFontHeight: 16
+    readonly property real  fontHRatio:         isTinyScreen ? (_textMeasure.contentHeight / _defaultFontHeight) * 0.75 : (_textMeasure.contentHeight / _defaultFontHeight)
+    readonly property real  realFontHeight:     _textMeasure.contentHeight
+
     // On OSX ElCapitan with Qt 5.4.0 any font pixel size above 19 shows garbage test. No idea why at this point.
     // Will remove Math.min when problem is figure out.
     readonly property real mediumFontPixelSize:     Math.min(defaultFontPixelSize * ScreenToolsController.mediumFontPixelSizeRatio, ScreenToolsController.isMobile ? 10000 : 19)
@@ -21,6 +28,8 @@ Item {
     property bool isAndroid:        ScreenToolsController.isAndroid
     property bool isiOS:            ScreenToolsController.isiOS
     property bool isMobile:         ScreenToolsController.isMobile
+    property bool isDebug:          ScreenToolsController.isDebug
+    property bool isTinyScreen:     (Screen.width / Screen.pixelDensity) < 120 // 120mm
 
     function mouseX() {
         return ScreenToolsController.mouseX()
@@ -33,8 +42,7 @@ Item {
     Text {
         id:     _textMeasure
         text:   "X"
-
-        property real fontWidth:    contentWidth * (ScreenToolsController.testHighDPI ? 2 : 1)
+        property real fontWidth:    contentWidth  * (ScreenToolsController.testHighDPI ? 2 : 1)
         property real fontHeight:   contentHeight * (ScreenToolsController.testHighDPI ? 2 : 1)
     }
 

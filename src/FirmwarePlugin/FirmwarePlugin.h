@@ -27,7 +27,6 @@
 #ifndef FirmwarePlugin_H
 #define FirmwarePlugin_H
 
-#include "QGCSingleton.h"
 #include "QGCMAVLink.h"
 #include "VehicleComponent.h"
 #include "AutoPilotPlugin.h"
@@ -46,7 +45,7 @@ class Vehicle;
 /// in the base class supports mavlink generic firmware. Override the base clase virtuals
 /// to create you firmware specific plugin.
 
-class FirmwarePlugin : public QGCSingleton
+class FirmwarePlugin : public QObject
 {
     Q_OBJECT
 
@@ -105,11 +104,11 @@ public:
     ///     false: Do not send first item to vehicle, sequence numbers must be adjusted
     virtual bool sendHomePositionToVehicle(void) = 0;
     
-    /// Returns the ParameterLoader
-    virtual ParameterLoader* getParameterLoader(AutoPilotPlugin* autopilotPlugin, Vehicle* vehicle) = 0;
-    
-protected:
-    FirmwarePlugin(QObject* parent = NULL) : QGCSingleton(parent) { }
+    /// Returns the parameter that is used to identify the default component
+    virtual QString getDefaultComponentIdParam(void) const = 0;
+
+    /// Adds the parameter meta data to the Fact
+    virtual void addMetaDataToFact(Fact* fact) = 0;
 };
 
 #endif

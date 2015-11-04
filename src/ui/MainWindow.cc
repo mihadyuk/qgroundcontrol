@@ -60,7 +60,6 @@ This file is part of the QGROUNDCONTROL project
 #include "QGCUASFileViewMulti.h"
 #include "UASQuickView.h"
 #include "QGCTabbedInfoView.h"
-#include "UASRawStatusView.h"
 #include "CustomCommandWidget.h"
 #include "QGCDockWidget.h"
 #include "UASInfoWidget.h"
@@ -85,15 +84,29 @@ This file is part of the QGROUNDCONTROL project
 const char* MAIN_SETTINGS_GROUP = "QGC_MAINWINDOW";
 
 #ifndef __mobile__
-const char* MainWindow::_mavlinkDockWidgetName =            "MAVLink Inspector";
-const char* MainWindow::_customCommandWidgetName =          "Custom Command";
-const char* MainWindow::_filesDockWidgetName =              "Onboard Files";
-const char* MainWindow::_uasStatusDetailsDockWidgetName =   "Status Details";
-const char* MainWindow::_uasInfoViewDockWidgetName =        "Info View";
-const char* MainWindow::_hilDockWidgetName =                "HIL Config";
-const char* MainWindow::_analyzeDockWidgetName =            "Analyze";
+enum DockWidgetTypes { 
+    MAVLINK_INSPECTOR, 
+    CUSTOM_COMMAND, 
+    ONBOARD_FILES,
+    STATUS_DETAILS,
+    INFO_VIEW,
+    HIL_CONFIG,
+    ANALYZE
+};
 
-const char* MainWindow::_visibleWidgetsKey =                "VisibleWidgets";
+static const char *rgDockWidgetNames[] = {
+    "MAVLink Inspector",
+    "Custom Command",
+    "Onboard Files",
+    "Status Details",
+    "Info View",
+    "HIL Config",
+    "Analyze"
+};
+
+#define ARRAY_SIZE(ARRAY) (sizeof(ARRAY) / sizeof(ARRAY[0]))
+
+static const char* _visibleWidgetsKey = "VisibleWidgets";
 #endif
 
 static MainWindow* _instance = NULL;   ///< @brief MainWindow singleton
@@ -199,8 +212,8 @@ MainWindow::MainWindow()
 #endif //QGC_MOUSE_ENABLED_LINUX
 
     // These also cause the screen to redraw so we need to update any OpenGL canvases in QML controls
-    connect(LinkManager::instance(), &LinkManager::linkConnected,    this, &MainWindow::_linkStateChange);
-    connect(LinkManager::instance(), &LinkManager::linkDisconnected, this, &MainWindow::_linkStateChange);
+    connect(qgcApp()->toolbox()->linkManager(), &LinkManager::linkConnected,    this, &MainWindow::_linkStateChange);
+    connect(qgcApp()->toolbox()->linkManager(), &LinkManager::linkDisconnected, this, &MainWindow::_linkStateChange);
 
     // Connect link
     if (_autoReconnect)
@@ -312,7 +325,7 @@ void MainWindow::_buildCommonWidgets(void)
 {
     // Add generic MAVLink decoder
     // TODO: This is never deleted
-    mavlinkDecoder = new MAVLinkDecoder(MAVLinkProtocol::instance(), this);
+    mavlinkDecoder = new MAVLinkDecoder(qgcApp()->toolbox()->mavlinkProtocol(), this);
     connect(mavlinkDecoder, SIGNAL(valueChanged(int,QString,QString,QVariant,quint64)),
                       this, SIGNAL(valueChanged(int,QString,QString,QVariant,quint64)));
 
@@ -321,27 +334,16 @@ void MainWindow::_buildCommonWidgets(void)
     logPlayer = new QGCMAVLinkLogPlayer(statusBar());
     statusBar()->addPermanentWidget(logPlayer);
 
-    static const char* rgDockWidgetNames[] = {
-        _mavlinkDockWidgetName,
-        _customCommandWidgetName,
-        _filesDockWidgetName,
-        _uasStatusDetailsDockWidgetName,
-        _uasInfoViewDockWidgetName,
-        _hilDockWidgetName,
-        _analyzeDockWidgetName,
-    };
-    static const size_t cDockWidgetNames = sizeof(rgDockWidgetNames) / sizeof(rgDockWidgetNames[0]);
+    for (int i = 0, end = ARRAY_SIZE(rgDockWidgetNames); i < end; i++) {
 
-    for (size_t i=0; i<cDockWidgetNames; i++) {
         const char* pDockWidgetName = rgDockWidgetNames[i];
 
         // Add to menu
-        QAction* action = new QAction(pDockWidgetName, NULL);
+        QAction* action = new QAction(tr(pDockWidgetName), NULL);
         action->setCheckable(true);
-        action->setData(pDockWidgetName);
+        action->setData(i);
         connect(action, &QAction::triggered, this, &MainWindow::_showDockWidgetAction);
         _ui.menuWidgets->addAction(action);
-
         _mapName2Action[pDockWidgetName] = action;
     }
 }
@@ -368,28 +370,35 @@ void MainWindow::_showDockWidget(const QString& name, bool show)
 void MainWindow::_createInnerDockWidget(const QString& widgetName)
 {
     QGCDockWidget* widget = NULL;
-
-    if (widgetName == _mavlinkDockWidgetName) {
-        widget = new QGCMAVLinkInspector(widgetName, _mapName2Action[widgetName], MAVLinkProtocol::instance(),this);
-    } else if (widgetName == _customCommandWidgetName) {
-        widget = new CustomCommandWidget(widgetName, _mapName2Action[widgetName], this);
-    } else if (widgetName == _filesDockWidgetName) {
-        widget = new QGCUASFileViewMulti(widgetName, _mapName2Action[widgetName], this);
-    } else if (widgetName == _uasStatusDetailsDockWidgetName) {
-        widget = new UASInfoWidget(widgetName, _mapName2Action[widgetName], this);
-    } else if (widgetName == _hilDockWidgetName) {
-        widget = new HILDockWidget(widgetName, _mapName2Action[widgetName], this);
-    } else if (widgetName == _analyzeDockWidgetName) {
-        widget = new Linecharts(widgetName, _mapName2Action[widgetName], mavlinkDecoder, this);
-    } else if (widgetName == _uasInfoViewDockWidgetName) {
-        QGCTabbedInfoView* pInfoView = new QGCTabbedInfoView(widgetName, _mapName2Action[widgetName], this);
-        pInfoView->addSource(mavlinkDecoder);
-        widget = pInfoView;
-    } else {
-        qWarning() << "Attempt to create unknown Inner Dock Widget" << widgetName;
-    return;
+    QAction *action = _mapName2Action[widgetName];
+    
+    switch(action->data().toInt()) {
+        case MAVLINK_INSPECTOR:
+            widget = new QGCMAVLinkInspector(widgetName, action, qgcApp()->toolbox()->mavlinkProtocol(),this);
+            break;
+        case CUSTOM_COMMAND:
+            widget = new CustomCommandWidget(widgetName, action, this);
+            break;
+        case ONBOARD_FILES:
+            widget = new QGCUASFileViewMulti(widgetName, action, this);
+            break;
+        case STATUS_DETAILS:
+            widget = new UASInfoWidget(widgetName, action, this);
+            break;
+        case HIL_CONFIG:
+            widget = new HILDockWidget(widgetName, action, this);
+            break;
+        case ANALYZE:
+            widget = new Linecharts(widgetName, action, mavlinkDecoder, this);
+            break;
+        case INFO_VIEW:
+            widget= new QGCTabbedInfoView(widgetName, action, this);
+            break;
     }
 
+    if(action->data().toInt() == INFO_VIEW) {
+        qobject_cast<QGCTabbedInfoView*>(widget)->addSource(mavlinkDecoder);
+    }
     _mapName2DockWidget[widgetName] = widget;
 }
 
@@ -402,19 +411,23 @@ void MainWindow::_hideAllDockWidgets(void)
 
 void MainWindow::_showDockWidgetAction(bool show)
 {
-    QAction* action = dynamic_cast<QAction*>(QObject::sender());
+    QAction* action = qobject_cast<QAction*>(QObject::sender());
     Q_ASSERT(action);
-    _showDockWidget(action->text(), show);
+    _showDockWidget(rgDockWidgetNames[action->data().toInt()], show);
 }
 #endif
 
 void MainWindow::fullScreenActionItemCallback(bool)
 {
+    if (!_ui.actionFullscreen->isChecked())
+        _ui.actionFullscreen->setChecked(true);
     _ui.actionNormal->setChecked(false);
 }
 
 void MainWindow::normalActionItemCallback(bool)
 {
+    if (!_ui.actionNormal->isChecked())
+        _ui.actionNormal->setChecked(true);
     _ui.actionFullscreen->setChecked(false);
 }
 
@@ -427,7 +440,7 @@ void MainWindow::showStatusBarCallback(bool checked)
 void MainWindow::closeEvent(QCloseEvent *event)
 {
     // Disallow window close if there are active connections
-    if (LinkManager::instance()->anyConnectedLinks()) {
+    if (qgcApp()->toolbox()->linkManager()->anyConnectedLinks()) {
         QGCMessageBox::StandardButton button =
             QGCMessageBox::warning(
                 tr("QGroundControl close"),
@@ -435,7 +448,7 @@ void MainWindow::closeEvent(QCloseEvent *event)
                 QMessageBox::Yes | QMessageBox::Cancel,
                 QMessageBox::Cancel);
         if (button == QMessageBox::Yes) {
-            LinkManager::instance()->disconnectAll();
+            qgcApp()->toolbox()->linkManager()->disconnectAll();
             // The above disconnect causes a flurry of activity as the vehicle components are removed. This in turn
             // causes the Windows Version of Qt to crash if you allow the close event to be accepted. In order to prevent
             // the crash, we ignore the close event and setup a delayed timer to close the window after things settle down.
@@ -450,7 +463,7 @@ void MainWindow::closeEvent(QCloseEvent *event)
     qgcApp()->processEvents(QEventLoop::ExcludeUserInputEvents);
 
     // Should not be any active connections
-    Q_ASSERT(!LinkManager::instance()->anyConnectedLinks());
+    Q_ASSERT(!qgcApp()->toolbox()->linkManager()->anyConnectedLinks());
 
     // We have to pull out the QmlWidget from the main window and delete it here, before
     // the MainWindow ends up getting deleted. Otherwise the Qml has a reference to MainWindow
@@ -461,7 +474,11 @@ void MainWindow::closeEvent(QCloseEvent *event)
 
     _storeCurrentViewState();
     storeSettings();
+
     event->accept();
+
+    _instance = NULL;
+    emit mainWindowClosed();
 }
 
 void MainWindow::loadSettings()
@@ -531,9 +548,9 @@ void MainWindow::connectCommonActions()
     connect(_ui.actionAdd_Link, SIGNAL(triggered()), this, SLOT(manageLinks()));
 
     // Audio output
-    _ui.actionMuteAudioOutput->setChecked(GAudioOutput::instance()->isMuted());
-    connect(GAudioOutput::instance(), SIGNAL(mutedChanged(bool)), _ui.actionMuteAudioOutput, SLOT(setChecked(bool)));
-    connect(_ui.actionMuteAudioOutput, SIGNAL(triggered(bool)), GAudioOutput::instance(), SLOT(mute(bool)));
+    _ui.actionMuteAudioOutput->setChecked(qgcApp()->toolbox()->audioOutput()->isMuted());
+    connect(qgcApp()->toolbox()->audioOutput(), SIGNAL(mutedChanged(bool)), _ui.actionMuteAudioOutput, SLOT(setChecked(bool)));
+    connect(_ui.actionMuteAudioOutput, SIGNAL(triggered(bool)), qgcApp()->toolbox()->audioOutput(), SLOT(mute(bool)));
 
     // Application Settings
     connect(_ui.actionSettings, SIGNAL(triggered()), this, SLOT(showSettings()));
@@ -542,9 +559,21 @@ void MainWindow::connectCommonActions()
     connect(_ui.actionFlight,   &QAction::triggered,    this, &MainWindow::showFlyView);
     connect(_ui.actionPlan,     &QAction::triggered,    this, &MainWindow::showPlanView);
     connect(_ui.actionSetup,    &QAction::triggered,    this, &MainWindow::showSetupView);
+    connect(_ui.actionFlight,   &QAction::triggered,    this, &MainWindow::handleActiveViewActionState);
+    connect(_ui.actionPlan,     &QAction::triggered,    this, &MainWindow::handleActiveViewActionState);
+    connect(_ui.actionSetup,    &QAction::triggered,    this, &MainWindow::handleActiveViewActionState);
 
     // Connect internal actions
-    connect(MultiVehicleManager::instance(), &MultiVehicleManager::vehicleAdded, this, &MainWindow::_vehicleAdded);
+    connect(qgcApp()->toolbox()->multiVehicleManager(), &MultiVehicleManager::vehicleAdded, this, &MainWindow::_vehicleAdded);
+}
+
+void MainWindow::handleActiveViewActionState(bool triggered)
+{
+    Q_UNUSED(triggered);
+    QAction *triggeredAction = qobject_cast<QAction*>(sender());
+    _ui.actionFlight->setChecked(triggeredAction == _ui.actionFlight);
+    _ui.actionPlan->setChecked(triggeredAction == _ui.actionPlan);
+    _ui.actionSetup->setChecked(triggeredAction == _ui.actionSetup);
 }
 
 void MainWindow::_openUrl(const QString& url, const QString& errorMessage)
@@ -559,7 +588,7 @@ void MainWindow::_openUrl(const QString& url, const QString& errorMessage)
 
 void MainWindow::showSettings()
 {
-    SettingsDialog settings(this);
+    SettingsDialog settings(qgcApp()->toolbox()->audioOutput(), qgcApp()->toolbox()->flightMapSettings(), this);
     settings.exec();
 }
 
@@ -582,7 +611,7 @@ void MainWindow::_storeCurrentViewState(void)
 
 void MainWindow::manageLinks()
 {
-    SettingsDialog settings(this, SettingsDialog::ShowCommLinks);
+    SettingsDialog settings(qgcApp()->toolbox()->audioOutput(), qgcApp()->toolbox()->flightMapSettings(), this, SettingsDialog::ShowCommLinks);
     settings.exec();
 }
 
@@ -608,7 +637,7 @@ void MainWindow::restoreLastUsedConnection()
     if(settings.contains(key)) {
         QString connection = settings.value(key).toString();
         // Create a link for it
-        LinkManager::instance()->createConnectedLink(connection);
+        qgcApp()->toolbox()->linkManager()->createConnectedLink(connection);
     }
 }
 

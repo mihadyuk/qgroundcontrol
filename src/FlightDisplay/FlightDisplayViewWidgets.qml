@@ -35,9 +35,11 @@ import QGroundControl.Palette       1.0
 import QGroundControl.Vehicle       1.0
 import QGroundControl.FlightMap     1.0
 
-/// This component is used to delay load the items which are direct children of the
-/// FlightDisplayViewControl.
 Item {
+
+    readonly property string _InstrumentVisibleKey: "IsInstrumentPanelVisible"
+
+    property bool _isInstrumentVisible: QGroundControl.loadBoolGlobalSetting(_InstrumentVisibleKey, true)
 
     ExclusiveGroup {
         id: _dropButtonsExclusiveGroup
@@ -74,12 +76,13 @@ Item {
         }
     }
 
-    //-- Instrument Pannel
+    //-- Instrument Panel
     QGCInstrumentWidget {
         anchors.margins:        ScreenTools.defaultFontPixelHeight
         anchors.right:          parent.right
         anchors.verticalCenter: parent.verticalCenter
-        size:                   ScreenTools.defaultFontPixelSize * (9)
+        visible:                _isInstrumentVisible
+        size:                   ScreenTools.isTinyScreen ? mainWindow.width * 0.2 : mainWindow.width * 0.15
         active:                 _activeVehicle != null
         heading:                _heading
         rollAngle:              _roll
@@ -89,11 +92,45 @@ Item {
         airSpeed:               _airSpeed
         isSatellite:            _mainIsMap ? _flightMap ? _flightMap.isSatelliteMap : true : true
         z:                      QGroundControl.zOrderWidgets
+        onClicked: {
+            _isInstrumentVisible = false
+            QGroundControl.saveBoolGlobalSetting(_InstrumentVisibleKey, false)
+        }
+    }
+
+    //-- Show (Hidden) Instrument Panel
+    Rectangle {
+        id:                     openButton
+        anchors.right:          parent.right
+        anchors.bottom:         parent.bottom
+        anchors.margins:        ScreenTools.defaultFontPixelHeight
+        height:                 ScreenTools.defaultFontPixelSize * 2
+        width:                  ScreenTools.defaultFontPixelSize * 2
+        radius:                 ScreenTools.defaultFontPixelSize / 3
+        visible:                !_isInstrumentVisible
+        color:                  isBackgroundDark ? Qt.rgba(1,1,1,0.5) : Qt.rgba(0,0,0,0.5)
+        Image {
+            width:              parent.width  * 0.75
+            height:             parent.height * 0.75
+            source:             "/qmlimages/buttonLeft.svg"
+            mipmap:             true
+            fillMode:           Image.PreserveAspectFit
+            anchors.verticalCenter:     parent.verticalCenter
+            anchors.horizontalCenter:   parent.horizontalCenter
+        }
+        MouseArea {
+            anchors.fill: parent
+            onClicked: {
+                _isInstrumentVisible = true
+                QGroundControl.saveBoolGlobalSetting(_InstrumentVisibleKey, true)
+            }
+        }
     }
 
     //-- Vertical Tool Buttons
     Column {
         id:                         toolColumn
+        visible:                    _mainIsMap
         anchors.margins:            ScreenTools.defaultFontPixelHeight
         anchors.left:               parent.left
         anchors.top:                parent.top
@@ -175,7 +212,7 @@ Item {
         //-- Zoom Map In
         RoundButton {
             id:                 mapZoomPlus
-            visible:            _mainIsMap
+            visible:            _mainIsMap && !ScreenTools.isTinyScreen
             buttonImage:        "/qmlimages/ZoomPlus.svg"
             exclusiveGroup:     _dropButtonsExclusiveGroup
             z:                  QGroundControl.zOrderWidgets
@@ -189,7 +226,7 @@ Item {
         //-- Zoom Map Out
         RoundButton {
             id:                 mapZoomMinus
-            visible:            _mainIsMap
+            visible:            _mainIsMap && !ScreenTools.isTinyScreen
             buttonImage:        "/qmlimages/ZoomMinus.svg"
             exclusiveGroup:     _dropButtonsExclusiveGroup
             z:                  QGroundControl.zOrderWidgets

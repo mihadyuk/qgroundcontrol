@@ -27,9 +27,8 @@
 #include "ArduPlaneFirmwarePlugin.h"
 #include "Generic/GenericFirmwarePlugin.h"
 
-IMPLEMENT_QGC_SINGLETON(ArduPlaneFirmwarePlugin, ArduPlaneFirmwarePlugin)
-
-APMPlaneMode::APMPlaneMode(uint32_t mode, bool settable) : APMCustomMode(mode, settable)
+APMPlaneMode::APMPlaneMode(uint32_t mode, bool settable)
+    : APMCustomMode(mode, settable)
 {
     QMap<uint32_t,QString> enumToString;
     enumToString.insert(MANUAL,         "Manual");
@@ -50,8 +49,7 @@ APMPlaneMode::APMPlaneMode(uint32_t mode, bool settable) : APMCustomMode(mode, s
     setEnumToStringMapping(enumToString);
 }
 
-ArduPlaneFirmwarePlugin::ArduPlaneFirmwarePlugin(QObject* parent) :
-    APMFirmwarePlugin(parent)
+ArduPlaneFirmwarePlugin::ArduPlaneFirmwarePlugin(void)
 {
     QList<APMCustomMode> supportedFlightModes;
     supportedFlightModes << APMPlaneMode(APMPlaneMode::MANUAL          ,true);

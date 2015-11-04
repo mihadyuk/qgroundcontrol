@@ -28,42 +28,54 @@
 #include "AutoPilotPlugin.h"
 #include "MAVLinkProtocol.h"
 #include "UAS.h"
+#include "QGCApplication.h"
 
-IMPLEMENT_QGC_SINGLETON(MultiVehicleManager, MultiVehicleManager)
+QGC_LOGGING_CATEGORY(MultiVehicleManagerLog, "MultiVehicleManagerLog")
 
-MultiVehicleManager::MultiVehicleManager(QObject* parent) :
-    QGCSingleton(parent)
+MultiVehicleManager::MultiVehicleManager(QGCApplication* app)
+    : QGCTool(app)
     , _activeVehicleAvailable(false)
     , _parameterReadyVehicleAvailable(false)
     , _activeVehicle(NULL)
+    , _firmwarePluginManager(NULL)
+    , _autopilotPluginManager(NULL)
+    , _joystickManager(NULL)
+    , _mavlinkProtocol(NULL)
 {
-    QQmlEngine::setObjectOwnership(this, QQmlEngine::CppOwnership);
-    qmlRegisterUncreatableType<MultiVehicleManager>("QGroundControl.MultiVehicleManager", 1, 0, "MultiVehicleManager", "Reference only");
+
 }
 
-MultiVehicleManager::~MultiVehicleManager()
+void MultiVehicleManager::setToolbox(QGCToolbox *toolbox)
 {
+   QGCTool::setToolbox(toolbox);
 
+   _firmwarePluginManager =     _toolbox->firmwarePluginManager();
+   _autopilotPluginManager =    _toolbox->autopilotPluginManager();
+   _joystickManager =           _toolbox->joystickManager();
+   _mavlinkProtocol =           _toolbox->mavlinkProtocol();
+
+   QQmlEngine::setObjectOwnership(this, QQmlEngine::CppOwnership);
+   qmlRegisterUncreatableType<MultiVehicleManager>("QGroundControl.MultiVehicleManager", 1, 0, "MultiVehicleManager", "Reference only");
 }
 
 bool MultiVehicleManager::notifyHeartbeatInfo(LinkInterface* link, int vehicleId, mavlink_heartbeat_t& heartbeat)
 {
     if (!getVehicleById(vehicleId) && !_ignoreVehicleIds.contains(vehicleId)) {
-        if (vehicleId == MAVLinkProtocol::instance()->getSystemId()) {
-            qgcApp()->showToolBarMessage(QString("Warning: A vehicle is using the same system id as QGroundControl: %1").arg(vehicleId));
+        if (vehicleId == _mavlinkProtocol->getSystemId()) {
+            _app->showToolBarMessage(QString("Warning: A vehicle is using the same system id as QGroundControl: %1").arg(vehicleId));
         }
         
         QSettings settings;
         bool mavlinkVersionCheck = settings.value("VERSION_CHECK_ENABLED", true).toBool();
         if (mavlinkVersionCheck && heartbeat.mavlink_version != MAVLINK_VERSION) {
             _ignoreVehicleIds += vehicleId;
-            qgcApp()->showToolBarMessage(QString("The MAVLink protocol version on vehicle #%1 and QGroundControl differ! "
+            _app->showToolBarMessage(QString("The MAVLink protocol version on vehicle #%1 and QGroundControl differ! "
                                                  "It is unsafe to use different MAVLink versions. "
                                                  "QGroundControl therefore refuses to connect to vehicle #%1, which sends MAVLink version %2 (QGroundControl uses version %3).").arg(vehicleId).arg(heartbeat.mavlink_version).arg(MAVLINK_VERSION));
             return false;
         }
         
-        Vehicle* vehicle = new Vehicle(link, vehicleId, (MAV_AUTOPILOT)heartbeat.autopilot, (MAV_TYPE)heartbeat.type);
+        Vehicle* vehicle = new Vehicle(link, vehicleId, (MAV_AUTOPILOT)heartbeat.autopilot, (MAV_TYPE)heartbeat.type, _firmwarePluginManager, _autopilotPluginManager, _joystickManager);
         
         if (!vehicle) {
             qWarning() << "New Vehicle allocation failed";
@@ -87,6 +99,8 @@ bool MultiVehicleManager::notifyHeartbeatInfo(LinkInterface* link, int vehicleId
 /// and all other right things happen when the Vehicle goes away.
 void MultiVehicleManager::_deleteVehiclePhase1(Vehicle* vehicle)
 {
+    qCDebug(MultiVehicleManagerLog) << "_deleteVehiclePhase1";
+
     _vehicleBeingDeleted = vehicle;
 
     // Remove from map
@@ -123,6 +137,8 @@ void MultiVehicleManager::_deleteVehiclePhase1(Vehicle* vehicle)
 
 void MultiVehicleManager::_deleteVehiclePhase2  (void)
 {
+    qCDebug(MultiVehicleManagerLog) << "_deleteVehiclePhase2";
+
     /// Qml has been notified of vehicle about to go away and should be disconnected from it by now.
     /// This means we can now clear the active vehicle property and delete the Vehicle for real.
     
@@ -147,6 +163,8 @@ void MultiVehicleManager::_deleteVehiclePhase2  (void)
 
 void MultiVehicleManager::setActiveVehicle(Vehicle* vehicle)
 {
+    qCDebug(MultiVehicleManagerLog) << "setActiveVehicle" << vehicle;
+
     if (vehicle != _activeVehicle) {
         if (_activeVehicle) {
             _activeVehicle->setActive(false);
@@ -170,6 +188,8 @@ void MultiVehicleManager::setActiveVehicle(Vehicle* vehicle)
 
 void MultiVehicleManager::_setActiveVehiclePhase2(void)
 {
+    qCDebug(MultiVehicleManagerLog) << "_setActiveVehiclePhase2";
+
     // Now we signal the new active vehicle
     _activeVehicle = _vehicleBeingSetActive;
     emit activeVehicleChanged(_activeVehicle);
@@ -199,13 +219,6 @@ void MultiVehicleManager::_autopilotParametersReadyChanged(bool parametersReady)
     if (autopilot->vehicle() == _activeVehicle) {
         _parameterReadyVehicleAvailable = parametersReady;
         emit parameterReadyVehicleAvailableChanged(parametersReady);
-    }
-}
-
-void MultiVehicleManager::setHomePositionForAllVehicles(double lat, double lon, double alt)
-{
-    for (int i=0; i< _vehicles.count(); i++) {
-        qobject_cast<Vehicle*>(_vehicles[i])->uas()->setHomePosition(lat, lon, alt);
     }
 }
 

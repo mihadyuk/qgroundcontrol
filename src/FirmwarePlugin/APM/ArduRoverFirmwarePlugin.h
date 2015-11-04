@@ -59,16 +59,9 @@ public:
 class ArduRoverFirmwarePlugin : public APMFirmwarePlugin
 {
     Q_OBJECT
-
-    DECLARE_QGC_SINGLETON(ArduRoverFirmwarePlugin, ArduRoverFirmwarePlugin)
     
 public:
-
-protected:
-    /// All access to singleton is through instance()
-    ArduRoverFirmwarePlugin(QObject* parent = NULL);
-    
-private:
+    ArduRoverFirmwarePlugin(void);
 };
 
 #endif

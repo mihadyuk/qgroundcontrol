@@ -6,7 +6,6 @@
 #include "UASMessageView.h"
 #include "UASQuickView.h"
 #include "UASQuickTabView.h"
-#include "UASRawStatusView.h"
 
 #include "ui_QGCTabbedInfoView.h"
 
@@ -24,7 +23,6 @@ private:
     UASMessageViewWidget *messageView;
     UASQuickView *quickView;
     UASQuickTabView *quicktabView;
-    UASRawStatusView *rawView;
 };
 
 #endif // QGCTABBEDINFOVIEW_H

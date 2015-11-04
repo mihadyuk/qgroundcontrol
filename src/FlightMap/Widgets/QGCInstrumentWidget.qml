@@ -23,7 +23,7 @@ This file is part of the QGROUNDCONTROL project
 
 /**
  * @file
- *   @brief QGC Compass Widget
+ *   @brief QGC Fly View Widgets
  *   @author Gus Grubba <mavlink@grubba.com>
  */
 
@@ -36,25 +36,31 @@ Item {
     id:     root
     height: size
 
+    signal clicked
+
     property alias  heading:        compass.heading
     property alias  rollAngle:      attitude.rollAngle
     property alias  pitchAngle:     attitude.pitchAngle
     property real   altitude:       0
     property real   groundSpeed:    0
     property real   airSpeed:       0
-    property real   size:           ScreenTools.defaultFontPixelSize * (10)
+    property real   size:           _defaultSize
     property bool   isSatellite:    false
     property bool   active:         false
 
-    property bool   _isVisible:     true
+    property real   _defaultSize:   ScreenTools.defaultFontPixelSize * (9)
 
-    //-- Instrument Pannel
+    property real   _sizeRatio:     ScreenTools.isTinyScreen ? (size / _defaultSize) * 0.5 : size / _defaultSize
+    property real   _bigFontSize:   ScreenTools.defaultFontPixelSize * 2.5  * _sizeRatio
+    property real   _normalFontSize:ScreenTools.defaultFontPixelSize * 1.5  * _sizeRatio
+    property real   _labelFontSize: ScreenTools.defaultFontPixelSize * 0.75 * _sizeRatio
+
+    //-- Instrument Panel
     Rectangle {
-        id:                     instrumentPannel
-        height:                 instruments.height + ScreenTools.defaultFontPixelSize
+        id:                     instrumentPanel
+        height:                 instruments.height + (size * 0.05)
         width:                  root.size
         radius:                 root.size / 2
-        visible:                _isVisible
         color:                  isSatellite ? Qt.rgba(1,1,1,0.75) : Qt.rgba(0,0,0,0.75)
         anchors.right:          parent.right
         anchors.verticalCenter: parent.verticalCenter
@@ -66,7 +72,7 @@ Item {
             //-- Attitude Indicator
             QGCAttitudeWidget {
                 id:             attitude
-                size:           parent.width * 0.9
+                size:           parent.width * 0.95
                 active:         root.active
                 anchors.horizontalCenter: parent.horizontalCenter
             }
@@ -78,16 +84,16 @@ Item {
                 anchors.horizontalCenter: parent.horizontalCenter
             }
             QGCLabel {
-                text:           "Altitude"
-                font.pixelSize: ScreenTools.defaultFontPixelSize * 0.75
+                text:           "Altitude (m)"
+                font.pixelSize: _labelFontSize
                 width:          parent.width
-                height:         ScreenTools.defaultFontPixelHeight * 0.5
+                height:         _labelFontSize
                 color:          isSatellite ? "black" : "white"
                 horizontalAlignment: TextEdit.AlignHCenter
             }
             QGCLabel {
                 text:           altitude < 10000 ? altitude.toFixed(1) : altitude.toFixed(0)
-                font.pixelSize: ScreenTools.defaultFontPixelSize * 2.5
+                font.pixelSize: _bigFontSize
                 font.weight:    Font.DemiBold
                 width:          parent.width
                 color:          isSatellite ? "black" : "white"
@@ -99,25 +105,25 @@ Item {
                 width:          parent.width * 0.9
                 color:          isSatellite ? Qt.rgba(0,0,0,0.25) : Qt.rgba(1,1,1,0.25)
                 anchors.horizontalCenter: parent.horizontalCenter
-                visible:        airSpeed <= 0
+                visible:        airSpeed <= 0 && !ScreenTools.isTinyScreen
             }
             QGCLabel {
-                text:           "Ground Speed"
-                font.pixelSize: ScreenTools.defaultFontPixelSize * 0.75
+                text:           "Ground Speed (km/h)"
+                font.pixelSize: _labelFontSize
                 width:          parent.width
-                height:         ScreenTools.defaultFontPixelHeight * 0.75
+                height:         _labelFontSize
                 color:          isSatellite ? "black" : "white"
                 horizontalAlignment: TextEdit.AlignHCenter
-                visible:        airSpeed <= 0
+                visible:        airSpeed <= 0 && !ScreenTools.isTinyScreen
             }
             QGCLabel {
-                text:           groundSpeed.toFixed(1)
-                font.pixelSize: ScreenTools.defaultFontPixelSize * 1.25
+                text:           (groundSpeed * 3.6).toFixed(1)
+                font.pixelSize: _normalFontSize
                 font.weight:    Font.DemiBold
                 width:          parent.width
                 color:          isSatellite ? "black" : "white"
                 horizontalAlignment: TextEdit.AlignHCenter
-                visible:        airSpeed <= 0
+                visible:        airSpeed <= 0 && !ScreenTools.isTinyScreen
             }
             //-- Air Speed
             Rectangle {
@@ -125,24 +131,24 @@ Item {
                 width:          parent.width * 0.9
                 color:          isSatellite ? Qt.rgba(0,0,0,0.25) : Qt.rgba(1,1,1,0.25)
                 anchors.horizontalCenter: parent.horizontalCenter
-                visible:        airSpeed > 0
+                visible:        airSpeed > 0 && !ScreenTools.isTinyScreen
             }
             QGCLabel {
-                text:           "Air Speed"
-                font.pixelSize: ScreenTools.defaultFontPixelSize * 0.75
+                text:           "Air Speed (km/h)"
+                font.pixelSize: _labelFontSize
                 width:          parent.width
-                height:         ScreenTools.defaultFontPixelHeight * 0.75
+                height:         _labelFontSize
                 color:          isSatellite ? "black" : "white"
-                visible:        airSpeed > 0
+                visible:        airSpeed > 0 && !ScreenTools.isTinyScreen
                 horizontalAlignment: TextEdit.AlignHCenter
             }
             QGCLabel {
-                text:           airSpeed.toFixed(1)
-                font.pixelSize: ScreenTools.defaultFontPixelSize * 1.25
+                text:           (airSpeed * 3.6).toFixed(1)
+                font.pixelSize: _normalFontSize
                 font.weight:    Font.DemiBold
                 width:          parent.width
                 color:          isSatellite ? "black" : "white"
-                visible:        airSpeed > 0
+                visible:        airSpeed > 0 && !ScreenTools.isTinyScreen
                 horizontalAlignment: TextEdit.AlignHCenter
             }
             //-- Compass
@@ -154,7 +160,7 @@ Item {
             }
             QGCCompassWidget {
                 id:             compass
-                size:           parent.width * 0.9
+                size:           parent.width * 0.95
                 active:         root.active
                 anchors.horizontalCenter: parent.horizontalCenter
             }
@@ -162,36 +168,8 @@ Item {
         MouseArea {
             anchors.fill: parent
             onClicked: {
-                _isVisible = !_isVisible
+                onClicked: root.clicked()
             }
         }
     }
-
-    //-- Show Instruments
-    Rectangle {
-        id:                     openButton
-        anchors.right:          parent.right
-        anchors.verticalCenter: parent.verticalCenter
-        height:                 ScreenTools.defaultFontPixelSize * 2
-        width:                  ScreenTools.defaultFontPixelSize * 2
-        radius:                 ScreenTools.defaultFontPixelSize / 3
-        visible:                !_isVisible
-        color:                  isSatellite ? Qt.rgba(1,1,1,0.5) : Qt.rgba(0,0,0,0.5)
-        Image {
-            width:              parent.width  * 0.75
-            height:             parent.height * 0.75
-            source:             "/qmlimages/buttonLeft.svg"
-            mipmap:             true
-            fillMode:           Image.PreserveAspectFit
-            anchors.verticalCenter:     parent.verticalCenter
-            anchors.horizontalCenter:   parent.horizontalCenter
-        }
-        MouseArea {
-            anchors.fill: parent
-            onClicked: {
-                _isVisible = !_isVisible
-            }
-        }
-    }
-
 }

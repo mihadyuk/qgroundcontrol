@@ -206,7 +206,6 @@ FORMS += \
     src/ui/uas/UASQuickView.ui \
     src/ui/uas/UASQuickViewItemSelect.ui \
     src/ui/UASInfo.ui \
-    src/ui/UASRawStatusView.ui \
 }
 
 HEADERS += \
@@ -246,8 +245,8 @@ HEADERS += \
     src/QGCPalette.h \
     src/QGCQmlWidgetHolder.h \
     src/QGCQuickWidget.h \
-    src/QGCSingleton.h \
     src/QGCTemporaryFile.h \
+    src/QGCToolbox.h \
     src/QmlControls/CoordinateVector.h \
     src/QmlControls/MavlinkQmlSingleton.h \
     src/QmlControls/ParameterEditorController.h \
@@ -323,7 +322,6 @@ HEADERS += \
     src/ui/uas/UASQuickViewItem.h \
     src/ui/uas/UASQuickViewItemSelect.h \
     src/ui/uas/UASQuickViewTextItem.h \
-    src/ui/UASRawStatusView.h \
     src/VehicleSetup/JoystickConfigController.h \
     src/ViewWidgets/CustomCommandWidget.h \
     src/ViewWidgets/CustomCommandWidgetController.h \
@@ -361,8 +359,8 @@ SOURCES += \
     src/QGCPalette.cc \
     src/QGCQmlWidgetHolder.cpp \
     src/QGCQuickWidget.cc \
-    src/QGCSingleton.cc \
     src/QGCTemporaryFile.cc \
+    src/QGCToolbox.cc \
     src/QGCGeo.cc \
     src/QmlControls/CoordinateVector.cc \
     src/QmlControls/ParameterEditorController.cc \
@@ -430,7 +428,6 @@ SOURCES += \
     src/ui/uas/UASQuickViewItem.cc \
     src/ui/uas/UASQuickViewItemSelect.cc \
     src/ui/uas/UASQuickViewTextItem.cc \
-    src/ui/UASRawStatusView.cpp \
     src/VehicleSetup/JoystickConfigController.cc \
     src/ViewWidgets/CustomCommandWidget.cc \
     src/ViewWidgets/CustomCommandWidgetController.cc \
@@ -518,6 +515,8 @@ HEADERS+= \
     src/AutoPilotPlugins/AutoPilotPlugin.h \
     src/AutoPilotPlugins/AutoPilotPluginManager.h \
     src/AutoPilotPlugins/APM/APMAutoPilotPlugin.h \
+    src/AutoPilotPlugins/APM/APMAirframeComponent.h \
+    src/AutoPilotPlugins/APM/APMComponent.h \
     src/AutoPilotPlugins/Generic/GenericAutoPilotPlugin.h \
     src/AutoPilotPlugins/PX4/AirframeComponent.h \
     src/AutoPilotPlugins/PX4/AirframeComponentAirframes.h \
@@ -536,14 +535,13 @@ HEADERS+= \
     src/FirmwarePlugin/FirmwarePluginManager.h \
     src/FirmwarePlugin/FirmwarePlugin.h \
     src/FirmwarePlugin/APM/APMFirmwarePlugin.h \
-    src/FirmwarePlugin/APM/APMParameterLoader.h \
+    src/FirmwarePlugin/APM/APMParameterMetaData.h \
     src/FirmwarePlugin/APM/ArduCopterFirmwarePlugin.h \
     src/FirmwarePlugin/APM/ArduPlaneFirmwarePlugin.h \
     src/FirmwarePlugin/APM/ArduRoverFirmwarePlugin.h \
     src/FirmwarePlugin/Generic/GenericFirmwarePlugin.h \
-    src/FirmwarePlugin/Generic/GenericParameterLoader.h \
     src/FirmwarePlugin/PX4/PX4FirmwarePlugin.h \
-    src/FirmwarePlugin/PX4/PX4ParameterLoader.h \
+    src/FirmwarePlugin/PX4/PX4ParameterMetaData.h \
     src/Vehicle/MultiVehicleManager.h \
     src/Vehicle/Vehicle.h \
     src/VehicleSetup/VehicleComponent.h \
@@ -561,6 +559,8 @@ SOURCES += \
     src/AutoPilotPlugins/AutoPilotPlugin.cc \
     src/AutoPilotPlugins/AutoPilotPluginManager.cc \
     src/AutoPilotPlugins/APM/APMAutoPilotPlugin.cc \
+    src/AutoPilotPlugins/APM/APMAirframeComponent.cc \
+    src/AutoPilotPlugins/APM/APMComponent.cc \
     src/AutoPilotPlugins/Generic/GenericAutoPilotPlugin.cc \
     src/AutoPilotPlugins/PX4/AirframeComponent.cc \
     src/AutoPilotPlugins/PX4/AirframeComponentAirframes.cc \
@@ -577,15 +577,14 @@ SOURCES += \
     src/AutoPilotPlugins/PX4/SensorsComponent.cc \
     src/AutoPilotPlugins/PX4/SensorsComponentController.cc \
     src/FirmwarePlugin/APM/APMFirmwarePlugin.cc \
-    src/FirmwarePlugin/APM/APMParameterLoader.cc \
+    src/FirmwarePlugin/APM/APMParameterMetaData.cc \
     src/FirmwarePlugin/APM/ArduCopterFirmwarePlugin.cc \
     src/FirmwarePlugin/APM/ArduPlaneFirmwarePlugin.cc \
     src/FirmwarePlugin/APM/ArduRoverFirmwarePlugin.cc \
     src/FirmwarePlugin/FirmwarePluginManager.cc \
     src/FirmwarePlugin/Generic/GenericFirmwarePlugin.cc \
-    src/FirmwarePlugin/Generic/GenericParameterLoader.cc \
     src/FirmwarePlugin/PX4/PX4FirmwarePlugin.cc \
-    src/FirmwarePlugin/PX4/PX4ParameterLoader.cc \
+    src/FirmwarePlugin/PX4/PX4ParameterMetaData.cc \
     src/Vehicle/MultiVehicleManager.cc \
     src/Vehicle/Vehicle.cc \
     src/VehicleSetup/VehicleComponent.cc \

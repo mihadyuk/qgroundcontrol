@@ -49,7 +49,6 @@
 #include "QGCMessageBox.h"
 #include "MainWindow.h"
 #include "UDPLink.h"
-#include "QGCSingleton.h"
 #include "LinkManager.h"
 #include "HomePositionManager.h"
 #include "UASMessageHandler.h"
@@ -137,7 +136,7 @@ static QObject* mavlinkQmlSingletonFactory(QQmlEngine*, QJSEngine*)
 
 static QObject* qgroundcontrolQmlGlobalSingletonFactory(QQmlEngine*, QJSEngine*)
 {
-    return new QGroundControlQmlGlobal;
+    return new QGroundControlQmlGlobal(qgcApp()->toolbox());
 }
 
 #if defined(QGC_GST_STREAMING)
@@ -172,6 +171,7 @@ QGCApplication::QGCApplication(int &argc, char* argv[], bool unitTesting)
 #ifdef QT_DEBUG
     , _testHighDPI(false)
 #endif
+    , _toolbox(NULL)
 {
     Q_ASSERT(_app == NULL);
     _app = this;
@@ -337,12 +337,19 @@ QGCApplication::QGCApplication(int &argc, char* argv[], bool unitTesting)
 
     // Initialize Video Streaming
     initializeVideoStreaming(argc, argv);
+
+    _toolbox = new QGCToolbox(this);
 }
 
 QGCApplication::~QGCApplication()
 {
-    _destroySingletons();
+    MainWindow* mainWindow = MainWindow::instance();
+    if (mainWindow) {
+        delete mainWindow;
+    }
+
     shutdownVideoStreaming();
+    delete _toolbox;
 }
 
 void QGCApplication::_initCommon(void)
@@ -451,8 +458,6 @@ bool QGCApplication::_initForNormalAppBoot(void)
 {
     QSettings settings;
 
-    _createSingletons();
-
 #ifdef __mobile__
     _styleIsDark = false;
 #else
@@ -480,12 +485,12 @@ bool QGCApplication::_initForNormalAppBoot(void)
 
 #ifndef __mobile__
     // Now that main window is up check for lost log files
-    connect(this, &QGCApplication::checkForLostLogFiles, MAVLinkProtocol::instance(), &MAVLinkProtocol::checkForLostLogFiles);
+    connect(this, &QGCApplication::checkForLostLogFiles, toolbox()->mavlinkProtocol(), &MAVLinkProtocol::checkForLostLogFiles);
     emit checkForLostLogFiles();
 #endif
 
     // Load known link configurations
-    LinkManager::instance()->loadLinkConfigurationList();
+    toolbox()->linkManager()->loadLinkConfigurationList();
 
     return true;
 }
@@ -595,116 +600,6 @@ QGCApplication* qgcApp(void)
 {
     Q_ASSERT(QGCApplication::_app);
     return QGCApplication::_app;
-}
-
-/// @brief We create all the non-ui based singletons here instead of allowing them to be created randomly
-///         by calls to instance. The reason being that depending on boot sequence the singleton may end
-///         up being creating on something other than the main thread.
-void QGCApplication::_createSingletons(void)
-{
-    // The order here is important since the singletons reference each other
-
-    // No dependencies
-    FlightMapSettings* flightMapSettings = FlightMapSettings::_createSingleton();
-    Q_UNUSED(flightMapSettings);
-    Q_ASSERT(flightMapSettings);
-
-    // No dependencies
-    HomePositionManager* homePositionManager = HomePositionManager::_createSingleton();
-    Q_UNUSED(homePositionManager);
-    Q_ASSERT(homePositionManager);
-
-    // No dependencies
-    FirmwarePlugin* firmwarePlugin = GenericFirmwarePlugin::_createSingleton();
-    Q_UNUSED(firmwarePlugin);
-    Q_ASSERT(firmwarePlugin);
-
-    // No dependencies
-    firmwarePlugin = PX4FirmwarePlugin::_createSingleton();
-    firmwarePlugin = ArduCopterFirmwarePlugin::_createSingleton();
-    firmwarePlugin = ArduPlaneFirmwarePlugin::_createSingleton();
-    firmwarePlugin = ArduRoverFirmwarePlugin::_createSingleton();
-
-    // No dependencies
-    FirmwarePluginManager* firmwarePluginManager = FirmwarePluginManager::_createSingleton();
-    Q_UNUSED(firmwarePluginManager);
-    Q_ASSERT(firmwarePluginManager);
-
-    // No dependencies
-    MultiVehicleManager* multiVehicleManager = MultiVehicleManager::_createSingleton();
-    Q_UNUSED(multiVehicleManager);
-    Q_ASSERT(multiVehicleManager);
-
-    // No dependencies
-    JoystickManager* joystickManager = JoystickManager::_createSingleton();
-    Q_UNUSED(joystickManager);
-    Q_ASSERT(joystickManager);
-
-    // No dependencies
-    GAudioOutput* audio = GAudioOutput::_createSingleton();
-    Q_UNUSED(audio);
-    Q_ASSERT(audio);
-
-    // No dependencies
-    LinkManager* linkManager = LinkManager::_createSingleton();
-    Q_UNUSED(linkManager);
-    Q_ASSERT(linkManager);
-
-    // Need MultiVehicleManager
-    AutoPilotPluginManager* pluginManager = AutoPilotPluginManager::_createSingleton();
-    Q_UNUSED(pluginManager);
-    Q_ASSERT(pluginManager);
-
-    // Need MultiVehicleManager
-    UASMessageHandler* messageHandler = UASMessageHandler::_createSingleton();
-    Q_UNUSED(messageHandler);
-    Q_ASSERT(messageHandler);
-
-    // Needs MultiVehicleManager
-    FactSystem* factSystem = FactSystem::_createSingleton();
-    Q_UNUSED(factSystem);
-    Q_ASSERT(factSystem);
-
-    // Needs everything!
-    MAVLinkProtocol* mavlink = MAVLinkProtocol::_createSingleton();
-    Q_UNUSED(mavlink);
-    Q_ASSERT(mavlink);
-
-}
-
-void QGCApplication::_destroySingletons(void)
-{
-    MainWindow* mainWindow = MainWindow::instance();
-    if (mainWindow) {
-        delete mainWindow;
-    }
-
-    if (LinkManager::instance(true /* nullOk */)) {
-        // This will close/delete all connections
-        LinkManager::instance()->_shutdown();
-    }
-
-    // Let the signals flow through the main thread
-    processEvents(QEventLoop::ExcludeUserInputEvents);
-
-    // Take down singletons in reverse order of creation
-
-    MAVLinkProtocol::_deleteSingleton();
-    FactSystem::_deleteSingleton();
-    UASMessageHandler::_deleteSingleton();
-    AutoPilotPluginManager::_deleteSingleton();
-    LinkManager::_deleteSingleton();
-    GAudioOutput::_deleteSingleton();
-    JoystickManager::_deleteSingleton();
-    MultiVehicleManager::_deleteSingleton();
-    FirmwarePluginManager::_deleteSingleton();
-    GenericFirmwarePlugin::_deleteSingleton();
-    PX4FirmwarePlugin::_deleteSingleton();
-    ArduCopterFirmwarePlugin::_deleteSingleton();
-    ArduPlaneFirmwarePlugin::_deleteSingleton();
-    ArduRoverFirmwarePlugin::_deleteSingleton();
-    HomePositionManager::_deleteSingleton();
-    FlightMapSettings::_deleteSingleton();
 }
 
 void QGCApplication::informationMessageBoxOnMainThread(const QString& title, const QString& msg)

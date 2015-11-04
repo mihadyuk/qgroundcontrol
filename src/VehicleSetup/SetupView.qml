@@ -36,7 +36,6 @@ import QGroundControl.ScreenTools           1.0
 import QGroundControl.MultiVehicleManager   1.0
 
 Rectangle {
-    anchors.fill:   parent
     color:          qgcPal.window
     z:              QGroundControl.zOrderTopMost
 
@@ -108,6 +107,11 @@ Rectangle {
                 panelLoader.source = vehicleComponent.setupSource
             }
         }
+    }
+
+    function showDebugPanel()
+    {
+        panelLoader.source = "DebugWindow.qml";
     }
 
     Component.onCompleted: showSummaryPanel()
@@ -199,10 +203,11 @@ Rectangle {
     }
 
     Rectangle {
-        //anchors.margins:    _defaultTextHeight * 2
+        //-- Fill entire screen, including behind tool bar
         anchors.fill:       parent
         color:              qgcPal.windowShadeDark
 
+        /* I think this takes too much space and is not exactly necessary
         QGCLabel {
             id:                     title
             anchors.topMargin:      _margin
@@ -213,24 +218,27 @@ Rectangle {
             font.pixelSize:         ScreenTools.largeFontPixelSize
             text:                   "Vehicle Setup"
         }
+        */
 
         Rectangle {
+            //-- Limit height to available height (below tool bar)
             anchors.topMargin:  _margin
-            anchors.top:        title.bottom
+            //anchors.top:      title.bottom
+            height:             mainWindow.avaiableHeight
             anchors.bottom:     parent.bottom
             anchors.left:       parent.left
             anchors.right:      parent.right
             color:              qgcPal.window
 
-            Flickable {
-                id:                 buttonFlickable
+            ScrollView {
+                id:                 buttonScroll
                 width:              _buttonWidth
                 anchors.topMargin:  _defaultTextHeight / 2
                 anchors.top:        parent.top
                 anchors.bottom:     parent.bottom
-                contentWidth:       _buttonWidth
-                contentHeight:      buttonColumn.height
-                flickableDirection: Flickable.VerticalFlick
+                frameVisible:       false
+                horizontalScrollBarPolicy:  Qt.ScrollBarAlwaysOff
+                verticalScrollBarPolicy:    Qt.ScrollBarAlwaysOff
 
                 Column {
                     id:         buttonColumn
@@ -297,14 +305,27 @@ Rectangle {
 
                         onClicked: showParametersPanel()
                     }
+
+                    SubMenuButton {
+                        width:          _buttonWidth
+                        setupIndicator: false
+                        exclusiveGroup: setupButtonGroup
+                        visible:        ScreenTools.isDebug
+                        text:           "DEBUG"
+
+                        onClicked: showDebugPanel()
+                    }
+
                 } // Column
-            } // Flickable
+            } // ScrollView
 
             Loader {
                 id:                     panelLoader
+                anchors.topMargin:      _margin
+                anchors.bottomMargin:   _margin
                 anchors.leftMargin:     _defaultTextWidth
                 anchors.rightMargin:    _defaultTextWidth
-                anchors.left:           buttonFlickable.right
+                anchors.left:           buttonScroll.right
                 anchors.right:          parent.right
                 anchors.top:            parent.top
                 anchors.bottom:         parent.bottom

@@ -28,13 +28,10 @@
 #define GenericFirmwarePlugin_H
 
 #include "FirmwarePlugin.h"
-#include "GenericParameterLoader.h"
 
 class GenericFirmwarePlugin : public FirmwarePlugin
 {
     Q_OBJECT
-
-    DECLARE_QGC_SINGLETON(GenericFirmwarePlugin, FirmwarePlugin)
     
 public:
     // Overrides from FirmwarePlugin
@@ -48,13 +45,8 @@ public:
     virtual void adjustMavlinkMessage(mavlink_message_t* message);
     virtual void initializeVehicle(Vehicle* vehicle);
     virtual bool sendHomePositionToVehicle(void);
-    virtual ParameterLoader* getParameterLoader(AutoPilotPlugin *autopilotPlugin, Vehicle* vehicle);
-
-private:
-    /// All access to singleton is through AutoPilotPluginManager::instance
-    GenericFirmwarePlugin(QObject* parent = NULL);
-
-    GenericParameterLoader* _parameterLoader;
+    virtual void addMetaDataToFact(Fact* fact);
+    virtual QString getDefaultComponentIdParam(void) const { return QString(); }
 };
 
 #endif
