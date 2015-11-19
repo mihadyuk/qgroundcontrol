@@ -94,6 +94,11 @@ Rectangle {
         panelLoader.source = "SetupParameterEditor.qml";
     }
 
+    function showPX4FlowPanel()
+    {
+        panelLoader.source = "PX4FlowSensor.qml";
+    }
+
     function showVehicleComponentPanel(vehicleComponent)
     {
         if (multiVehicleManager.activeVehicle.armed) {
@@ -107,11 +112,6 @@ Rectangle {
                 panelLoader.source = vehicleComponent.setupSource
             }
         }
-    }
-
-    function showDebugPanel()
-    {
-        panelLoader.source = "DebugWindow.qml";
     }
 
     Component.onCompleted: showSummaryPanel()
@@ -203,133 +203,115 @@ Rectangle {
     }
 
     Rectangle {
-        //-- Fill entire screen, including behind tool bar
-        anchors.fill:       parent
-        color:              qgcPal.windowShadeDark
+        //-- Limit height to available height (below tool bar)
+        anchors.topMargin:  _margin
+        height:             mainWindow.avaiableHeight
+        anchors.bottom:     parent.bottom
+        anchors.left:       parent.left
+        anchors.right:      parent.right
+        color:              qgcPal.window
 
-        /* I think this takes too much space and is not exactly necessary
-        QGCLabel {
-            id:                     title
-            anchors.topMargin:      _margin
-            anchors.top:            parent.top
-            anchors.left:           parent.left
-            anchors.right:          parent.right
-            horizontalAlignment:    Text.AlignHCenter
-            font.pixelSize:         ScreenTools.largeFontPixelSize
-            text:                   "Vehicle Setup"
-        }
-        */
-
-        Rectangle {
-            //-- Limit height to available height (below tool bar)
-            anchors.topMargin:  _margin
-            //anchors.top:      title.bottom
-            height:             mainWindow.avaiableHeight
+        Flickable {
+            id:                 buttonScroll
+            width:              mainWindow.menuButtonWidth
+            anchors.topMargin:  _defaultTextHeight / 2
+            anchors.top:        parent.top
             anchors.bottom:     parent.bottom
-            anchors.left:       parent.left
-            anchors.right:      parent.right
-            color:              qgcPal.window
+            clip:               true
+            contentHeight:      buttonColumn.height
+            contentWidth:       parent.width
+            boundsBehavior:     Flickable.StopAtBounds
+            flickableDirection: Flickable.VerticalFlick
 
-            ScrollView {
-                id:                 buttonScroll
-                width:              _buttonWidth
-                anchors.topMargin:  _defaultTextHeight / 2
-                anchors.top:        parent.top
-                anchors.bottom:     parent.bottom
-                frameVisible:       false
-                horizontalScrollBarPolicy:  Qt.ScrollBarAlwaysOff
-                verticalScrollBarPolicy:    Qt.ScrollBarAlwaysOff
+            Column {
+                id:         buttonColumn
+                width:      mainWindow.menuButtonWidth
+                spacing:    _defaultTextHeight / 2
 
-                Column {
-                    id:         buttonColumn
-                    width:      _buttonWidth
-                    spacing:    _defaultTextHeight / 2
+                SubMenuButton {
+                    id:             summaryButton
+                    width:          mainWindow.menuButtonWidth
+                    imageResource: "/qmlimages/VehicleSummaryIcon.png"
+                    setupIndicator: false
+                    checked:        true
+                    exclusiveGroup: setupButtonGroup
+                    text:           "SUMMARY"
 
-                    SubMenuButton {
-                        id:             summaryButton
-                        width:          _buttonWidth
-                        imageResource: "/qmlimages/VehicleSummaryIcon.png"
-                        setupIndicator: false
-                        checked:        true
-                        exclusiveGroup: setupButtonGroup
-                        text:           "SUMMARY"
+                    onClicked: showSummaryPanel()
+                }
 
-                        onClicked: showSummaryPanel()
-                    }
+                SubMenuButton {
+                    id:             firmwareButton
+                    width:          mainWindow.menuButtonWidth
+                    imageResource:  "/qmlimages/FirmwareUpgradeIcon.png"
+                    setupIndicator: false
+                    exclusiveGroup: setupButtonGroup
+                    visible:        !ScreenTools.isMobile
+                    text:           "FIRMWARE"
 
-                    SubMenuButton {
-                        id:             firmwareButton
-                        width:          _buttonWidth
-                        imageResource:  "/qmlimages/FirmwareUpgradeIcon.png"
-                        setupIndicator: false
-                        exclusiveGroup: setupButtonGroup
-                        visible:        !ScreenTools.isMobile
-                        text:           "FIRMWARE"
+                    onClicked: showFirmwarePanel()
+                }
 
-                        onClicked: showFirmwarePanel()
-                    }
+                SubMenuButton {
+                    id:             px4FlowButton
+                    width:          mainWindow.menuButtonWidth
+                    exclusiveGroup: setupButtonGroup
+                    visible:        _fullParameterVehicleAvailable
+                    setupIndicator: false
+                    text:           "PX4FLOW"
+                    onClicked:      showPX4FlowPanel()
+                }
 
-                    SubMenuButton {
-                        id:             joystickButton
-                        width:          _buttonWidth
-                        setupIndicator: true
-                        setupComplete:  joystickManager.activeJoystick ? joystickManager.activeJoystick.calibrated : false
-                        exclusiveGroup: setupButtonGroup
-                        visible:        _fullParameterVehicleAvailable && joystickManager.joysticks.length != 0
-                        text:           "JOYSTICK"
+                SubMenuButton {
+                    id:             joystickButton
+                    width:          mainWindow.menuButtonWidth
+                    setupIndicator: true
+                    setupComplete:  joystickManager.activeJoystick ? joystickManager.activeJoystick.calibrated : false
+                    exclusiveGroup: setupButtonGroup
+                    visible:        _fullParameterVehicleAvailable && joystickManager.joysticks.length != 0
+                    text:           "JOYSTICK"
 
-                        onClicked: showJoystickPanel()
-                    }
+                    onClicked: showJoystickPanel()
+                }
 
-                    Repeater {
-                        model: _fullParameterVehicleAvailable ? multiVehicleManager.activeVehicle.autopilot.vehicleComponents : 0
-
-                        SubMenuButton {
-                            width:          _buttonWidth
-                            imageResource:  modelData.iconResource
-                            setupIndicator: modelData.requiresSetup
-                            setupComplete:  modelData.setupComplete
-                            exclusiveGroup: setupButtonGroup
-                            text:           modelData.name.toUpperCase()
-
-                            onClicked: showVehicleComponentPanel(modelData)
-                        }
-                    }
+                Repeater {
+                    model: _fullParameterVehicleAvailable ? multiVehicleManager.activeVehicle.autopilot.vehicleComponents : 0
 
                     SubMenuButton {
-                        width:          _buttonWidth
-                        setupIndicator: false
+                        width:          mainWindow.menuButtonWidth
+                        imageResource:  modelData.iconResource
+                        setupIndicator: modelData.requiresSetup
+                        setupComplete:  modelData.setupComplete
                         exclusiveGroup: setupButtonGroup
-                        visible:        multiVehicleManager.parameterReadyVehicleAvailable
-                        text:           "PARAMETERS"
+                        text:           modelData.name.toUpperCase()
 
-                        onClicked: showParametersPanel()
+                        onClicked: showVehicleComponentPanel(modelData)
                     }
+                }
 
-                    SubMenuButton {
-                        width:          _buttonWidth
-                        setupIndicator: false
-                        exclusiveGroup: setupButtonGroup
-                        visible:        ScreenTools.isDebug
-                        text:           "DEBUG"
+                SubMenuButton {
+                    width:          mainWindow.menuButtonWidth
+                    setupIndicator: false
+                    exclusiveGroup: setupButtonGroup
+                    visible:        multiVehicleManager.parameterReadyVehicleAvailable
+                    text:           "PARAMETERS"
 
-                        onClicked: showDebugPanel()
-                    }
+                    onClicked: showParametersPanel()
+                }
 
-                } // Column
-            } // ScrollView
-
-            Loader {
-                id:                     panelLoader
-                anchors.topMargin:      _margin
-                anchors.bottomMargin:   _margin
-                anchors.leftMargin:     _defaultTextWidth
-                anchors.rightMargin:    _defaultTextWidth
-                anchors.left:           buttonScroll.right
-                anchors.right:          parent.right
-                anchors.top:            parent.top
-                anchors.bottom:         parent.bottom
             }
+        }
+
+        Loader {
+            id:                     panelLoader
+            anchors.topMargin:      _margin
+            anchors.bottomMargin:   _margin
+            anchors.leftMargin:     _defaultTextWidth
+            anchors.rightMargin:    _defaultTextWidth
+            anchors.left:           buttonScroll.right
+            anchors.right:          parent.right
+            anchors.top:            parent.top
+            anchors.bottom:         parent.bottom
         }
     }
 }

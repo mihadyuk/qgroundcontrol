@@ -19,6 +19,7 @@ Item {
     readonly property real  _defaultFontHeight: 16
     readonly property real  fontHRatio:         isTinyScreen ? (_textMeasure.contentHeight / _defaultFontHeight) * 0.75 : (_textMeasure.contentHeight / _defaultFontHeight)
     readonly property real  realFontHeight:     _textMeasure.contentHeight
+    readonly property real  realFontWidth :     _textMeasure.contentWidth
 
     // On OSX ElCapitan with Qt 5.4.0 any font pixel size above 19 shows garbage test. No idea why at this point.
     // Will remove Math.min when problem is figure out.
@@ -29,7 +30,8 @@ Item {
     property bool isiOS:            ScreenToolsController.isiOS
     property bool isMobile:         ScreenToolsController.isMobile
     property bool isDebug:          ScreenToolsController.isDebug
-    property bool isTinyScreen:     (Screen.width / Screen.pixelDensity) < 120 // 120mm
+    property bool isTinyScreen:     (Screen.width  / Screen.pixelDensity) < 120 // 120mm
+    property bool isShortScreen:    ScreenToolsController.isMobile && ((Screen.height / Screen.width) < 0.6) // Nexus 7 for example
 
     function mouseX() {
         return ScreenToolsController.mouseX()

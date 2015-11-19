@@ -49,7 +49,7 @@ Item {
 
     property var _activeVehicle:  multiVehicleManager.activeVehicle
 
-    readonly property var  _defaultVehicleCoordinate:   QtPositioning.coordinate(37.803784, -122.462276)
+    readonly property var  _defaultVehicleCoordinate:   mainWindow.tabletPosition
     readonly property real _defaultRoll:                0
     readonly property real _defaultPitch:               0
     readonly property real _defaultHeading:             0
@@ -182,11 +182,11 @@ Item {
         width:                  ScreenTools.defaultFontPixelSize * 2
         radius:                 ScreenTools.defaultFontPixelSize / 3
         visible:                _controller.hasVideo && !_isPipVisible
-        color:                  isBackgroundDark ? Qt.rgba(1,1,1,0.5) : Qt.rgba(0,0,0,0.5)
+        color:                  isBackgroundDark ? Qt.rgba(0,0,0,0.75) : Qt.rgba(0,0,0,0.5)
         Image {
             width:              parent.width  * 0.75
             height:             parent.height * 0.75
-            source:             "/qmlimages/buttonRight.svg"
+            source:             "/res/buttonRight.svg"
             mipmap:             true
             fillMode:           Image.PreserveAspectFit
             anchors.verticalCenter:     parent.verticalCenter

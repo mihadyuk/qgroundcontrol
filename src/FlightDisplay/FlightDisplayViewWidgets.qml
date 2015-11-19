@@ -41,6 +41,16 @@ Item {
 
     property bool _isInstrumentVisible: QGroundControl.loadBoolGlobalSetting(_InstrumentVisibleKey, true)
 
+    function getGadgetWidth() {
+        if(ScreenTools.isMobile) {
+            if(ScreenTools.isTinyScreen)
+                return mainWindow.width * 0.2
+            return mainWindow.width * 0.15
+        }
+        var w = mainWindow.width * 0.15
+        return Math.min(w, 200)
+    }
+
     ExclusiveGroup {
         id: _dropButtonsExclusiveGroup
     }
@@ -78,11 +88,12 @@ Item {
 
     //-- Instrument Panel
     QGCInstrumentWidget {
+        id:                     instrumentGadget
         anchors.margins:        ScreenTools.defaultFontPixelHeight
         anchors.right:          parent.right
         anchors.verticalCenter: parent.verticalCenter
         visible:                _isInstrumentVisible
-        size:                   ScreenTools.isTinyScreen ? mainWindow.width * 0.2 : mainWindow.width * 0.15
+        size:                   getGadgetWidth()
         active:                 _activeVehicle != null
         heading:                _heading
         rollAngle:              _roll
@@ -108,11 +119,11 @@ Item {
         width:                  ScreenTools.defaultFontPixelSize * 2
         radius:                 ScreenTools.defaultFontPixelSize / 3
         visible:                !_isInstrumentVisible
-        color:                  isBackgroundDark ? Qt.rgba(1,1,1,0.5) : Qt.rgba(0,0,0,0.5)
+        color:                  isBackgroundDark ? Qt.rgba(0,0,0,0.75) : Qt.rgba(0,0,0,0.5)
         Image {
             width:              parent.width  * 0.75
             height:             parent.height * 0.75
-            source:             "/qmlimages/buttonLeft.svg"
+            source:             "/res/buttonLeft.svg"
             mipmap:             true
             fillMode:           Image.PreserveAspectFit
             anchors.verticalCenter:     parent.verticalCenter
