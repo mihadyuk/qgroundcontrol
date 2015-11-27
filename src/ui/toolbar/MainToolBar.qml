@@ -31,6 +31,7 @@ import QtQuick 2.5
 import QtQuick.Controls 1.2
 import QtQuick.Controls.Styles 1.2
 
+import QGroundControl                       1.0
 import QGroundControl.Controls              1.0
 import QGroundControl.FactControls          1.0
 import QGroundControl.Palette               1.0
@@ -49,6 +50,8 @@ Rectangle {
     property bool isMessageImportant:   activeVehicle ? !activeVehicle.messageTypeNormal && !activeVehicle.messageTypeNone : false
     property bool isBackgroundDark:     true
     property bool opaqueBackground:     false
+
+    property string formatedMessage:    activeVehicle ? activeVehicle.formatedMessage : ""
 
     /*
         Dev System (Mac OS)
@@ -146,13 +149,35 @@ Rectangle {
 
     MainToolBarController { id: _controller }
 
+    onFormatedMessageChanged: {
+        if(messageArea.visible) {
+            messageText.append(formatedMessage)
+            //-- Hack to scroll down
+            messageFlick.flick(0,-500)
+        }
+    }
+
+    function showMessageArea() {
+        if(multiVehicleManager.activeVehicleAvailable) {
+            messageText.text = activeVehicle.formatedMessages
+            //-- Hack to scroll to last message
+            for (var i = 0; i < activeVehicle.messageCount; i++)
+                messageFlick.flick(0,-5000)
+            activeVehicle.resetMessages()
+        } else {
+            messageText.text = "No Messages"
+        }
+        messageArea.visible = true
+        mainWindow.setMapInteractive(false)
+    }
+
     function showToolbarMessage(message) {
         toolBarMessage.text = message
         toolBarMessageArea.visible = true
     }
 
     function showMavStatus() {
-         return (multiVehicleManager.activeVehicleAvailable && activeVehicle.heartbeatTimeout === 0 && _controller.connectionCount > 0);
+         return (multiVehicleManager.activeVehicleAvailable && activeVehicle.heartbeatTimeout === 0);
     }
 
     Component.onCompleted: {
@@ -248,9 +273,10 @@ Rectangle {
     }
 
     Item {
+        id:                     vehicleIndicators
         visible:                showMavStatus() && !connectionStatus.visible
         height:                 mainWindow.tbCellHeight
-        width:                  (toolBar.width - viewRow.width - connectRow.width)
+        width:                  (toolBar.width - viewRow.width)
         anchors.left:           viewRow.right
         anchors.leftMargin:     mainWindow.tbSpacing * 2
         anchors.verticalCenter: parent.verticalCenter
@@ -258,6 +284,55 @@ Rectangle {
             source:             multiVehicleManager.activeVehicleAvailable ? "MainToolBarIndicators.qml" : ""
             anchors.left:       parent.left
             anchors.verticalCenter:   parent.verticalCenter
+        }
+    }
+
+    //-------------------------------------------------------------------------
+    //-- System Message Area
+    Rectangle {
+        id:             messageArea
+        width:          mainWindow.width  * 0.5
+        height:         mainWindow.height * 0.5
+        anchors.top:    parent.bottom
+        anchors.horizontalCenter: parent.horizontalCenter
+        color:          Qt.rgba(0,0,0,0.75)
+        visible:        false
+        radius:         ScreenTools.defaultFontPixelHeight * 0.5
+        Flickable {
+            id:                 messageFlick
+            anchors.margins:    ScreenTools.defaultFontPixelHeight
+            anchors.fill:       parent
+            contentHeight:      messageText.height
+            contentWidth:       messageText.width
+            boundsBehavior:     Flickable.StopAtBounds
+            pixelAligned:       true
+            clip:               true
+            TextEdit {
+                id:         messageText
+                readOnly:   true
+                textFormat: TextEdit.RichText
+                color:      "white"
+            }
+        }
+        //-- Dismiss System Message
+        Image {
+            anchors.margins:    ScreenTools.defaultFontPixelHeight
+            anchors.top:        parent.top
+            anchors.right:      parent.right
+            width:              ScreenTools.defaultFontPixelHeight * 1.5
+            height:             ScreenTools.defaultFontPixelHeight * 1.5
+            source:             "/res/XDelete.svg"
+            fillMode:           Image.PreserveAspectFit
+            mipmap:             true
+            smooth:             true
+            MouseArea {
+                anchors.fill:   parent
+                onClicked: {
+                    messageText.text    = ""
+                    messageArea.visible = false
+                    mainWindow.setMapInteractive(true)
+                }
+            }
         }
     }
 
@@ -271,125 +346,6 @@ Rectangle {
         anchors.left:           viewRow.right
         anchors.leftMargin:     mainWindow.tbSpacing * 2
         anchors.verticalCenter: parent.verticalCenter
-    }
-
-    Row {
-        id:                     connectRow
-        height:                 mainWindow.tbCellHeight
-        spacing:                mainWindow.tbSpacing
-        anchors.rightMargin:    mainWindow.tbSpacing
-        anchors.right:          parent.right
-        anchors.verticalCenter: parent.verticalCenter
-
-        Menu {
-            id: connectMenu
-            Component.onCompleted: {
-                _controller.configListChanged.connect(connectMenu.updateConnectionList);
-                connectMenu.updateConnectionList();
-            }
-            function addMenuEntry(name) {
-                var label = "Add Connection"
-                if(name !== "")
-                    label = name;
-                var mItem = connectMenu.addItem(label);
-                var menuSlot = function() {_controller.onConnect(name)};
-                mItem.triggered.connect(menuSlot);
-            }
-            function updateConnectionList() {
-                connectMenu.clear();
-                for(var i = 0; i < _controller.configList.length; i++) {
-                    connectMenu.addMenuEntry(_controller.configList[i]);
-                }
-                if(_controller.configList.length > 0) {
-                    connectMenu.addSeparator();
-                }
-                // Add "Add Connection" to the list
-                connectMenu.addMenuEntry("");
-            }
-        }
-
-        Rectangle {
-            height: mainWindow.tbCellHeight
-            width:  1
-            color: Qt.rgba(1,1,1,0.45)
-        }
-
-        QGCToolBarButton {
-            id:             connectButton
-            width:          mainWindow.tbButtonWidth
-            height:         mainWindow.tbCellHeight
-            visible:        _controller.connectionCount === 0
-            source:         "/qmlimages/Connect.svg"
-            checked:        false
-            onClicked: {
-                checked = false
-                connectMenu.popup()
-                /*
-                console.log("Main Window Width:   " + mainWindow.width)
-                console.log("Toolbar height:      " + toolBar.height)
-                console.log("Default font:        " + ScreenTools.defaultFontPixelSize)
-                console.log("Font (.75):          " + ScreenTools.defaultFontPixelSize * 0.75)
-                console.log("Font (.85):          " + ScreenTools.defaultFontPixelSize * 0.85)
-                console.log("Font 1.5):           " + ScreenTools.defaultFontPixelSize * 1.5)
-                console.log("Default Font Width:  " + ScreenTools.defaultFontPixelWidth)
-                console.log("Default Font Height: " + ScreenTools.defaultFontPixelHeight)
-                console.log("--")
-                console.log("Real Font Height:    " + ScreenTools.realFontHeight)
-                console.log("fontHRatio:          " + ScreenTools.fontHRatio)
-                console.log("--")
-                console.log("cellHeight:          " + cellHeight)
-                console.log("tbFontSmall:         " + tbFontSmall);
-                console.log("tbFontNormal:        " + tbFontNormal);
-                console.log("tbFontLarge:         " + tbFontLarge);
-                console.log("mainWindow.tbSpacing:           " + tbSpacing);
-                */
-            }
-        }
-
-        QGCToolBarButton {
-            id:             disconnectButton
-            width:          mainWindow.tbButtonWidth
-            height:         mainWindow.tbCellHeight
-            visible:        _controller.connectionCount === 1
-            source:         "/qmlimages/Disconnect.svg"
-            checked:        false
-            onClicked: {
-                checked = false
-                _controller.onDisconnect("");
-            }
-        }
-
-        Menu {
-            id: disconnectMenu
-            Component.onCompleted: {
-                _controller.connectedListChanged.connect(disconnectMenu.onConnectedListChanged)
-            }
-            function addMenuEntry(name) {
-                var mItem = disconnectMenu.addItem(name);
-                var menuSlot = function() {_controller.onDisconnect(name)};
-                mItem.triggered.connect(menuSlot);
-            }
-            function onConnectedListChanged(conList) {
-                disconnectMenu.clear();
-                for(var i = 0; i < conList.length; i++) {
-                    disconnectMenu.addMenuEntry(conList[i]);
-                }
-            }
-        }
-
-        QGCToolBarButton {
-            id:             multidisconnectButton
-            width:          mainWindow.tbButtonWidth
-            height:         mainWindow.tbCellHeight
-            visible:        _controller.connectionCount > 1
-            source:         "/qmlimages/Disconnect.svg"
-            checked:        false
-            onClicked: {
-                checked = false
-                disconnectMenu.popup()
-            }
-        }
-
     }
 
     // Progress bar

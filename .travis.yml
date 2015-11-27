@@ -13,10 +13,12 @@ matrix:
     include:
         - os: linux
           env: SPEC=linux-g++-64 CONFIG=debug SHADOW_BUILD_DIR=/tmp/build_linux_debug
-          sudo: false
+          sudo: required
+          dist: trusty
         - os: linux
           env: SPEC=linux-g++-64 CONFIG=installer SHADOW_BUILD_DIR=/tmp/build_linux_install
-          sudo: false
+          sudo: required 
+          dist: trusty
         - os: osx
           osx_image: xcode7
           env: SPEC=macx-clang CONFIG=debug QT_FATAL_WARNINGS=1 SHADOW_BUILD_DIR=/tmp/build_macos_debug
@@ -127,6 +129,9 @@ after_success:
       && ${TRAVIS_BUILD_DIR}/tools/google_play_upload.py org.mavlink.qgroundcontrol ${SHADOW_BUILD_DIR}/release/package/qgroundcontrol.apk
       ;
     fi
+
+before_deploy:
+  - rvm 1.9.3 do gem install mime-types -v 2.6.2
 
 deploy:
   - provider: s3
