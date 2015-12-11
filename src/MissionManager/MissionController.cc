@@ -24,10 +24,13 @@ This file is part of the QGROUNDCONTROL project
 #include "MissionController.h"
 #include "MultiVehicleManager.h"
 #include "MissionManager.h"
-#include "QGCFileDialog.h"
 #include "CoordinateVector.h"
-#include "QGCMessageBox.h"
 #include "FirmwarePlugin.h"
+#include "QGCApplication.h"
+
+#ifndef __mobile__
+#include "QGCFileDialog.h"
+#endif
 
 QGC_LOGGING_CATEGORY(MissionControllerLog, "MissionControllerLog")
 
@@ -169,7 +172,14 @@ int MissionController::addMissionItem(QGeoCoordinate coordinate)
     }
     newItem->setDefaultsForCommand();
     if ((MAV_CMD)newItem->command() == MAV_CMD_NAV_WAYPOINT) {
-        newItem->setParam7(_findLastAltitude());
+        double lastValue;
+
+        if (_findLastAcceptanceRadius(&lastValue)) {
+            newItem->setParam2(lastValue);
+        }
+        if (_findLastAltitude(&lastValue)) {
+            newItem->setParam7(lastValue);
+        }
     }
     _missionItems->append(newItem);
 
@@ -199,6 +209,7 @@ void MissionController::removeMissionItem(int index)
 
 void MissionController::loadMissionFromFile(void)
 {
+#ifndef __mobile__
     QString errorString;
     QString filename = QGCFileDialog::getOpenFileName(NULL, "Select Mission File to load");
 
@@ -245,10 +256,12 @@ void MissionController::loadMissionFromFile(void)
     }
 
     _initAllMissionItems();
+#endif
 }
 
 void MissionController::saveMissionToFile(void)
 {
+#ifndef __mobile__
     QString errorString;
     QString filename = QGCFileDialog::getSaveFileName(NULL, "Select file to save mission to");
 
@@ -271,30 +284,31 @@ void MissionController::saveMissionToFile(void)
     }
 
     _missionItems->setDirty(false);
+#endif
 }
 
-double MissionController::_calcDistance(bool homePositionValid, double homeAlt, MissionItem* item1, MissionItem* item2)
+void MissionController::_calcPrevWaypointValues(bool homePositionValid, double homeAlt, MissionItem* currentItem, MissionItem* prevItem, double* azimuth, double* distance, double* altDifference)
 {
-    QGeoCoordinate  coord1 =        item1->coordinate();
-    QGeoCoordinate  coord2 =        item2->coordinate();
+    QGeoCoordinate  currentCoord =  currentItem->coordinate();
+    QGeoCoordinate  prevCoord =     prevItem->coordinate();
     bool            distanceOk =    false;
 
     // Convert to fixed altitudes
 
     qCDebug(MissionControllerLog) << homePositionValid << homeAlt
-                                  << item1->relativeAltitude() << item1->coordinate().altitude()
-                                  << item2->relativeAltitude() << item2->coordinate().altitude();
+                                  << currentItem->relativeAltitude() << currentItem->coordinate().altitude()
+                                  << prevItem->relativeAltitude() << prevItem->coordinate().altitude();
 
     if (homePositionValid) {
         distanceOk = true;
-        if (item1->relativeAltitude()) {
-            coord1.setAltitude(homeAlt + coord1.altitude());
+        if (currentItem->relativeAltitude()) {
+            currentCoord.setAltitude(homeAlt + currentCoord.altitude());
         }
-        if (item2->relativeAltitude()) {
-            coord2.setAltitude(homeAlt + coord2.altitude());
+        if (prevItem->relativeAltitude()) {
+            prevCoord.setAltitude(homeAlt + prevCoord.altitude());
         }
     } else {
-        if (item1->relativeAltitude() && item2->relativeAltitude()) {
+        if (prevItem->relativeAltitude() && currentItem->relativeAltitude()) {
             distanceOk = true;
         }
     }
@@ -302,9 +316,13 @@ double MissionController::_calcDistance(bool homePositionValid, double homeAlt, 
     qCDebug(MissionControllerLog) << "distanceOk" << distanceOk;
 
     if (distanceOk) {
-        return item1->coordinate().distanceTo(item2->coordinate());
+        *altDifference = currentCoord.altitude() - prevCoord.altitude();
+        *distance = prevCoord.distanceTo(currentCoord);
+        *azimuth = prevCoord.azimuthTo(currentCoord);
     } else {
-        return -1.0;
+        *altDifference = 0.0;
+        *azimuth = 0.0;
+        *distance = -1.0;   // Signals no values
     }
 }
 
@@ -322,35 +340,81 @@ void MissionController::_recalcWaypointLines(void)
     // If home position is not valid we can only calculate distances between waypoints which are
     // both relative altitude.
 
-    // No distance for first item
+    // No values for first item
+    lastCoordinateItem->setAltDifference(0.0);
+    lastCoordinateItem->setAzimuth(0.0);
     lastCoordinateItem->setDistance(-1.0);
+
+    double minAltSeen = 0.0;
+    double maxAltSeen = 0.0;
+    double homePositionAltitude = homeItem->coordinate().altitude();
+    minAltSeen = maxAltSeen = homeItem->coordinate().altitude();
 
     _waypointLines.clear();
 
     for (int i=1; i<_missionItems->count(); i++) {
         MissionItem* item = qobject_cast<MissionItem*>(_missionItems->get(i));
 
-        item->setDistance(-1.0);    // Assume the worst
+        // Assume the worst
+        item->setAzimuth(0.0);
+        item->setDistance(-1.0);
 
         if (item->specifiesCoordinate()) {
-            if (firstCoordinateItem) {
-                if (item->command() == MavlinkQmlSingleton::MAV_CMD_NAV_TAKEOFF) {
-                    // The first coordinate we hit is a takeoff command so link back to home position if valid
-                    if (homePositionValid) {
-                        _waypointLines.append(new CoordinateVector(homeItem->coordinate(), item->coordinate()));
-                        item->setDistance(_calcDistance(homePositionValid, homeAlt, homeItem, item));
-                    }
-                } else {
-                    // First coordiante is not a takeoff command, it does not link backwards to anything
-                }
-                firstCoordinateItem = false;
-            } else if (!lastCoordinateItem->homePosition() || lastCoordinateItem->homePositionValid()) {
-                // Subsequent coordinate items link to last coordinate item. If the last coordinate item
-                // is an invalid home position we skip the line
-                item->setDistance(_calcDistance(homePositionValid, homeAlt, lastCoordinateItem, item));
-                _waypointLines.append(new CoordinateVector(lastCoordinateItem->coordinate(), item->coordinate()));
+            double absoluteAltitude = item->coordinate().altitude();
+            if (item->relativeAltitude() && homePositionValid) {
+                absoluteAltitude += homePositionAltitude;
             }
-            lastCoordinateItem = item;
+            minAltSeen = std::min(minAltSeen, absoluteAltitude);
+            maxAltSeen = std::max(maxAltSeen, absoluteAltitude);
+
+            if (!item->standaloneCoordinate()) {
+                if (firstCoordinateItem) {
+                    if (item->command() == MavlinkQmlSingleton::MAV_CMD_NAV_TAKEOFF) {
+                        // The first coordinate we hit is a takeoff command so link back to home position if valid
+                        if (homePositionValid) {
+                            double azimuth, distance, altDifference;
+
+                            _waypointLines.append(new CoordinateVector(homeItem->coordinate(), item->coordinate()));
+                            _calcPrevWaypointValues(homePositionValid, homeAlt, item, homeItem, &azimuth, &distance, &altDifference);
+                            item->setAltDifference(altDifference);
+                            item->setAzimuth(azimuth);
+                            item->setDistance(distance);
+                        }
+                    } else {
+                        // First coordiante is not a takeoff command, it does not link backwards to anything
+                    }
+                    firstCoordinateItem = false;
+                } else if (!lastCoordinateItem->homePosition() || lastCoordinateItem->homePositionValid()) {
+                    double azimuth, distance, altDifference;
+
+                    // Subsequent coordinate items link to last coordinate item. If the last coordinate item
+                    // is an invalid home position we skip the line
+                    _calcPrevWaypointValues(homePositionValid, homeAlt, item, lastCoordinateItem, &azimuth, &distance, &altDifference);
+                    item->setAltDifference(altDifference);
+                    item->setAzimuth(azimuth);
+                    item->setDistance(distance);
+                    _waypointLines.append(new CoordinateVector(lastCoordinateItem->coordinate(), item->coordinate()));
+                }
+                lastCoordinateItem = item;
+            }
+        }
+    }
+
+    // Walk the list again calculating altitude percentages
+    double altRange = maxAltSeen - minAltSeen;
+    for (int i=0; i<_missionItems->count(); i++) {
+        MissionItem* item = qobject_cast<MissionItem*>(_missionItems->get(i));
+
+        if (item->specifiesCoordinate()) {
+            double absoluteAltitude = item->coordinate().altitude();
+            if (item->relativeAltitude() && homePositionValid) {
+                absoluteAltitude += homePositionAltitude;
+            }
+            if (altRange == 0.0) {
+                item->setAltPercent(0.0);
+            } else {
+                item->setAltPercent((absoluteAltitude - minAltSeen) / altRange);
+            }
         }
     }
 
@@ -402,17 +466,26 @@ void MissionController::_initAllMissionItems(void)
 
     if (_activeVehicle && _activeVehicle->firmwarePlugin()->sendHomePositionToVehicle() && _missionItems->count() != 0) {
         homeItem = qobject_cast<MissionItem*>(_missionItems->get(0));
-        homeItem->setHomePositionSpecialCase(true);
     } else {
         // Add the home position item to the front
         homeItem = new MissionItem(this);
-        homeItem->setHomePositionSpecialCase(true);
-        homeItem->setCommand(MavlinkQmlSingleton::MAV_CMD_NAV_LAST);
-        homeItem->setFrame(MAV_FRAME_GLOBAL_RELATIVE_ALT);
         homeItem->setSequenceNumber(0);
         _missionItems->insert(0, homeItem);
     }
-    homeItem->setHomePositionValid(false);
+    homeItem->setHomePositionSpecialCase(true);
+    if (_activeVehicle) {
+        homeItem->setCoordinate(_activeVehicle->homePosition());
+        homeItem->setHomePositionValid(_activeVehicle->homePositionAvailable());
+    } else {
+        homeItem->setHomePositionValid(false);
+    }
+    homeItem->setCommand(MAV_CMD_NAV_WAYPOINT);
+    homeItem->setFrame(MAV_FRAME_GLOBAL);
+    if (!homeItem->homePositionValid()) {
+        QGeoCoordinate homeCoord = homeItem->coordinate();
+        homeCoord.setAltitude(0.0);
+        homeItem->setCoordinate(homeCoord);
+    }
 
     for (int i=0; i<_missionItems->count(); i++) {
         _initMissionItem(qobject_cast<MissionItem*>(_missionItems->get(i)));
@@ -507,7 +580,7 @@ void MissionController::_setupActiveVehicle(Vehicle* activeVehicle, bool forceLo
         MissionManager* missionManager = activeVehicle->missionManager();
 
         connect(missionManager, &MissionManager::newMissionItemsAvailable,  this, &MissionController::_newMissionItemsAvailableFromVehicle);
-        connect(missionManager, &MissionManager::inProgressChanged,          this, &MissionController::_inProgressChanged);
+        connect(missionManager, &MissionManager::inProgressChanged,         this, &MissionController::_inProgressChanged);
         connect(_activeVehicle, &Vehicle::homePositionAvailableChanged,     this, &MissionController::_activeVehicleHomePositionAvailableChanged);
         connect(_activeVehicle, &Vehicle::homePositionChanged,              this, &MissionController::_activeVehicleHomePositionChanged);
 
@@ -524,6 +597,7 @@ void MissionController::_activeVehicleHomePositionAvailableChanged(bool homePosi
     _liveHomePositionAvailable = homePositionAvailable;
     qobject_cast<MissionItem*>(_missionItems->get(0))->setHomePositionValid(homePositionAvailable);
     emit liveHomePositionAvailableChanged(_liveHomePositionAvailable);
+    _recalcWaypointLines();
 }
 
 void MissionController::_activeVehicleHomePositionChanged(const QGeoCoordinate& homePosition)
@@ -531,6 +605,7 @@ void MissionController::_activeVehicleHomePositionChanged(const QGeoCoordinate& 
     _liveHomePosition = homePosition;
     qobject_cast<MissionItem*>(_missionItems->get(0))->setCoordinate(_liveHomePosition);
     emit liveHomePositionChanged(_liveHomePosition);
+    _recalcWaypointLines();
 }
 
 void MissionController::deleteCurrentMissionItem(void)
@@ -596,17 +671,44 @@ QmlObjectListModel* MissionController::missionItems(void)
     return _missionItems;
 }
 
-double MissionController::_findLastAltitude(void)
+bool MissionController::_findLastAltitude(double* lastAltitude)
 {
-    double lastAltitude = MissionItem::defaultAltitude;
+    bool found = false;
+    double foundAltitude;
 
     for (int i=0; i<_missionItems->count(); i++) {
         MissionItem* item = qobject_cast<MissionItem*>(_missionItems->get(i));
 
-        if (item->specifiesCoordinate()) {
-            lastAltitude = item->param7();
+        if (item->specifiesCoordinate() && !item->standaloneCoordinate()) {
+            foundAltitude = item->param7();
+            found = true;
         }
     }
 
-    return lastAltitude;
+    if (found) {
+        *lastAltitude = foundAltitude;
+    }
+
+    return found;
+}
+
+bool MissionController::_findLastAcceptanceRadius(double* lastAcceptanceRadius)
+{
+    bool found = false;
+    double foundAcceptanceRadius;
+
+    for (int i=0; i<_missionItems->count(); i++) {
+        MissionItem* item = qobject_cast<MissionItem*>(_missionItems->get(i));
+
+        if ((MAV_CMD)item->command() == MAV_CMD_NAV_WAYPOINT) {
+            foundAcceptanceRadius = item->param2();
+            found = true;
+        }
+    }
+
+    if (found) {
+        *lastAcceptanceRadius = foundAcceptanceRadius;
+    }
+
+    return found;
 }

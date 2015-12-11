@@ -32,7 +32,6 @@ This file is part of the QGROUNDCONTROL project
 
 #include "MainToolBarController.h"
 #include "ScreenToolsController.h"
-#include "MainWindow.h"
 #include "UASMessageView.h"
 #include "UASMessageHandler.h"
 #include "QGCApplication.h"
@@ -46,36 +45,18 @@ MainToolBarController::MainToolBarController(QObject* parent)
     , _progressBarValue(0.0f)
     , _telemetryRRSSI(0)
     , _telemetryLRSSI(0)
-    , _toolbarMessageVisible(false)
 {
     _activeVehicleChanged(qgcApp()->toolbox()->multiVehicleManager()->activeVehicle());
-
     // RSSI (didn't like standard connection)
     connect(qgcApp()->toolbox()->mavlinkProtocol(),
         SIGNAL(radioStatusChanged(LinkInterface*, unsigned, unsigned, int, int, unsigned, unsigned, unsigned)), this,
         SLOT(_telemetryChanged(LinkInterface*, unsigned, unsigned, int, int, unsigned, unsigned, unsigned)));
-
     connect(qgcApp()->toolbox()->multiVehicleManager(), &MultiVehicleManager::activeVehicleChanged, this, &MainToolBarController::_activeVehicleChanged);
 }
 
 MainToolBarController::~MainToolBarController()
 {
 
-}
-
-void MainToolBarController::onSetupView()
-{
-    MainWindow::instance()->showSetupView();
-}
-
-void MainToolBarController::onPlanView()
-{
-    MainWindow::instance()->showPlanView();
-}
-
-void MainToolBarController::onFlyView()
-{
-    MainWindow::instance()->showFlyView();
 }
 
 void MainToolBarController::_activeVehicleChanged(Vehicle* vehicle)
@@ -96,7 +77,7 @@ void MainToolBarController::_activeVehicleChanged(Vehicle* vehicle)
     }
 }
 
-void MainToolBarController::_telemetryChanged(LinkInterface*, unsigned, unsigned, int rssi, int remrssi, unsigned, unsigned, unsigned)
+void MainToolBarController::_telemetryChanged(LinkInterface*, unsigned rxerrors, unsigned fixed, int rssi, int remrssi, unsigned txbuf, unsigned noise, unsigned remnoise)
 {
     if(_telemetryLRSSI != rssi) {
         _telemetryLRSSI = rssi;
@@ -106,60 +87,30 @@ void MainToolBarController::_telemetryChanged(LinkInterface*, unsigned, unsigned
         _telemetryRRSSI = remrssi;
         emit telemetryRRSSIChanged(_telemetryRRSSI);
     }
+    if(_telemetryRXErrors != rxerrors) {
+        _telemetryRXErrors = rxerrors;
+        emit telemetryRXErrorsChanged(_telemetryRXErrors);
+    }
+    if(_telemetryFixed != fixed) {
+        _telemetryFixed = fixed;
+        emit telemetryFixedChanged(_telemetryFixed);
+    }
+    if(_telemetryTXBuffer != txbuf) {
+        _telemetryTXBuffer = txbuf;
+        emit telemetryTXBufferChanged(_telemetryTXBuffer);
+    }
+    if(_telemetryLNoise != noise) {
+        _telemetryLNoise = noise;
+        emit telemetryLNoiseChanged(_telemetryLNoise);
+    }
+    if(_telemetryRNoise != remnoise) {
+        _telemetryRNoise = remnoise;
+        emit telemetryRNoiseChanged(_telemetryRNoise);
+    }
 }
 
 void MainToolBarController::_setProgressBarValue(float value)
 {
     _progressBarValue = value;
     emit progressBarValueChanged(value);
-}
-
-void MainToolBarController::showToolBarMessage(const QString& message)
-{
-    _toolbarMessageQueueMutex.lock();
-
-    if (_toolbarMessageQueue.count() == 0 && !_toolbarMessageVisible) {
-        QTimer::singleShot(500, this, &MainToolBarController::_delayedShowToolBarMessage);
-    }
-
-    _toolbarMessageQueue += message;
-
-    _toolbarMessageQueueMutex.unlock();
-}
-
-void MainToolBarController::_delayedShowToolBarMessage(void)
-{
-    QString messages;
-
-    if (!_toolbarMessageVisible) {
-        _toolbarMessageQueueMutex.lock();
-
-        foreach (QString message, _toolbarMessageQueue) {
-            messages += message + "\n";
-        }
-        _toolbarMessageQueue.clear();
-
-        _toolbarMessageQueueMutex.unlock();
-
-        if (!messages.isEmpty()) {
-            _toolbarMessageVisible = true;
-            emit showMessage(messages);
-        }
-    }
-}
-
-void MainToolBarController::onToolBarMessageClosed(void)
-{
-    _toolbarMessageVisible = false;
-    _delayedShowToolBarMessage();
-}
-
-void MainToolBarController::showSettings(void)
-{
-    MainWindow::instance()->showSettings();
-}
-
-void MainToolBarController::manageLinks(void)
-{
-    MainWindow::instance()->manageLinks();
 }

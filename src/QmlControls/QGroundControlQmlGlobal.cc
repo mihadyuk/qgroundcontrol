@@ -29,16 +29,17 @@
 
 #include <QSettings>
 
-static const char* kQmlGlobalKeyName =                                  "QGCQml";
+static const char* kQmlGlobalKeyName = "QGCQml";
 
 const char* QGroundControlQmlGlobal::_virtualTabletJoystickKey = "VirtualTabletJoystick";
 
 QGroundControlQmlGlobal::QGroundControlQmlGlobal(QGCToolbox* toolbox, QObject* parent)
     : QObject(parent)
-    , _multiVehicleManager(toolbox->multiVehicleManager())
-    , _linkManager(toolbox->linkManager())
-    , _homePositionManager(toolbox->homePositionManager())
     , _flightMapSettings(toolbox->flightMapSettings())
+    , _homePositionManager(toolbox->homePositionManager())
+    , _linkManager(toolbox->linkManager())
+    , _missionCommands(toolbox->missionCommands())
+    , _multiVehicleManager(toolbox->multiVehicleManager())
     , _virtualTabletJoystick(false)
 {
     QSettings settings;
@@ -73,28 +74,10 @@ bool QGroundControlQmlGlobal::loadBoolGlobalSetting (const QString& key, bool de
     return settings.value(key, defaultValue).toBool();
 }
 
-#ifdef QT_DEBUG
-void QGroundControlQmlGlobal::_startMockLink(MockConfiguration* mockConfig)
-{
-    LinkManager* linkManager = qgcApp()->toolbox()->linkManager();
-
-    mockConfig->setDynamic(true);
-    linkManager->linkConfigurations()->append(mockConfig);
-
-    linkManager->createConnectedLink(mockConfig, false /* autoconnectLink */);
-}
-#endif
-
 void QGroundControlQmlGlobal::startPX4MockLink(bool sendStatusText)
 {
 #ifdef QT_DEBUG
-    MockConfiguration* mockConfig = new MockConfiguration("PX4 MockLink");
-
-    mockConfig->setFirmwareType(MAV_AUTOPILOT_PX4);
-    mockConfig->setVehicleType(MAV_TYPE_QUADROTOR);
-    mockConfig->setSendStatusText(sendStatusText);
-
-    _startMockLink(mockConfig);
+    MockLink::startPX4MockLink(sendStatusText);
 #else
     Q_UNUSED(sendStatusText);
 #endif
@@ -103,13 +86,7 @@ void QGroundControlQmlGlobal::startPX4MockLink(bool sendStatusText)
 void QGroundControlQmlGlobal::startGenericMockLink(bool sendStatusText)
 {
 #ifdef QT_DEBUG
-    MockConfiguration* mockConfig = new MockConfiguration("Generic MockLink");
-
-    mockConfig->setFirmwareType(MAV_AUTOPILOT_GENERIC);
-    mockConfig->setVehicleType(MAV_TYPE_QUADROTOR);
-    mockConfig->setSendStatusText(sendStatusText);
-
-    _startMockLink(mockConfig);
+    MockLink::startGenericMockLink(sendStatusText);
 #else
     Q_UNUSED(sendStatusText);
 #endif
@@ -118,13 +95,7 @@ void QGroundControlQmlGlobal::startGenericMockLink(bool sendStatusText)
 void QGroundControlQmlGlobal::startAPMArduCopterMockLink(bool sendStatusText)
 {
 #ifdef QT_DEBUG
-    MockConfiguration* mockConfig = new MockConfiguration("APM ArduCopter MockLink");
-
-    mockConfig->setFirmwareType(MAV_AUTOPILOT_ARDUPILOTMEGA);
-    mockConfig->setVehicleType(MAV_TYPE_QUADROTOR);
-    mockConfig->setSendStatusText(sendStatusText);
-
-    _startMockLink(mockConfig);
+    MockLink::startAPMArduCopterMockLink(sendStatusText);
 #else
     Q_UNUSED(sendStatusText);
 #endif
@@ -133,13 +104,7 @@ void QGroundControlQmlGlobal::startAPMArduCopterMockLink(bool sendStatusText)
 void QGroundControlQmlGlobal::startAPMArduPlaneMockLink(bool sendStatusText)
 {
 #ifdef QT_DEBUG
-    MockConfiguration* mockConfig = new MockConfiguration("APM ArduPlane MockLink");
-
-    mockConfig->setFirmwareType(MAV_AUTOPILOT_ARDUPILOTMEGA);
-    mockConfig->setVehicleType(MAV_TYPE_FIXED_WING);
-    mockConfig->setSendStatusText(sendStatusText);
-
-    _startMockLink(mockConfig);
+    MockLink::startAPMArduPlaneMockLink(sendStatusText);
 #else
     Q_UNUSED(sendStatusText);
 #endif
@@ -155,7 +120,7 @@ void QGroundControlQmlGlobal::stopAllMockLinks(void)
         MockLink* mockLink = qobject_cast<MockLink*>(link);
 
         if (mockLink) {
-            linkManager->disconnectLink(mockLink, false /* disconnectAutoconnectLink */);
+            linkManager->disconnectLink(mockLink);
         }
     }
 #endif
@@ -171,12 +136,6 @@ void QGroundControlQmlGlobal::setIsAudioMuted(bool muted)
 {
     qgcApp()->toolbox()->audioOutput()->mute(muted);
     emit isAudioMutedChanged(muted);
-}
-
-void QGroundControlQmlGlobal::setIsLowPowerMode(bool low)
-{
-    MainWindow::instance()->enableLowPowerMode(low);
-    emit isLowPowerModeChanged(low);
 }
 
 void QGroundControlQmlGlobal::setIsSaveLogPrompt(bool prompt)
@@ -207,6 +166,12 @@ void QGroundControlQmlGlobal::setIsVersionCheckEnabled(bool enable)
 {
     qgcApp()->toolbox()->mavlinkProtocol()->enableVersionCheck(enable);
     emit isVersionCheckEnabledChanged(enable);
+}
+
+void QGroundControlQmlGlobal::setMavlinkSystemID(int id)
+{
+    qgcApp()->toolbox()->mavlinkProtocol()->setSystemId(id);
+    emit mavlinkSystemIDChanged(id);
 }
 
 void QGroundControlQmlGlobal::setVirtualTabletJoystick(bool enabled)

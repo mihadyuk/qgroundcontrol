@@ -30,10 +30,10 @@
 #include <QObject>
 
 #include "QGCApplication.h"
-#include "MainWindow.h"
 #include "LinkManager.h"
 #include "HomePositionManager.h"
 #include "FlightMapSettings.h"
+#include "MissionCommands.h"
 
 #ifdef QT_DEBUG
 #include "MockLink.h"
@@ -48,10 +48,11 @@ class QGroundControlQmlGlobal : public QObject
 public:
     QGroundControlQmlGlobal(QGCToolbox* toolbox, QObject* parent = NULL);
 
-    Q_PROPERTY(LinkManager*         linkManager         READ linkManager            CONSTANT)
-    Q_PROPERTY(MultiVehicleManager* multiVehicleManager READ multiVehicleManager    CONSTANT)
-    Q_PROPERTY(HomePositionManager* homePositionManager READ homePositionManager    CONSTANT)
     Q_PROPERTY(FlightMapSettings*   flightMapSettings   READ flightMapSettings      CONSTANT)
+    Q_PROPERTY(HomePositionManager* homePositionManager READ homePositionManager    CONSTANT)
+    Q_PROPERTY(LinkManager*         linkManager         READ linkManager            CONSTANT)
+    Q_PROPERTY(MissionCommands*     missionCommands     READ missionCommands        CONSTANT)
+    Q_PROPERTY(MultiVehicleManager* multiVehicleManager READ multiVehicleManager    CONSTANT)
 
     Q_PROPERTY(qreal                zOrderTopMost       READ zOrderTopMost          CONSTANT) ///< z order for top most items, toolbar, main window sub view
     Q_PROPERTY(qreal                zOrderWidgets       READ zOrderWidgets          CONSTANT) ///< z order value to widgets, for example: zoom controls, hud widgetss
@@ -61,13 +62,15 @@ public:
     Q_PROPERTY(bool     isAdvancedMode          READ isAdvancedMode                                                 CONSTANT)                               ///< Global "Advance Mode" preference. Certain UI elements and features are different based on this.
     Q_PROPERTY(bool     isDarkStyle             READ isDarkStyle                WRITE setIsDarkStyle                NOTIFY isDarkStyleChanged)              // TODO: Should be in ScreenTools?
     Q_PROPERTY(bool     isAudioMuted            READ isAudioMuted               WRITE setIsAudioMuted               NOTIFY isAudioMutedChanged)
-    Q_PROPERTY(bool     isLowPowerMode          READ isLowPowerMode             WRITE setIsLowPowerMode             NOTIFY isLowPowerModeChanged)
     Q_PROPERTY(bool     isSaveLogPrompt         READ isSaveLogPrompt            WRITE setIsSaveLogPrompt            NOTIFY isSaveLogPromptChanged)
     Q_PROPERTY(bool     isSaveLogPromptNotArmed READ isSaveLogPromptNotArmed    WRITE setIsSaveLogPromptNotArmed    NOTIFY isSaveLogPromptNotArmedChanged)
+    Q_PROPERTY(bool     virtualTabletJoystick   READ virtualTabletJoystick      WRITE setVirtualTabletJoystick      NOTIFY virtualTabletJoystickChanged)
+
+    // MavLink Protocol
     Q_PROPERTY(bool     isHeartBeatEnabled      READ isHeartBeatEnabled         WRITE setIsHeartBeatEnabled         NOTIFY isHeartBeatEnabledChanged)
     Q_PROPERTY(bool     isMultiplexingEnabled   READ isMultiplexingEnabled      WRITE setIsMultiplexingEnabled      NOTIFY isMultiplexingEnabledChanged)
     Q_PROPERTY(bool     isVersionCheckEnabled   READ isVersionCheckEnabled      WRITE setIsVersionCheckEnabled      NOTIFY isVersionCheckEnabledChanged)
-    Q_PROPERTY(bool     virtualTabletJoystick   READ virtualTabletJoystick      WRITE setVirtualTabletJoystick      NOTIFY virtualTabletJoystickChanged)
+    Q_PROPERTY(int      mavlinkSystemID         READ mavlinkSystemID            WRITE setMavlinkSystemID            NOTIFY mavlinkSystemIDChanged)
 
     Q_INVOKABLE void    saveGlobalSetting       (const QString& key, const QString& value);
     Q_INVOKABLE QString loadGlobalSetting       (const QString& key, const QString& defaultValue);
@@ -85,10 +88,11 @@ public:
 
     // Property accesors
 
-    LinkManager*            linkManager ()              { return _linkManager; }
-    MultiVehicleManager*    multiVehicleManager ()      { return _multiVehicleManager; }
-    HomePositionManager*    homePositionManager ()      { return _homePositionManager; }
     FlightMapSettings*      flightMapSettings   ()      { return _flightMapSettings; }
+    HomePositionManager*    homePositionManager ()      { return _homePositionManager; }
+    LinkManager*            linkManager ()              { return _linkManager; }
+    MissionCommands*        missionCommands ()          { return _missionCommands; }
+    MultiVehicleManager*    multiVehicleManager ()      { return _multiVehicleManager; }
 
     qreal                   zOrderTopMost       ()      { return 1000; }
     qreal                   zOrderWidgets       ()      { return 100; }
@@ -96,47 +100,47 @@ public:
 
     bool    isDarkStyle             () { return qgcApp()->styleIsDark(); }
     bool    isAudioMuted            () { return qgcApp()->toolbox()->audioOutput()->isMuted(); }
-    bool    isLowPowerMode          () { return MainWindow::instance()->lowPowerModeEnabled(); }
     bool    isSaveLogPrompt         () { return qgcApp()->promptFlightDataSave(); }
     bool    isSaveLogPromptNotArmed () { return qgcApp()->promptFlightDataSaveNotArmed(); }
+    bool    virtualTabletJoystick   () { return _virtualTabletJoystick; }
+
     bool    isHeartBeatEnabled      () { return qgcApp()->toolbox()->mavlinkProtocol()->heartbeatsEnabled(); }
     bool    isMultiplexingEnabled   () { return qgcApp()->toolbox()->mavlinkProtocol()->multiplexingEnabled(); }
     bool    isVersionCheckEnabled   () { return qgcApp()->toolbox()->mavlinkProtocol()->versionCheckEnabled(); }
-    bool    virtualTabletJoystick   () { return _virtualTabletJoystick; }
+    int     mavlinkSystemID         () { return qgcApp()->toolbox()->mavlinkProtocol()->getSystemId(); }
 
     //-- TODO: Make this into an actual preference.
     bool    isAdvancedMode          () { return false; }
 
     void    setIsDarkStyle              (bool dark);
     void    setIsAudioMuted             (bool muted);
-    void    setIsLowPowerMode           (bool low);
     void    setIsSaveLogPrompt          (bool prompt);
     void    setIsSaveLogPromptNotArmed  (bool prompt);
+    void    setVirtualTabletJoystick    (bool enabled);
+
     void    setIsHeartBeatEnabled       (bool enable);
     void    setIsMultiplexingEnabled    (bool enable);
     void    setIsVersionCheckEnabled    (bool enable);
-    void    setVirtualTabletJoystick    (bool enabled);
+    void    setMavlinkSystemID          (int  id);
 
 signals:
     void isDarkStyleChanged             (bool dark);
     void isAudioMutedChanged            (bool muted);
-    void isLowPowerModeChanged          (bool lowPower);
     void isSaveLogPromptChanged         (bool prompt);
     void isSaveLogPromptNotArmedChanged (bool prompt);
+    void virtualTabletJoystickChanged   (bool enabled);
     void isHeartBeatEnabledChanged      (bool enabled);
     void isMultiplexingEnabledChanged   (bool enabled);
     void isVersionCheckEnabledChanged   (bool enabled);
-    void virtualTabletJoystickChanged   (bool enabled);
+    void mavlinkSystemIDChanged         (int id);
 
 private:
-#ifdef QT_DEBUG
-    void _startMockLink(MockConfiguration* mockConfig);
-#endif
 
-    MultiVehicleManager*    _multiVehicleManager;
-    LinkManager*            _linkManager;
-    HomePositionManager*    _homePositionManager;
     FlightMapSettings*      _flightMapSettings;
+    HomePositionManager*    _homePositionManager;
+    LinkManager*            _linkManager;
+    MissionCommands*        _missionCommands;
+    MultiVehicleManager*    _multiVehicleManager;
 
     bool _virtualTabletJoystick;
 

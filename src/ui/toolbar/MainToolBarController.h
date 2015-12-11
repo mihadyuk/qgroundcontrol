@@ -50,38 +50,41 @@ public:
     MainToolBarController(QObject* parent = NULL);
     ~MainToolBarController();
 
-    Q_INVOKABLE void    onSetupView();
-    Q_INVOKABLE void    onPlanView();
-    Q_INVOKABLE void    onFlyView();
-    Q_INVOKABLE void    onToolBarMessageClosed(void);
-    Q_INVOKABLE void    showSettings(void);
-    Q_INVOKABLE void    manageLinks(void);
-
     Q_PROPERTY(double       height              MEMBER _toolbarHeight           NOTIFY heightChanged)
     Q_PROPERTY(float        progressBarValue    MEMBER _progressBarValue        NOTIFY progressBarValueChanged)
     Q_PROPERTY(int          telemetryRRSSI      READ telemetryRRSSI             NOTIFY telemetryRRSSIChanged)
     Q_PROPERTY(int          telemetryLRSSI      READ telemetryLRSSI             NOTIFY telemetryLRSSIChanged)
+    Q_PROPERTY(unsigned int telemetryRXErrors   READ telemetryRXErrors          NOTIFY telemetryRXErrorsChanged)
+    Q_PROPERTY(unsigned int telemetryFixed      READ telemetryFixed             NOTIFY telemetryFixedChanged)
+    Q_PROPERTY(unsigned int telemetryTXBuffer   READ telemetryTXBuffer          NOTIFY telemetryTXBufferChanged)
+    Q_PROPERTY(unsigned int telemetryLNoise     READ telemetryLNoise            NOTIFY telemetryLNoiseChanged)
+    Q_PROPERTY(unsigned int telemetryRNoise     READ telemetryRNoise            NOTIFY telemetryRNoiseChanged)
 
     void        viewStateChanged        (const QString& key, bool value);
+
     int         telemetryRRSSI          () { return _telemetryRRSSI; }
     int         telemetryLRSSI          () { return _telemetryLRSSI; }
-
-    void showToolBarMessage(const QString& message);
+    unsigned int telemetryRXErrors      () { return _telemetryRXErrors; }
+    unsigned int telemetryFixed         () { return _telemetryFixed; }
+    unsigned int telemetryTXBuffer      () { return _telemetryTXBuffer; }
+    unsigned int telemetryLNoise        () { return _telemetryLNoise; }
+    unsigned int telemetryRNoise        () { return _telemetryRNoise; }
 
 signals:
     void progressBarValueChanged        (float value);
     void telemetryRRSSIChanged          (int value);
     void telemetryLRSSIChanged          (int value);
     void heightChanged                  (double height);
-
-    /// Shows a non-modal message below the toolbar
-    void showMessage(const QString& message);
+    void telemetryRXErrorsChanged       (unsigned int value);
+    void telemetryFixedChanged          (unsigned int value);
+    void telemetryTXBufferChanged       (unsigned int value);
+    void telemetryLNoiseChanged         (unsigned int value);
+    void telemetryRNoiseChanged         (unsigned int value);
 
 private slots:
     void _activeVehicleChanged          (Vehicle* vehicle);
     void _setProgressBarValue           (float value);
     void _telemetryChanged              (LinkInterface* link, unsigned rxerrors, unsigned fixed, int rssi, int remrssi, unsigned txbuf, unsigned noise, unsigned remnoise);
-    void _delayedShowToolBarMessage     (void);
 
 private:
     Vehicle*        _vehicle;
@@ -90,9 +93,14 @@ private:
     double          _remoteRSSIstore;
     int             _telemetryRRSSI;
     int             _telemetryLRSSI;
+    uint32_t        _telemetryRXErrors;
+    uint32_t        _telemetryFixed;
+    uint32_t        _telemetryTXBuffer;
+    uint32_t        _telemetryLNoise;
+    uint32_t        _telemetryRNoise;
+
     double          _toolbarHeight;
 
-    bool            _toolbarMessageVisible;
     QStringList     _toolbarMessageQueue;
     QMutex          _toolbarMessageQueueMutex;
 };

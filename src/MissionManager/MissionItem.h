@@ -29,8 +29,6 @@
 #include <QtQml>
 #include <QTextStream>
 #include <QGeoCoordinate>
-#include <QJsonObject>
-#include <QJsonValue>
 
 #include "QGCMAVLink.h"
 #include "QGC.h"
@@ -39,6 +37,7 @@
 #include "Fact.h"
 #include "QGCLoggingCategory.h"
 #include "QmlObjectListModel.h"
+#include "MissionCommands.h"
 
 Q_DECLARE_LOGGING_CATEGORY(MissionItemLog)
 
@@ -69,20 +68,26 @@ public:
 
     const MissionItem& operator=(const MissionItem& other);
     
-    Q_PROPERTY(MavlinkQmlSingleton::Qml_MAV_CMD command READ command            WRITE setCommand            NOTIFY commandChanged)
-    Q_PROPERTY(QString          commandDescription  READ commandDescription                                 NOTIFY commandChanged)
-    Q_PROPERTY(QString          commandName         READ commandName                                        NOTIFY commandChanged)
-    Q_PROPERTY(QGeoCoordinate   coordinate          READ coordinate             WRITE setCoordinate         NOTIFY coordinateChanged)
-    Q_PROPERTY(bool             dirty               READ dirty                  WRITE setDirty              NOTIFY dirtyChanged)
-    Q_PROPERTY(double           distance            READ distance               WRITE setDistance           NOTIFY distanceChanged)             ///< Distance to previous waypoint
-    Q_PROPERTY(bool             friendlyEditAllowed READ friendlyEditAllowed                                NOTIFY friendlyEditAllowedChanged)
-    Q_PROPERTY(bool             homePosition        READ homePosition                                       CONSTANT)                           ///< true: This item is being used as a home position indicator
-    Q_PROPERTY(bool             homePositionValid   READ homePositionValid      WRITE setHomePositionValid  NOTIFY homePositionValidChanged)    ///< true: Home position should be shown
-    Q_PROPERTY(bool             isCurrentItem       READ isCurrentItem          WRITE setIsCurrentItem      NOTIFY isCurrentItemChanged)
-    Q_PROPERTY(bool             rawEdit             READ rawEdit                WRITE setRawEdit            NOTIFY rawEditChanged)              ///< true: raw item editing with all params
-    Q_PROPERTY(int              sequenceNumber      READ sequenceNumber         WRITE setSequenceNumber     NOTIFY sequenceNumberChanged)
-    Q_PROPERTY(bool             specifiesCoordinate READ specifiesCoordinate                                NOTIFY commandChanged)
-    Q_PROPERTY(Fact*            supportedCommand    READ supportedCommand                                   NOTIFY commandChanged)
+    Q_PROPERTY(double           altDifference           READ altDifference          WRITE setAltDifference      NOTIFY altDifferenceChanged)        ///< Change in altitude from previous waypoint
+    Q_PROPERTY(double           altPercent              READ altPercent             WRITE setAltPercent         NOTIFY altPercentChanged)           ///< Percent of total altitude change in mission altitude
+    Q_PROPERTY(double           azimuth                 READ azimuth                WRITE setAzimuth            NOTIFY azimuthChanged)              ///< Azimuth to previous waypoint
+    Q_PROPERTY(QString          category                READ category                                           NOTIFY commandChanged)
+    Q_PROPERTY(MavlinkQmlSingleton::Qml_MAV_CMD command READ command                WRITE setCommand            NOTIFY commandChanged)
+    Q_PROPERTY(QString          commandDescription      READ commandDescription                                 NOTIFY commandChanged)
+    Q_PROPERTY(QString          commandName             READ commandName                                        NOTIFY commandChanged)
+    Q_PROPERTY(QGeoCoordinate   coordinate              READ coordinate             WRITE setCoordinate         NOTIFY coordinateChanged)
+    Q_PROPERTY(bool             dirty                   READ dirty                  WRITE setDirty              NOTIFY dirtyChanged)
+    Q_PROPERTY(double           distance                READ distance               WRITE setDistance           NOTIFY distanceChanged)             ///< Distance to previous waypoint
+    Q_PROPERTY(bool             friendlyEditAllowed     READ friendlyEditAllowed                                NOTIFY friendlyEditAllowedChanged)
+    Q_PROPERTY(bool             homePosition            READ homePosition                                       CONSTANT)                           ///< true: This item is being used as a home position indicator
+    Q_PROPERTY(bool             homePositionValid       READ homePositionValid      WRITE setHomePositionValid  NOTIFY homePositionValidChanged)    ///< true: Home position should be shown
+    Q_PROPERTY(bool             isCurrentItem           READ isCurrentItem          WRITE setIsCurrentItem      NOTIFY isCurrentItemChanged)
+    Q_PROPERTY(bool             rawEdit                 READ rawEdit                WRITE setRawEdit            NOTIFY rawEditChanged)              ///< true: raw item editing with all params
+    Q_PROPERTY(bool             relativeAltitude        READ relativeAltitude                                   NOTIFY frameChanged)
+    Q_PROPERTY(int              sequenceNumber          READ sequenceNumber         WRITE setSequenceNumber     NOTIFY sequenceNumberChanged)
+    Q_PROPERTY(bool             standaloneCoordinate    READ standaloneCoordinate                               NOTIFY commandChanged)
+    Q_PROPERTY(bool             specifiesCoordinate     READ specifiesCoordinate                                NOTIFY commandChanged)
+    Q_PROPERTY(Fact*            supportedCommand        READ supportedCommand                                   NOTIFY commandChanged)
 
     // These properties are used to display the editing ui
     Q_PROPERTY(QmlObjectListModel*  checkboxFacts   READ checkboxFacts  NOTIFY uiModelChanged)
@@ -95,6 +100,10 @@ public:
 
     // Property accesors
     
+    double          altDifference       (void) const    { return _altDifference; }
+    double          altPercent          (void) const    { return _altPercent; }
+    double          azimuth             (void) const    { return _azimuth; }
+    QString         category            (void) const;
     MavlinkQmlSingleton::Qml_MAV_CMD command(void) const { return (MavlinkQmlSingleton::Qml_MAV_CMD)_commandFact.cookedValue().toInt(); };
     QString         commandDescription  (void) const;
     QString         commandName         (void) const;
@@ -107,6 +116,7 @@ public:
     bool            isCurrentItem       (void) const    { return _isCurrentItem; }
     bool            rawEdit             (void) const;
     int             sequenceNumber      (void) const    { return _sequenceNumber; }
+    bool            standaloneCoordinate(void) const;
     bool            specifiesCoordinate (void) const;
     Fact*           supportedCommand    (void)          { return &_supportedCommandFact; }
 
@@ -131,7 +141,10 @@ public:
     void setHomePositionValid(bool homePositionValid);
     void setHomePositionSpecialCase(bool homePositionSpecialCase) { _homePositionSpecialCase = homePositionSpecialCase; }
 
-    void setDistance(double distance);
+    void setAltDifference   (double altDifference);
+    void setAltPercent      (double altPercent);
+    void setAzimuth         (double azimuth);
+    void setDistance        (double distance);
 
     // C++ only methods
 
@@ -163,21 +176,19 @@ public:
 
     bool relativeAltitude(void) { return frame() == MAV_FRAME_GLOBAL_RELATIVE_ALT; }
 
-    static const double defaultTakeoffPitch;
-    static const double defaultHeading;
     static const double defaultAltitude;
-    static const double defaultAcceptanceRadius;
-    static const double defaultLoiterOrbitRadius;
-    static const double defaultLoiterTurns;
 
 public slots:
     void setDefaultsForCommand(void);
 
 signals:
+    void altDifferenceChanged       (double altDifference);
+    void altPercentChanged          (double altPercent);
+    void azimuthChanged             (double azimuth);
     void commandChanged             (MavlinkQmlSingleton::Qml_MAV_CMD command);
     void coordinateChanged          (const QGeoCoordinate& coordinate);
     void dirtyChanged               (bool dirty);
-    void distanceChanged            (float distance);
+    void distanceChanged            (double distance);
     void frameChanged               (int frame);
     void friendlyEditAllowedChanged (bool friendlyEditAllowed);
     void headingDegreesChanged      (double heading);
@@ -202,36 +213,19 @@ private slots:
 private:
     void _clearParamMetaData(void);
     void _connectSignals(void);
-    bool _loadMavCmdInfoJson(void);
     void _setupMetaData(void);
-    bool _validateKeyTypes(QJsonObject& jsonObject, const QStringList& keys, const QList<QJsonValue::Type>& types);
 
     static QVariant _degreesToRadians(const QVariant& degrees);
     static QVariant _radiansToDegrees(const QVariant& radians);
 
 private:
-    typedef struct {
-        int     param;
-        QString label;
-        QString units;
-        double  defaultValue;
-        int     decimalPlaces;
-    } ParamInfo_t;
-
-    typedef struct {
-        MAV_CMD                 command;
-        QString                 rawName;
-        QString                 friendlyName;
-        QString                 description;
-        bool                    specifiesCoordinate;
-        bool                    friendlyEdit;
-        QMap<int, ParamInfo_t>  paramInfoMap;
-    } MavCmdInfo_t;
-    
     bool        _rawEdit;
     bool        _dirty;
     int         _sequenceNumber;
     bool        _isCurrentItem;
+    double      _altDifference;             ///< Difference in altitude from previous waypoint
+    double      _altPercent;                ///< Percent of total altitude change in mission
+    double      _azimuth;                   ///< Azimuth to previous waypoint
     double      _distance;                  ///< Distance to previous waypoint
     bool        _homePositionSpecialCase;   ///< true: This item is being used as a ui home position indicator
     bool        _homePositionValid;         ///< true: Home psition should be displayed
@@ -261,6 +255,9 @@ private:
     FactMetaData    _param2MetaData;
     FactMetaData    _param3MetaData;
     FactMetaData    _param4MetaData;
+    FactMetaData    _param5MetaData;
+    FactMetaData    _param6MetaData;
+    FactMetaData    _param7MetaData;
 
     /// This is used to reference any subsequent mission items which do not specify a coordinate.
     QmlObjectListModel  _childItems;
@@ -269,27 +266,7 @@ private:
     bool _syncingHeadingDegreesAndParam4;           ///< true: already in a sync signal, prevents signal loop
     bool _syncingSupportedCommandAndCommand;         ///< true: already in a sync signal, prevents signal loop
 
-    static QMap<MAV_CMD, MavCmdInfo_t> _mavCmdInfoMap;
-
-    static const QString _decimalPlacesJsonKey;
-    static const QString _defaultJsonKey;
-    static const QString _descriptionJsonKey;
-    static const QString _friendlyNameJsonKey;
-    static const QString _friendlyEditJsonKey;
-    static const QString _idJsonKey;
-    static const QString _labelJsonKey;
-    static const QString _mavCmdInfoJsonKey;
-    static const QString _param1JsonKey;
-    static const QString _param2JsonKey;
-    static const QString _param3JsonKey;
-    static const QString _param4JsonKey;
-    static const QString _paramJsonKeyFormat;
-    static const QString _rawNameJsonKey;
-    static const QString _specifiesCoordinateJsonKey;
-    static const QString _unitsJsonKey;
-    static const QString _versionJsonKey;
-
-    static const QString _degreesUnits;
+    const QMap<MAV_CMD, MavCmdInfo*>& _mavCmdInfoMap;
 };
 
 QDebug operator<<(QDebug dbg, const MissionItem& missionItem);

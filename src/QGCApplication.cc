@@ -37,30 +37,32 @@
 #include <QStyleFactory>
 #include <QAction>
 
+#ifdef QGC_ENABLE_BLUETOOTH
+#include <QBluetoothLocalDevice>
+#endif
+
 #include <QDebug>
 
 #include "VideoStreaming.h"
 
 #include "QGC.h"
 #include "QGCApplication.h"
-#include "MainWindow.h"
 #include "GAudioOutput.h"
 #include "CmdLineOptParser.h"
-#include "QGCMessageBox.h"
-#include "MainWindow.h"
 #include "UDPLink.h"
 #include "LinkManager.h"
 #include "HomePositionManager.h"
 #include "UASMessageHandler.h"
 #include "AutoPilotPluginManager.h"
 #include "QGCTemporaryFile.h"
-#include "QGCFileDialog.h"
 #include "QGCPalette.h"
+#include "QGCMapPalette.h"
 #include "QGCLoggingCategory.h"
 #include "ViewWidgetController.h"
 #include "ParameterEditorController.h"
 #include "CustomCommandWidgetController.h"
 #include "FlightModesComponentController.h"
+#include "APMFlightModesComponentController.h"
 #include "AirframeComponentController.h"
 #include "SensorsComponentController.h"
 #include "PowerComponentController.h"
@@ -87,6 +89,7 @@
 #include "CoordinateVector.h"
 #include "MainToolBarController.h"
 #include "MissionController.h"
+#include "MissionCommands.h"
 #include "FlightDisplayViewController.h"
 #include "VideoSurface.h"
 #include "VideoReceiver.h"
@@ -96,8 +99,11 @@
 #endif
 
 #ifndef __mobile__
+    #include "QGCFileDialog.h"
+    #include "QGCMessageBox.h"
     #include "FirmwareUpgradeController.h"
     #include "JoystickConfigController.h"
+    #include "MainWindow.h"
 #endif
 
 #ifdef QGC_RTLAB_ENABLED
@@ -151,7 +157,12 @@ static QObject* qgroundcontrolQmlGlobalSingletonFactory(QQmlEngine*, QJSEngine*)
  **/
 
 QGCApplication::QGCApplication(int &argc, char* argv[], bool unitTesting)
+#ifdef __mobile__
+    : QGuiApplication(argc, argv)
+    , _qmlAppEngine(NULL)
+#else
     : QApplication(argc, argv)
+#endif
     , _runningUnitTests(unitTesting)
 #if defined (__mobile__)
     , _styleIsDark(false)
@@ -163,6 +174,7 @@ QGCApplication::QGCApplication(int &argc, char* argv[], bool unitTesting)
     , _testHighDPI(false)
 #endif
     , _toolbox(NULL)
+    , _bluetoothAvailable(false)
 {
     Q_ASSERT(_app == NULL);
     _app = this;
@@ -334,6 +346,15 @@ QGCApplication::QGCApplication(int &argc, char* argv[], bool unitTesting)
         settings.setValue(_settingsVersionKey, QGC_SETTINGS_VERSION);
     }
 
+    // Initialize Bluetooth
+#ifdef QGC_ENABLE_BLUETOOTH
+    QBluetoothLocalDevice localDevice;
+    if (localDevice.isValid())
+    {
+        _bluetoothAvailable = true;
+    }
+#endif
+
     // Initialize Video Streaming
     initializeVideoStreaming(argc, argv);
 
@@ -342,10 +363,12 @@ QGCApplication::QGCApplication(int &argc, char* argv[], bool unitTesting)
 
 QGCApplication::~QGCApplication()
 {
+#ifndef __mobile__
     MainWindow* mainWindow = MainWindow::instance();
     if (mainWindow) {
         delete mainWindow;
     }
+#endif
     shutdownVideoStreaming();
     delete _toolbox;
 }
@@ -356,7 +379,15 @@ void QGCApplication::_initCommon(void)
 
     // Register our Qml objects
 
-    qmlRegisterType<QGCPalette>("QGroundControl.Palette", 1, 0, "QGCPalette");
+    qmlRegisterType<QGCPalette>     ("QGroundControl.Palette", 1, 0, "QGCPalette");
+    qmlRegisterType<QGCMapPalette>  ("QGroundControl.Palette", 1, 0, "QGCMapPalette");
+
+    qmlRegisterUncreatableType<CoordinateVector>    ("QGroundControl",                  1, 0, "CoordinateVector",       "Reference only");
+    qmlRegisterUncreatableType<MissionCommands>     ("QGroundControl",                  1, 0, "MissionCommands",        "Reference only");
+    qmlRegisterUncreatableType<QGCQGeoCoordinate>   ("QGroundControl",                  1, 0, "QGCQGeoCoordinate",      "Reference only");
+    qmlRegisterUncreatableType<QmlObjectListModel>  ("QGroundControl",                  1, 0, "QmlObjectListModel",     "Reference only");
+    qmlRegisterUncreatableType<VideoReceiver>       ("QGroundControl",                  1, 0, "VideoReceiver",          "Reference only");
+    qmlRegisterUncreatableType<VideoSurface>        ("QGroundControl",                  1, 0, "VideoSurface",           "Reference only");
 
     qmlRegisterUncreatableType<AutoPilotPlugin>     ("QGroundControl.AutoPilotPlugin",  1, 0, "AutoPilotPlugin",        "Reference only");
     qmlRegisterUncreatableType<VehicleComponent>    ("QGroundControl.AutoPilotPlugin",  1, 0, "VehicleComponent",       "Reference only");
@@ -365,22 +396,18 @@ void QGCApplication::_initCommon(void)
     qmlRegisterUncreatableType<MissionManager>      ("QGroundControl.Vehicle",          1, 0, "MissionManager",         "Reference only");
     qmlRegisterUncreatableType<JoystickManager>     ("QGroundControl.JoystickManager",  1, 0, "JoystickManager",        "Reference only");
     qmlRegisterUncreatableType<Joystick>            ("QGroundControl.JoystickManager",  1, 0, "Joystick",               "Reference only");
-    qmlRegisterUncreatableType<QmlObjectListModel>  ("QGroundControl",                  1, 0, "QmlObjectListModel",     "Reference only");
-    qmlRegisterUncreatableType<QGCQGeoCoordinate>   ("QGroundControl",                  1, 0, "QGCQGeoCoordinate",      "Reference only");
-    qmlRegisterUncreatableType<CoordinateVector>    ("QGroundControl",                  1, 0, "CoordinateVector",       "Reference only");
-    qmlRegisterUncreatableType<VideoSurface>        ("QGroundControl",                  1, 0, "VideoSurface",           "Reference only");
-    qmlRegisterUncreatableType<VideoReceiver>       ("QGroundControl",                  1, 0, "VideoReceiver",          "Reference only");
 
-    qmlRegisterType<ParameterEditorController>      ("QGroundControl.Controllers", 1, 0, "ParameterEditorController");
-    qmlRegisterType<FlightModesComponentController> ("QGroundControl.Controllers", 1, 0, "FlightModesComponentController");
-    qmlRegisterType<AirframeComponentController>    ("QGroundControl.Controllers", 1, 0, "AirframeComponentController");
-    qmlRegisterType<SensorsComponentController>     ("QGroundControl.Controllers", 1, 0, "SensorsComponentController");
-    qmlRegisterType<PowerComponentController>       ("QGroundControl.Controllers", 1, 0, "PowerComponentController");
-    qmlRegisterType<RadioComponentController>       ("QGroundControl.Controllers", 1, 0, "RadioComponentController");
-    qmlRegisterType<ScreenToolsController>          ("QGroundControl.Controllers", 1, 0, "ScreenToolsController");
-    qmlRegisterType<MainToolBarController>          ("QGroundControl.Controllers", 1, 0, "MainToolBarController");
-    qmlRegisterType<MissionController>              ("QGroundControl.Controllers", 1, 0, "MissionController");
-    qmlRegisterType<FlightDisplayViewController>    ("QGroundControl.Controllers", 1, 0, "FlightDisplayViewController");
+    qmlRegisterType<ParameterEditorController>          ("QGroundControl.Controllers", 1, 0, "ParameterEditorController");
+    qmlRegisterType<APMFlightModesComponentController>  ("QGroundControl.Controllers", 1, 0, "APMFlightModesComponentController");
+    qmlRegisterType<FlightModesComponentController>     ("QGroundControl.Controllers", 1, 0, "FlightModesComponentController");
+    qmlRegisterType<AirframeComponentController>        ("QGroundControl.Controllers", 1, 0, "AirframeComponentController");
+    qmlRegisterType<SensorsComponentController>         ("QGroundControl.Controllers", 1, 0, "SensorsComponentController");
+    qmlRegisterType<PowerComponentController>           ("QGroundControl.Controllers", 1, 0, "PowerComponentController");
+    qmlRegisterType<RadioComponentController>           ("QGroundControl.Controllers", 1, 0, "RadioComponentController");
+    qmlRegisterType<ScreenToolsController>              ("QGroundControl.Controllers", 1, 0, "ScreenToolsController");
+    qmlRegisterType<MainToolBarController>              ("QGroundControl.Controllers", 1, 0, "MainToolBarController");
+    qmlRegisterType<MissionController>                  ("QGroundControl.Controllers", 1, 0, "MissionController");
+    qmlRegisterType<FlightDisplayViewController>        ("QGroundControl.Controllers", 1, 0, "FlightDisplayViewController");
 
 #ifndef __mobile__
     qmlRegisterType<ViewWidgetController>           ("QGroundControl.Controllers", 1, 0, "ViewWidgetController");
@@ -410,9 +437,8 @@ void QGCApplication::_initCommon(void)
     if (settingsUpgraded) {
         settings.clear();
         settings.setValue(_settingsVersionKey, QGC_SETTINGS_VERSION);
-        QGCMessageBox::information(tr("Settings Cleared"),
-                                   tr("The format for QGroundControl saved settings has been modified. "
-                                      "Your saved settings have been reset to defaults."));
+        showMessage("The format for QGroundControl saved settings has been modified. "
+                    "Your saved settings have been reset to defaults.");
     }
 
     // Load saved files location and validate
@@ -462,6 +488,13 @@ bool QGCApplication::_initForNormalAppBoot(void)
     // Exit main application when last window is closed
     connect(this, SIGNAL(lastWindowClosed()), this, SLOT(quit()));
 
+#ifdef __mobile__
+    _qmlAppEngine = new QQmlApplicationEngine(this);
+    _qmlAppEngine->addImportPath("qrc:/qml");
+    _qmlAppEngine->rootContext()->setContextProperty("multiVehicleManager", toolbox()->multiVehicleManager());
+    _qmlAppEngine->rootContext()->setContextProperty("joystickManager", toolbox()->joystickManager());
+    _qmlAppEngine->load(QUrl(QStringLiteral("qrc:/qml/MainWindowNative.qml")));
+#else
     // Start the user interface
     MainWindow* mainWindow = MainWindow::_create();
     Q_CHECK_PTR(mainWindow);
@@ -471,13 +504,9 @@ bool QGCApplication::_initForNormalAppBoot(void)
     /// settings.
     QString savedFilesLocation = settings.value(_savedFilesLocationKey).toString();
     if (savedFilesLocation.isEmpty()) {
-        QGCMessageBox::warning(
-            tr("Bad save location"),
-            tr("The location to save files to is invalid, or cannot be written to. Please provide a new one."));
-        mainWindow->showSettings();
+        showMessage("The location to save files to is invalid, or cannot be written to. Please provide a new one.");
     }
 
-#ifndef __mobile__
     // Now that main window is up check for lost log files
     connect(this, &QGCApplication::checkForLostLogFiles, toolbox()->mavlinkProtocol(), &MAVLinkProtocol::checkForLostLogFiles);
     emit checkForLostLogFiles();
@@ -611,19 +640,31 @@ QGCApplication* qgcApp(void)
 
 void QGCApplication::informationMessageBoxOnMainThread(const QString& title, const QString& msg)
 {
-    QGCMessageBox::information(title, msg);
+    Q_UNUSED(title);
+    showMessage(msg);
 }
 
 void QGCApplication::warningMessageBoxOnMainThread(const QString& title, const QString& msg)
 {
+#ifdef __mobile__
+    Q_UNUSED(title)
+    showMessage(msg);
+#else
     QGCMessageBox::warning(title, msg);
+#endif
 }
 
 void QGCApplication::criticalMessageBoxOnMainThread(const QString& title, const QString& msg)
 {
+#ifdef __mobile__
+    Q_UNUSED(title)
+    showMessage(msg);
+#else
     QGCMessageBox::critical(title, msg);
+#endif
 }
 
+#ifndef __mobile__
 void QGCApplication::saveTempFlightDataLogOnMainThread(QString tempLogfile)
 {
     bool saveError;
@@ -651,6 +692,7 @@ void QGCApplication::saveTempFlightDataLogOnMainThread(QString tempLogfile)
     } while(saveError); // if the file could not be overwritten, ask for new file
     QFile::remove(tempLogfile);
 }
+#endif
 
 void QGCApplication::setStyle(bool styleIsDark)
 {
@@ -664,11 +706,9 @@ void QGCApplication::setStyle(bool styleIsDark)
 
 void QGCApplication::_loadCurrentStyle(void)
 {
+#ifndef __mobile__
     bool success = true;
     QString styles;
-
-    // Signal to the user that the app will pause to apply a new stylesheet
-    setOverrideCursor(Qt::WaitCursor);
 
     // The dark style sheet is the master. Any other selected style sheet just overrides
     // the colors of the master sheet.
@@ -698,11 +738,9 @@ void QGCApplication::_loadCurrentStyle(void)
         // Fall back to plastique if we can't load our own
         setStyle("plastique");
     }
+#endif
 
     QGCPalette::setGlobalTheme(_styleIsDark ? QGCPalette::Dark : QGCPalette::Light);
-
-    // Finally restore the cursor before returning.
-    restoreOverrideCursor();
 }
 
 void QGCApplication::reportMissingParameter(int componentId, const QString& name)
@@ -726,18 +764,67 @@ void QGCApplication::_missingParamsDisplay(void)
     }
     _missingParams.clear();
 
-    QGCMessageBox::critical(
-        "Missing Parameters",
-        QString("Parameters missing from firmware: %1.\n\n"
-                "You should quit QGroundControl immediately and update your firmware.").arg(params));
+    showMessage(QString("Parameters missing from firmware: %1.\n\nYou should quit QGroundControl immediately and update your firmware.").arg(params));
 }
 
-void QGCApplication::showToolBarMessage(const QString& message)
+QObject* QGCApplication::_rootQmlObject(void)
 {
-    MainWindow* mainWindow = MainWindow::instance();
-    if (mainWindow) {
-        mainWindow->showToolbarMessage(message);
-    } else {
-        QGCMessageBox::information("", message);
-    }
+#ifdef __mobile__
+    return _qmlAppEngine->rootObjects()[0];
+#else
+    return MainWindow::instance()->rootQmlObject();
+#endif
+}
+
+
+void QGCApplication::showMessage(const QString& message)
+{
+    QVariant varReturn;
+    QVariant varMessage = QVariant::fromValue(message);
+
+    QMetaObject::invokeMethod(_rootQmlObject(), "showMessage", Q_RETURN_ARG(QVariant, varReturn), Q_ARG(QVariant, varMessage));
+}
+
+void QGCApplication::showFlyView(void)
+{
+    QMetaObject::invokeMethod(_rootQmlObject(), "showFlyView");
+}
+
+void QGCApplication::showPlanView(void)
+{
+    QMetaObject::invokeMethod(_rootQmlObject(), "showPlanView");
+}
+
+void QGCApplication::showSetupView(void)
+{
+    QMetaObject::invokeMethod(_rootQmlObject(), "showSetupView");
+}
+
+void QGCApplication::showWindowCloseMessage(void)
+{
+    QMetaObject::invokeMethod(_rootQmlObject(), "showWindowCloseMessage");
+}
+
+
+void QGCApplication::_showSetupFirmware(void)
+{
+    QMetaObject::invokeMethod(_rootQmlObject(), "showSetupFirmware");
+}
+
+void QGCApplication::_showSetupParameters(void)
+{
+    QMetaObject::invokeMethod(_rootQmlObject(), "showSetupParameters");
+}
+
+void QGCApplication::_showSetupSummary(void)
+{
+    QMetaObject::invokeMethod(_rootQmlObject(), "showSetupSummary");
+}
+
+void QGCApplication::_showSetupVehicleComponent(VehicleComponent* vehicleComponent)
+{
+    QVariant varReturn;
+    QVariant varComponent = QVariant::fromValue(vehicleComponent);
+
+    QMetaObject::invokeMethod(_rootQmlObject(), "showSetupVehicleComponent", Q_RETURN_ARG(QVariant, varReturn), Q_ARG(QVariant, varComponent));
 }

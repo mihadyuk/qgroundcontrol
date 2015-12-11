@@ -37,7 +37,9 @@ This file is part of the PIXHAWK project
 #include "QGCToolbox.h"
 #include "ProtocolInterface.h"
 #include "MAVLinkProtocol.h"
+#ifndef __mobile__
 #include "LogReplayLink.h"
+#endif
 #include "QmlObjectListModel.h"
 
 #ifndef __ios__
@@ -73,35 +75,55 @@ public:
     ~LinkManager();
 
     Q_PROPERTY(bool anyActiveLinks                      READ anyActiveLinks                                                     NOTIFY anyActiveLinksChanged)
-    Q_PROPERTY(bool anyNonAutoconnectActiveLinks        READ anyNonAutoconnectActiveLinks                                       NOTIFY anyNonAutoconnectActiveLinksChanged)
     Q_PROPERTY(bool anyConnectedLinks                   READ anyConnectedLinks                                                  NOTIFY anyConnectedLinksChanged)
-    Q_PROPERTY(bool anyNonAutoconnectConnectedLinks     READ anyNonAutoconnectConnectedLinks                                    NOTIFY anyNonAutoconnectConnectedLinksChanged)
     Q_PROPERTY(bool autoconnectUDP                      READ autoconnectUDP                     WRITE setAutoconnectUDP         NOTIFY autoconnectUDPChanged)
     Q_PROPERTY(bool autoconnectPixhawk                  READ autoconnectPixhawk                 WRITE setAutoconnectPixhawk     NOTIFY autoconnectPixhawkChanged)
     Q_PROPERTY(bool autoconnect3DRRadio                 READ autoconnect3DRRadio                WRITE setAutoconnect3DRRadio    NOTIFY autoconnect3DRRadioChanged)
     Q_PROPERTY(bool autoconnectPX4Flow                  READ autoconnectPX4Flow                 WRITE setAutoconnectPX4Flow     NOTIFY autoconnectPX4FlowChanged)
-    Q_PROPERTY(QmlObjectListModel* links                READ links                                                              CONSTANT)
-    Q_PROPERTY(QmlObjectListModel* linkConfigurations   READ linkConfigurations                                                 CONSTANT)
+    Q_PROPERTY(bool isBluetoothAvailable                READ isBluetoothAvailable               CONSTANT)
+
+    /// LinkInterface Accessor
+    Q_PROPERTY(QmlObjectListModel*  links               READ links                              CONSTANT)
+    /// LinkConfiguration Accessor
+    Q_PROPERTY(QmlObjectListModel*  linkConfigurations  READ linkConfigurations                                                 NOTIFY linkConfigurationsChanged)
+    /// List of comm type strings
+    Q_PROPERTY(QStringList          linkTypeStrings     READ linkTypeStrings                    CONSTANT)
+    /// List of supported baud rates for serial links
+    Q_PROPERTY(QStringList          serialBaudRates     READ serialBaudRates                    CONSTANT)
+    /// List of comm ports display names
+    Q_PROPERTY(QStringList          serialPortStrings   READ serialPortStrings                                                  NOTIFY commPortStringsChanged)
+    /// List of comm ports
+    Q_PROPERTY(QStringList          serialPorts         READ serialPorts                                                        NOTIFY commPortsChanged)
+
+    // Create/Edit Link Configuration
+    Q_INVOKABLE LinkConfiguration*  createConfiguration         (int type, const QString& name);
+    Q_INVOKABLE LinkConfiguration*  startConfigurationEditing   (LinkConfiguration* config);
+    Q_INVOKABLE void                cancelConfigurationEditing  (LinkConfiguration* config) { delete config; }
+    Q_INVOKABLE bool                endConfigurationEditing     (LinkConfiguration* config, LinkConfiguration* editedConfig);
+    Q_INVOKABLE bool                endCreateConfiguration      (LinkConfiguration* config);
+    Q_INVOKABLE void                removeConfiguration         (LinkConfiguration* config);
 
     // Property accessors
 
-    bool anyConnectedLinks(void);
-    bool anyNonAutoconnectConnectedLinks(void);
-    bool anyActiveLinks(void);
-    bool anyNonAutoconnectActiveLinks(void);
-    bool autoconnectUDP(void)       { return _autoconnectUDP; }
-    bool autoconnectPixhawk(void)   { return _autoconnectPixhawk; }
-    bool autoconnect3DRRadio(void)  { return _autoconnect3DRRadio; }
-    bool autoconnectPX4Flow(void)   { return _autoconnectPX4Flow; }
+    bool anyConnectedLinks          (void);
+    bool anyActiveLinks             (void);
+    bool autoconnectUDP             (void)  { return _autoconnectUDP; }
+    bool autoconnectPixhawk         (void)  { return _autoconnectPixhawk; }
+    bool autoconnect3DRRadio        (void)  { return _autoconnect3DRRadio; }
+    bool autoconnectPX4Flow         (void)  { return _autoconnectPX4Flow; }
+    bool isBluetoothAvailable       (void);
 
-    QmlObjectListModel* links(void)                 { return &_links; }
-    QmlObjectListModel* linkConfigurations(void)    { return &_linkConfigurations; }
+    QmlObjectListModel* links               (void) { return &_links; }
+    QmlObjectListModel* linkConfigurations  (void) { return &_linkConfigurations; }
+    QStringList         linkTypeStrings     (void) const;
+    QStringList         serialBaudRates     (void);
+    QStringList         serialPortStrings   (void);
+    QStringList         serialPorts         (void);
 
-    void setAutoconnectUDP(bool autoconnect);
-    void setAutoconnectPixhawk(bool autoconnect);
-    void setAutoconnect3DRRadio(bool autoconnect);
-    void setAutoconnectPX4Flow(bool autoconnect);
-
+    void setAutoconnectUDP      (bool autoconnect);
+    void setAutoconnectPixhawk  (bool autoconnect);
+    void setAutoconnect3DRRadio (bool autoconnect);
+    void setAutoconnectPX4Flow  (bool autoconnect);
 
     /// Load list of link configurations from disk
     void loadLinkConfigurationList();
@@ -121,25 +143,20 @@ public:
 
     /// Creates, connects (and adds) a link  based on the given configuration instance.
     /// Link takes ownership of config.
-    Q_INVOKABLE LinkInterface* createConnectedLink(LinkConfiguration* config, bool persistenLink = false);
+    Q_INVOKABLE LinkInterface* createConnectedLink(LinkConfiguration* config);
 
     /// Creates, connects (and adds) a link  based on the given configuration name.
-    LinkInterface* createConnectedLink(const QString& name, bool persistenLink = false);
+    LinkInterface* createConnectedLink(const QString& name);
 
-    /// Disconnects all existing links, including persistent links.
-    ///     @param disconnectAutoconnectLink See disconnectLink
-    void disconnectAll(bool disconnectAutoconnectLink);
+    /// Disconnects all existing links
+    void disconnectAll(void);
 
     /// Connect the specified link
     bool connectLink(LinkInterface* link);
 
-    /// Disconnect the specified link.
-    ///     @param disconnectAutoconnectLink
-    ///                 true: link is disconnected no matter what type
-    ///                 false: if autoconnect link, link is marked as inactive and linkInactive is signalled
-    ///                 false: if not autoconnect link, link is disconnected
-    Q_INVOKABLE bool disconnectLink(LinkInterface* link, bool disconnectAutoconnectLink);
-    
+    /// Disconnect the specified link
+    Q_INVOKABLE void disconnectLink(LinkInterface* link);
+
     /// Called to notify that a heartbeat was received with the specified information. Will transition
     /// a link to active as needed.
     ///     @param link Heartbeat came through on this link
@@ -154,16 +171,22 @@ public:
     void _addLink(LinkInterface* link);
 
     // Called to signal app shutdown. Disconnects all links while turning off auto-connect.
-    void shutdown(void);
+    Q_INVOKABLE void shutdown(void);
+
+#ifdef QT_DEBUG
+    // Only used by unit test tp restart after a shutdown
+    void restart(void) { setConnectionsAllowed(); }
+#endif
+
+    /// @return true: specified link is an autoconnect link
+    bool isAutoconnectLink(LinkInterface* link);
 
     // Override from QGCTool
     virtual void setToolbox(QGCToolbox *toolbox);
 
 signals:
     void anyActiveLinksChanged(bool anyActiveLinks);
-    void anyNonAutoconnectActiveLinksChanged(bool anyNonAutoconnectActiveLinks);
     void anyConnectedLinksChanged(bool anyConnectedLinks);
-    void anyNonAutoconnectConnectedLinksChanged(bool anyNoAutoconnectConnectedLinks);
     void autoconnectUDPChanged(bool autoconnect);
     void autoconnectPixhawkChanged(bool autoconnect);
     void autoconnect3DRRadioChanged(bool autoconnect);
@@ -186,7 +209,9 @@ signals:
     // No longer hearing from any vehicles on this link.
     void linkInactive(LinkInterface* link);
 
-    void linkConfigurationChanged();
+    void commPortStringsChanged();
+    void commPortsChanged();
+    void linkConfigurationsChanged();
 
 private slots:
     void _linkConnected(void);
@@ -196,6 +221,8 @@ private slots:
 private:
     bool _connectionsSuspendedMsg(void);
     void _updateAutoConnectLinks(void);
+    void _updateSerialPorts();
+    void _fixUnnamed(LinkConfiguration* config);
 
 #ifndef __ios__
     SerialConfiguration* _autoconnectConfigurationsContainsPort(const QString& portName);
@@ -205,9 +232,7 @@ private:
     bool    _configurationsLoaded;                      ///< true: Link configurations have been loaded
     bool    _connectionsSuspended;                      ///< true: all new connections should not be allowed
     QString _connectionsSuspendedReason;                ///< User visible reason for suspension
-#ifndef __ios__
     QTimer  _portListTimer;
-#endif
     uint32_t _mavlinkChannelsUsedBitMask;
 
     MAVLinkProtocol*    _mavlinkProtocol;
@@ -216,18 +241,24 @@ private:
     QmlObjectListModel  _links;
     QmlObjectListModel  _linkConfigurations;
     QmlObjectListModel  _autoconnectConfigurations;
-    UDPConfiguration*   _autoconnectUDPConfig;
+
+    QMap<QString, int>  _autoconnectWaitList;   ///< key: QGCSerialPortInfo.systemLocation, value: wait count
+    QStringList _commPortList;
+    QStringList _commPortDisplayList;
 
     bool _autoconnectUDP;
     bool _autoconnectPixhawk;
     bool _autoconnect3DRRadio;
     bool _autoconnectPX4Flow;
 
-    static const char* _settingsGroup;
-    static const char* _autoconnectUDPKey;
-    static const char* _autoconnectPixhawkKey;
-    static const char* _autoconnect3DRRadioKey;
-    static const char* _autoconnectPX4FlowKey;
+    static const char*  _settingsGroup;
+    static const char*  _autoconnectUDPKey;
+    static const char*  _autoconnectPixhawkKey;
+    static const char*  _autoconnect3DRRadioKey;
+    static const char*  _autoconnectPX4FlowKey;
+    static const char*  _defaultUPDLinkName;
+    static const int    _autoconnectUpdateTimerMSecs;
+    static const int    _autoconnectConnectDelayMSecs;
 };
 
 #endif

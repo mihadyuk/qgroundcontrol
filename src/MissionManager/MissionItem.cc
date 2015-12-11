@@ -21,8 +21,6 @@ This file is part of the QGROUNDCONTROL project
 ======================================================================*/
 
 #include <QStringList>
-#include <QJsonDocument>
-#include <QJsonParseError>
 #include <QDebug>
 
 #include "MissionItem.h"
@@ -31,12 +29,7 @@ This file is part of the QGROUNDCONTROL project
 
 QGC_LOGGING_CATEGORY(MissionItemLog, "MissionItemLog")
 
-const double MissionItem::defaultTakeoffPitch =         15.0;
-const double MissionItem::defaultHeading =              0.0;
 const double MissionItem::defaultAltitude =             25.0;
-const double MissionItem::defaultAcceptanceRadius =     3.0;
-const double MissionItem::defaultLoiterOrbitRadius =    10.0;
-const double MissionItem::defaultLoiterTurns =          1.0;
 
 FactMetaData* MissionItem::_altitudeMetaData =          NULL;
 FactMetaData* MissionItem::_commandMetaData =           NULL;
@@ -45,28 +38,6 @@ FactMetaData* MissionItem::_frameMetaData =             NULL;
 FactMetaData* MissionItem::_latitudeMetaData =          NULL;
 FactMetaData* MissionItem::_longitudeMetaData =         NULL;
 FactMetaData* MissionItem::_supportedCommandMetaData =  NULL;
-
-const QString MissionItem::_decimalPlacesJsonKey        (QStringLiteral("decimalPlaces"));
-const QString MissionItem::_defaultJsonKey              (QStringLiteral("default"));
-const QString MissionItem::_descriptionJsonKey          (QStringLiteral("description"));
-const QString MissionItem::_friendlyEditJsonKey         (QStringLiteral("friendlyEdit"));
-const QString MissionItem::_friendlyNameJsonKey         (QStringLiteral("friendlyName"));
-const QString MissionItem::_idJsonKey                   (QStringLiteral("id"));
-const QString MissionItem::_labelJsonKey                (QStringLiteral("label"));
-const QString MissionItem::_mavCmdInfoJsonKey           (QStringLiteral("mavCmdInfo"));
-const QString MissionItem::_param1JsonKey               (QStringLiteral("param1"));
-const QString MissionItem::_param2JsonKey               (QStringLiteral("param2"));
-const QString MissionItem::_param3JsonKey               (QStringLiteral("param3"));
-const QString MissionItem::_param4JsonKey               (QStringLiteral("param4"));
-const QString MissionItem::_paramJsonKeyFormat          (QStringLiteral("param%1"));
-const QString MissionItem::_rawNameJsonKey              (QStringLiteral("rawName"));
-const QString MissionItem::_specifiesCoordinateJsonKey  (QStringLiteral("specifiesCoordinate"));
-const QString MissionItem::_unitsJsonKey                (QStringLiteral("units"));
-const QString MissionItem::_versionJsonKey              (QStringLiteral("version"));
-
-const QString MissionItem::_degreesUnits                (QStringLiteral("degrees"));
-
-QMap<MAV_CMD, MissionItem::MavCmdInfo_t> MissionItem::_mavCmdInfoMap;
 
 struct EnumInfo_s {
     const char *    label;
@@ -110,13 +81,16 @@ MissionItem::MissionItem(QObject* parent)
     , _dirty(false)
     , _sequenceNumber(0)
     , _isCurrentItem(false)
+    , _altDifference(0.0)
+    , _altPercent(0.0)
+    , _azimuth(0.0)
     , _distance(0.0)
     , _homePositionSpecialCase(false)
     , _homePositionValid(false)
     , _altitudeRelativeToHomeFact   (0, "Altitude is relative to home", FactMetaData::valueTypeUint32)
     , _autoContinueFact             (0, "AutoContinue",                 FactMetaData::valueTypeUint32)
-    , _commandFact                  (0, "Command:",                     FactMetaData::valueTypeUint32)
-    , _frameFact                    (0, "Frame:",                       FactMetaData::valueTypeUint32)
+    , _commandFact                  (0, "",                             FactMetaData::valueTypeUint32)
+    , _frameFact                    (0, "",                             FactMetaData::valueTypeUint32)
     , _param1Fact                   (0, "Param1:",                      FactMetaData::valueTypeDouble)
     , _param2Fact                   (0, "Param2:",                      FactMetaData::valueTypeDouble)
     , _param3Fact                   (0, "Param3:",                      FactMetaData::valueTypeDouble)
@@ -129,14 +103,24 @@ MissionItem::MissionItem(QObject* parent)
     , _param2MetaData(FactMetaData::valueTypeDouble)
     , _param3MetaData(FactMetaData::valueTypeDouble)
     , _param4MetaData(FactMetaData::valueTypeDouble)
+    , _param5MetaData(FactMetaData::valueTypeDouble)
+    , _param6MetaData(FactMetaData::valueTypeDouble)
+    , _param7MetaData(FactMetaData::valueTypeDouble)
     , _syncingAltitudeRelativeToHomeAndFrame    (false)
     , _syncingHeadingDegreesAndParam4           (false)
     , _syncingSupportedCommandAndCommand        (false)
+    , _mavCmdInfoMap(qgcApp()->toolbox()->missionCommands()->commandInfoMap())
 {
+    // Need a good command and frame before we start passing signals around
+    _commandFact.setRawValue(MAV_CMD_NAV_WAYPOINT);
+    _frameFact.setRawValue(MAV_FRAME_GLOBAL_RELATIVE_ALT);
+    _altitudeRelativeToHomeFact.setRawValue(true);
+
     _setupMetaData();
     _connectSignals();
 
     setAutoContinue(true);
+    setDefaultsForCommand();
 }
 
 MissionItem::MissionItem(int             sequenceNumber,
@@ -157,12 +141,15 @@ MissionItem::MissionItem(int             sequenceNumber,
     , _dirty(false)
     , _sequenceNumber(sequenceNumber)
     , _isCurrentItem(isCurrentItem)
+    , _altDifference(0.0)
+    , _altPercent(0.0)
+    , _azimuth(0.0)
     , _distance(0.0)
     , _homePositionSpecialCase(false)
     , _homePositionValid(false)
     , _altitudeRelativeToHomeFact   (0, "Altitude is relative to home", FactMetaData::valueTypeUint32)
-    , _commandFact                  (0, "Command:",                     FactMetaData::valueTypeUint32)
-    , _frameFact                    (0, "Frame:",                       FactMetaData::valueTypeUint32)
+    , _commandFact                  (0, "",                             FactMetaData::valueTypeUint32)
+    , _frameFact                    (0, "",                             FactMetaData::valueTypeUint32)
     , _param1Fact                   (0, "Param1:",                      FactMetaData::valueTypeDouble)
     , _param2Fact                   (0, "Param2:",                      FactMetaData::valueTypeDouble)
     , _param3Fact                   (0, "Param3:",                      FactMetaData::valueTypeDouble)
@@ -175,10 +162,19 @@ MissionItem::MissionItem(int             sequenceNumber,
     , _param2MetaData(FactMetaData::valueTypeDouble)
     , _param3MetaData(FactMetaData::valueTypeDouble)
     , _param4MetaData(FactMetaData::valueTypeDouble)
+    , _param5MetaData(FactMetaData::valueTypeDouble)
+    , _param6MetaData(FactMetaData::valueTypeDouble)
+    , _param7MetaData(FactMetaData::valueTypeDouble)
     , _syncingAltitudeRelativeToHomeAndFrame    (false)
     , _syncingHeadingDegreesAndParam4           (false)
     , _syncingSupportedCommandAndCommand        (false)
+    , _mavCmdInfoMap(qgcApp()->toolbox()->missionCommands()->commandInfoMap())
 {
+    // Need a good command and frame before we start passing signals around
+    _commandFact.setRawValue(MAV_CMD_NAV_WAYPOINT);
+    _frameFact.setRawValue(MAV_FRAME_GLOBAL_RELATIVE_ALT);
+    _altitudeRelativeToHomeFact.setRawValue(true);
+
     _setupMetaData();
     _connectSignals();
 
@@ -204,12 +200,15 @@ MissionItem::MissionItem(const MissionItem& other, QObject* parent)
     , _dirty(false)
     , _sequenceNumber(0)
     , _isCurrentItem(false)
+    , _altDifference(0.0)
+    , _altPercent(0.0)
+    , _azimuth(0.0)
     , _distance(0.0)
     , _homePositionSpecialCase(false)
     , _homePositionValid(false)
     , _altitudeRelativeToHomeFact   (0, "Altitude is relative to home", FactMetaData::valueTypeUint32)
-    , _commandFact                  (0, "Command:",                     FactMetaData::valueTypeUint32)
-    , _frameFact                    (0, "Frame:",                       FactMetaData::valueTypeUint32)
+    , _commandFact                  (0, "",                             FactMetaData::valueTypeUint32)
+    , _frameFact                    (0, "",                             FactMetaData::valueTypeUint32)
     , _param1Fact                   (0, "Param1:",                      FactMetaData::valueTypeDouble)
     , _param2Fact                   (0, "Param2:",                      FactMetaData::valueTypeDouble)
     , _param3Fact                   (0, "Param3:",                      FactMetaData::valueTypeDouble)
@@ -225,7 +224,13 @@ MissionItem::MissionItem(const MissionItem& other, QObject* parent)
     , _syncingAltitudeRelativeToHomeAndFrame    (false)
     , _syncingHeadingDegreesAndParam4           (false)
     , _syncingSupportedCommandAndCommand        (false)
+    , _mavCmdInfoMap(qgcApp()->toolbox()->missionCommands()->commandInfoMap())
 {
+    // Need a good command and frame before we start passing signals around
+    _commandFact.setRawValue(MAV_CMD_NAV_WAYPOINT);
+    _frameFact.setRawValue(MAV_FRAME_GLOBAL_RELATIVE_ALT);
+    _altitudeRelativeToHomeFact.setRawValue(true);
+
     _setupMetaData();
     _connectSignals();
 
@@ -241,6 +246,9 @@ const MissionItem& MissionItem::operator=(const MissionItem& other)
     setSequenceNumber(other._sequenceNumber);
     setAutoContinue(other.autoContinue());
     setIsCurrentItem(other._isCurrentItem);
+    setAltDifference(other._altDifference);
+    setAltPercent(other._altPercent);
+    setAzimuth(other._azimuth);
     setDistance(other._distance);
     setHomePositionSpecialCase(other._homePositionSpecialCase);
     setHomePositionValid(other._homePositionValid);
@@ -289,6 +297,9 @@ void MissionItem::_connectSignals(void)
     connect(&_commandFact,      &Fact::valueChanged,        this, &MissionItem::_sendFriendlyEditAllowedChanged);
     connect(&_frameFact,        &Fact::valueChanged,        this, &MissionItem::_sendFriendlyEditAllowedChanged);
 
+    // When the command changes we need to set defaults. This must go out before the signals below so it must be registered first.
+    connect(&_commandFact,  &Fact::valueChanged, this, &MissionItem::setDefaultsForCommand);
+
     // Whenever these properties change the ui model changes as well
     connect(this, &MissionItem::commandChanged, this, &MissionItem::_sendUiModelChanged);
     connect(this, &MissionItem::rawEditChanged, this, &MissionItem::_sendUiModelChanged);
@@ -297,134 +308,6 @@ void MissionItem::_connectSignals(void)
     connect(&_commandFact,  &Fact::valueChanged, this, &MissionItem::_sendCommandChanged);
     connect(&_frameFact,    &Fact::valueChanged, this, &MissionItem::_sendFrameChanged);
 
-    // When the command changes we need to set defaults
-    connect(&_commandFact,  &Fact::valueChanged, this, &MissionItem::setDefaultsForCommand);
-}
-
-bool MissionItem::_validateKeyTypes(QJsonObject& jsonObject, const QStringList& keys, const QList<QJsonValue::Type>& types)
-{
-    for (int i=0; i<keys.count(); i++) {
-        if (jsonObject.contains(keys[i])) {
-            if (jsonObject.value(keys[i]).type() != types[i]) {
-                qWarning() << "Incorrect type key:type:expected" << keys[i] << jsonObject.value(keys[i]).type() << types[i];
-                return false;
-            }
-        }
-    }
-
-    return true;
-}
-
-bool MissionItem::_loadMavCmdInfoJson(void)
-{
-    QFile jsonFile(":/json/MavCmdInfo.json");
-    if (!jsonFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        qWarning() << "Unable to open MavCmdInfo.json" << jsonFile.errorString();
-        return false;
-    }
-
-    QByteArray bytes = jsonFile.readAll();
-    jsonFile.close();
-    QJsonParseError jsonParseError;
-    QJsonDocument doc = QJsonDocument::fromJson(bytes, &jsonParseError);
-    if (jsonParseError.error != QJsonParseError::NoError) {
-        qWarning() <<  "Unable to open json document" << jsonParseError.errorString();
-        return false;
-    }
-
-    QJsonObject json = doc.object();
-
-    int version = json.value(_versionJsonKey).toInt();
-    if (version != 1) {
-        qWarning() << "Invalid version" << version;
-        return false;
-    }
-
-    QJsonValue jsonValue = json.value(_mavCmdInfoJsonKey);
-    if (!jsonValue.isArray()) {
-        qWarning() << "mavCmdInfo not array";
-        return false;
-    }
-
-    QJsonArray jsonArray = jsonValue.toArray();
-    foreach(QJsonValue info, jsonArray) {
-        if (!info.isObject()) {
-            qWarning() << "mavCmdArray should contain objects";
-            return false;
-        }
-        QJsonObject jsonObject = info.toObject();
-
-        // Make sure we have the required keys
-        QStringList requiredKeys;
-        requiredKeys << _idJsonKey << _rawNameJsonKey;
-        foreach (QString key, requiredKeys) {
-            if (!jsonObject.contains(key)) {
-                qWarning() << "Mission required key" << key;
-                return false;
-            }
-        }
-
-        // Validate key types
-
-        QStringList             keys;
-        QList<QJsonValue::Type> types;
-        keys << _idJsonKey << _rawNameJsonKey << _friendlyNameJsonKey << _descriptionJsonKey << _specifiesCoordinateJsonKey << _friendlyEditJsonKey
-             << _param1JsonKey << _param2JsonKey << _param3JsonKey << _param4JsonKey;
-        types << QJsonValue::Double << QJsonValue::String << QJsonValue::String<< QJsonValue::String << QJsonValue::Bool << QJsonValue::Bool
-              << QJsonValue::Object << QJsonValue::Object << QJsonValue::Object << QJsonValue::Object;
-        if (!_validateKeyTypes(jsonObject, keys, types)) {
-            return false;
-        }
-
-        MavCmdInfo_t mavCmdInfo;
-
-        mavCmdInfo.command = (MAV_CMD)      jsonObject.value(_idJsonKey).toInt();
-        mavCmdInfo.rawName =                jsonObject.value(_rawNameJsonKey).toString();
-        mavCmdInfo.friendlyName =           jsonObject.value(_friendlyNameJsonKey).toString(QString());
-        mavCmdInfo.description =            jsonObject.value(_descriptionJsonKey).toString(QString());
-        mavCmdInfo.specifiesCoordinate =    jsonObject.value(_specifiesCoordinateJsonKey).toBool(false);
-        mavCmdInfo.friendlyEdit =           jsonObject.value(_friendlyEditJsonKey).toBool(false);
-
-        if (_mavCmdInfoMap.contains(mavCmdInfo.command)) {
-            qWarning() << "Duplicate command" << mavCmdInfo.command;
-            return false;
-        }
-
-        _mavCmdInfoMap[mavCmdInfo.command] = mavCmdInfo;
-
-        // Read params
-
-        for (int i=1; i<5; i++) {
-            QString paramKey = QString(_paramJsonKeyFormat).arg(i);
-
-            if (jsonObject.contains(paramKey)) {
-                QJsonObject paramObject = jsonObject.value(paramKey).toObject();
-
-                // Validate key types
-                QStringList             keys;
-                QList<QJsonValue::Type> types;
-                keys << _labelJsonKey << _unitsJsonKey << _defaultJsonKey << _decimalPlacesJsonKey;
-                types << QJsonValue::String << QJsonValue::String << QJsonValue::Double << QJsonValue::Double;
-                if (!_validateKeyTypes(paramObject, keys, types)) {
-                    return false;
-                }
-
-                if (paramObject.contains(_labelJsonKey)) {
-                    _mavCmdInfoMap[mavCmdInfo.command].paramInfoMap[i].label = paramObject.value(_labelJsonKey).toString();
-                } else {
-                    qWarning() << "param object missing label key" << mavCmdInfo.rawName << paramKey;
-                    return false;
-                }
-
-                _mavCmdInfoMap[mavCmdInfo.command].paramInfoMap[i].param =          i;
-                _mavCmdInfoMap[mavCmdInfo.command].paramInfoMap[i].units =          paramObject.value(_unitsJsonKey).toString();
-                _mavCmdInfoMap[mavCmdInfo.command].paramInfoMap[i].defaultValue =   paramObject.value(_defaultJsonKey).toDouble(0.0);
-                _mavCmdInfoMap[mavCmdInfo.command].paramInfoMap[i].decimalPlaces =  paramObject.value(_decimalPlacesJsonKey).toInt(FactMetaData::defaultDecimalPlaces);
-            }
-        }
-    }
-
-    return true;
 }
 
 void MissionItem::_setupMetaData(void)
@@ -433,17 +316,15 @@ void MissionItem::_setupMetaData(void)
     QVariantList enumValues;
 
     if (!_altitudeMetaData) {
-        _loadMavCmdInfoJson();
-
         _altitudeMetaData = new FactMetaData(FactMetaData::valueTypeDouble);
         _altitudeMetaData->setUnits("meters");
         _altitudeMetaData->setDecimalPlaces(3);
 
         enumStrings.clear();
         enumValues.clear();
-        foreach (MavCmdInfo_t mavCmdInfo, _mavCmdInfoMap) {
-            enumStrings.append(mavCmdInfo.rawName);
-            enumValues.append(QVariant(mavCmdInfo.command));
+        foreach (const MavCmdInfo* mavCmdInfo, _mavCmdInfoMap) {
+            enumStrings.append(mavCmdInfo->rawName());
+            enumValues.append(QVariant(mavCmdInfo->command()));
         }
         _commandMetaData = new FactMetaData(FactMetaData::valueTypeUint32);
         _commandMetaData->setEnumInfo(enumStrings, enumValues);
@@ -472,17 +353,17 @@ void MissionItem::_setupMetaData(void)
 
         enumStrings.clear();
         enumValues.clear();
-        // FIXME: Hack hardcode tp PX4
+        // FIXME: Hack hardcode to PX4
         QList<MAV_CMD> supportedCommands = qgcApp()->toolbox()->firmwarePluginManager()->firmwarePluginForAutopilot(MAV_AUTOPILOT_PX4, MAV_TYPE_QUADROTOR)->supportedMissionCommands();
         if (supportedCommands.count()) {
             foreach (MAV_CMD command, supportedCommands) {
-                enumStrings.append(_mavCmdInfoMap[command].friendlyName);
+                enumStrings.append(_mavCmdInfoMap[command]->friendlyName());
                 enumValues.append(QVariant(command));
             }
         } else {
-            foreach (MavCmdInfo_t mavCmdInfo, _mavCmdInfoMap) {
-                enumStrings.append(mavCmdInfo.friendlyName);
-                enumValues.append(QVariant(mavCmdInfo.command));
+            foreach (const MavCmdInfo* mavCmdInfo, _mavCmdInfoMap) {
+                enumStrings.append(mavCmdInfo->friendlyName());
+                enumValues.append(QVariant(mavCmdInfo->command()));
             }
         }
         _supportedCommandMetaData = new FactMetaData(FactMetaData::valueTypeUint32);
@@ -631,14 +512,19 @@ void MissionItem::setParam7(double param)
     }
 }
 
+bool MissionItem::standaloneCoordinate(void) const
+{
+    return _mavCmdInfoMap[(MAV_CMD)command()]->standaloneCoordinate();
+}
+
 bool MissionItem::specifiesCoordinate(void) const
 {
-    return _mavCmdInfoMap[(MAV_CMD)command()].specifiesCoordinate;
+    return _mavCmdInfoMap[(MAV_CMD)command()]->specifiesCoordinate();
 }
 
 QString MissionItem::commandDescription(void) const
 {
-    return _mavCmdInfoMap[(MAV_CMD)command()].description;
+    return _mavCmdInfoMap[(MAV_CMD)command()]->description();
 }
 
 void MissionItem::_clearParamMetaData(void)
@@ -688,48 +574,29 @@ QmlObjectListModel* MissionItem::textFieldFacts(void)
 
         MAV_CMD command = (MAV_CMD)this->command();
 
-        if (_mavCmdInfoMap[command].paramInfoMap.contains(1)) {
-            _param1Fact._setName(_mavCmdInfoMap[command].paramInfoMap[1].label);
-            _param1MetaData.setUnits(_mavCmdInfoMap[command].paramInfoMap[1].units);
-            _param1MetaData.setDecimalPlaces(_mavCmdInfoMap[command].paramInfoMap[1].decimalPlaces);
-            if (_mavCmdInfoMap[command].paramInfoMap[1].units == _degreesUnits) {
-                _param1MetaData.setTranslators(_radiansToDegrees, _degreesToRadians);
-            }
-            _param1Fact.setMetaData(&_param1MetaData);
-            model->append(&_param1Fact);
-        }
+        Fact*           rgParamFacts[7] =       { &_param1Fact, &_param2Fact, &_param3Fact, &_param4Fact, &_param5Fact, &_param6Fact, &_param7Fact };
+        FactMetaData*   rgParamMetaData[7] =    { &_param1MetaData, &_param2MetaData, &_param3MetaData, &_param4MetaData, &_param5MetaData, &_param6MetaData, &_param7MetaData };
 
-        if (_mavCmdInfoMap[command].paramInfoMap.contains(2)) {
-            _param2Fact._setName(_mavCmdInfoMap[command].paramInfoMap[2].label);
-            _param2MetaData.setUnits(_mavCmdInfoMap[command].paramInfoMap[2].units);
-            _param2MetaData.setDecimalPlaces(_mavCmdInfoMap[command].paramInfoMap[2].decimalPlaces);
-            if (_mavCmdInfoMap[command].paramInfoMap[2].units == _degreesUnits) {
-                _param2MetaData.setTranslators(_radiansToDegrees, _degreesToRadians);
-            }
-            _param2Fact.setMetaData(&_param2MetaData);
-            model->append(&_param2Fact);
-        }
+        for (int i=1; i<=7; i++) {
+            const QMap<int, MavCmdParamInfo*>& paramInfoMap = _mavCmdInfoMap[command]->paramInfoMap();
 
-        if (_mavCmdInfoMap[command].paramInfoMap.contains(3)) {
-            _param3Fact._setName(_mavCmdInfoMap[command].paramInfoMap[3].label);
-            _param3MetaData.setUnits(_mavCmdInfoMap[command].paramInfoMap[3].units);
-            _param3MetaData.setDecimalPlaces(_mavCmdInfoMap[command].paramInfoMap[3].decimalPlaces);
-            if (_mavCmdInfoMap[command].paramInfoMap[3].units == _degreesUnits) {
-                _param3MetaData.setTranslators(_radiansToDegrees, _degreesToRadians);
-            }
-            _param3Fact.setMetaData(&_param3MetaData);
-            model->append(&_param3Fact);
-        }
+            if (paramInfoMap.contains(i) && paramInfoMap[i]->enumStrings().count() == 0) {
+                Fact*               paramFact =     rgParamFacts[i-1];
+                FactMetaData*       paramMetaData = rgParamMetaData[i-1];
+                MavCmdParamInfo*    paramInfo =     paramInfoMap[i];
 
-        if (_mavCmdInfoMap[command].paramInfoMap.contains(4)) {
-            _param4Fact._setName(_mavCmdInfoMap[command].paramInfoMap[4].label);
-            _param4MetaData.setUnits(_mavCmdInfoMap[command].paramInfoMap[4].units);
-            _param4MetaData.setDecimalPlaces(_mavCmdInfoMap[command].paramInfoMap[4].decimalPlaces);
-            if (_mavCmdInfoMap[command].paramInfoMap[4].units == _degreesUnits) {
-                _param4MetaData.setTranslators(_radiansToDegrees, _degreesToRadians);
+                paramFact->_setName(paramInfo->label());
+                paramMetaData->setDecimalPlaces(paramInfo->decimalPlaces());
+                paramMetaData->setEnumInfo(paramInfo->enumStrings(), paramInfo->enumValues());
+                if (paramInfo->units() == MissionCommands::_degreesConvertUnits) {
+                    paramMetaData->setTranslators(_radiansToDegrees, _degreesToRadians);
+                    paramMetaData->setUnits(MissionCommands::_degreesUnits);
+                } else {
+                    paramMetaData->setUnits(paramInfo->units());
+                }
+                paramFact->setMetaData(paramMetaData);
+                model->append(paramFact);
             }
-            _param4Fact.setMetaData(&_param4MetaData);
-            model->append(&_param4Fact);
         }
 
         if (specifiesCoordinate()) {
@@ -763,6 +630,33 @@ QmlObjectListModel* MissionItem::comboboxFacts(void)
     if (rawEdit()) {
         model->append(&_commandFact);
         model->append(&_frameFact);
+    } else {
+        Fact*           rgParamFacts[7] =       { &_param1Fact, &_param2Fact, &_param3Fact, &_param4Fact, &_param5Fact, &_param6Fact, &_param7Fact };
+        FactMetaData*   rgParamMetaData[7] =    { &_param1MetaData, &_param2MetaData, &_param3MetaData, &_param4MetaData, &_param5MetaData, &_param6MetaData, &_param7MetaData };
+
+        MAV_CMD command = (MAV_CMD)this->command();
+
+        for (int i=1; i<=7; i++) {
+            const QMap<int, MavCmdParamInfo*>& paramInfoMap = _mavCmdInfoMap[command]->paramInfoMap();
+
+            if (paramInfoMap.contains(i) && paramInfoMap[i]->enumStrings().count() != 0) {
+                Fact*               paramFact =     rgParamFacts[i-1];
+                FactMetaData*       paramMetaData = rgParamMetaData[i-1];
+                MavCmdParamInfo*    paramInfo =     paramInfoMap[i];
+
+                paramFact->_setName(paramInfo->label());
+                paramMetaData->setDecimalPlaces(paramInfo->decimalPlaces());
+                paramMetaData->setEnumInfo(paramInfo->enumStrings(), paramInfo->enumValues());
+                if (paramInfo->units() == MissionCommands::_degreesConvertUnits) {
+                    paramMetaData->setTranslators(_radiansToDegrees, _degreesToRadians);
+                    paramMetaData->setUnits(MissionCommands::_degreesUnits);
+                } else {
+                    paramMetaData->setUnits(paramInfo->units());
+                }
+                paramFact->setMetaData(paramMetaData);
+                model->append(paramFact);
+            }
+        }
     }
 
     return model;
@@ -782,7 +676,7 @@ void MissionItem::setCoordinate(const QGeoCoordinate& coordinate)
 
 bool MissionItem::friendlyEditAllowed(void) const
 {
-    if (_mavCmdInfoMap[(MAV_CMD)command()].friendlyEdit) {
+    if (_mavCmdInfoMap[(MAV_CMD)command()]->friendlyEdit()) {
         if (!autoContinue()) {
             return false;
         }
@@ -804,7 +698,7 @@ bool MissionItem::rawEdit(void) const
 
 void MissionItem::setRawEdit(bool rawEdit)
 {
-    if (_rawEdit != rawEdit) {
+    if (this->rawEdit() != rawEdit) {
         _rawEdit = rawEdit;
         emit rawEditChanged(this->rawEdit());
     }
@@ -837,6 +731,24 @@ void MissionItem::setDistance(double distance)
 {
     _distance = distance;
     emit distanceChanged(_distance);
+}
+
+void MissionItem::setAltDifference(double altDifference)
+{
+    _altDifference = altDifference;
+    emit altDifferenceChanged(_altDifference);
+}
+
+void MissionItem::setAltPercent(double altPercent)
+{
+    _altPercent = altPercent;
+    emit altPercentChanged(_altPercent);
+}
+
+void MissionItem::setAzimuth(double azimuth)
+{
+    _azimuth = azimuth;
+    emit azimuthChanged(_azimuth);
 }
 
 void MissionItem::_sendCoordinateChanged(void)
@@ -882,26 +794,15 @@ void MissionItem::_syncCommandToSupportedCommand(const QVariant& value)
 
 void MissionItem::setDefaultsForCommand(void)
 {
-    foreach (ParamInfo_t paramInfo, _mavCmdInfoMap[(MAV_CMD)command()].paramInfoMap) {
-        double defaultValue = paramInfo.defaultValue;
+    // We set these global defaults first, then if there are param defaults they will get reset
+    setParam7(defaultAltitude);
 
-        switch (paramInfo.param) {
-            case 1:
-                _param1Fact.setRawValue(defaultValue);
-                break;
-            case 2:
-                _param2Fact.setRawValue(defaultValue);
-                break;
-            case 3:
-                _param3Fact.setRawValue(defaultValue);
-                break;
-            case 4:
-                _param4Fact.setRawValue(defaultValue);
-                break;
-        }
+    foreach (const MavCmdParamInfo* paramInfo, _mavCmdInfoMap[(MAV_CMD)command()]->paramInfoMap()) {
+        Fact* rgParamFacts[7] = { &_param1Fact, &_param2Fact, &_param3Fact, &_param4Fact, &_param5Fact, &_param6Fact, &_param7Fact };
+
+        rgParamFacts[paramInfo->param()-1]->setRawValue(paramInfo->defaultValue());
     }
 
-    setParam7(defaultAltitude);
     setAutoContinue(true);
     setFrame(specifiesCoordinate() ? MAV_FRAME_GLOBAL_RELATIVE_ALT : MAV_FRAME_MISSION);
     setRawEdit(false);
@@ -924,9 +825,9 @@ void MissionItem::_sendCommandChanged(void)
 
 QString MissionItem::commandName(void) const
 {
-    MavCmdInfo_t& mavCmdInfo = _mavCmdInfoMap[(MAV_CMD)command()];
+    const MavCmdInfo* mavCmdInfo = _mavCmdInfoMap[(MAV_CMD)command()];
 
-    return mavCmdInfo.friendlyName.isEmpty() ? mavCmdInfo.rawName : mavCmdInfo.friendlyName;
+    return mavCmdInfo->friendlyName().isEmpty() ? mavCmdInfo->rawName() : mavCmdInfo->friendlyName();
 }
 
 QVariant MissionItem::_degreesToRadians(const QVariant& degrees)
@@ -942,4 +843,9 @@ QVariant MissionItem::_radiansToDegrees(const QVariant& radians)
 void MissionItem::_sendFriendlyEditAllowedChanged(void)
 {
     emit friendlyEditAllowedChanged(friendlyEditAllowed());
+}
+
+QString MissionItem::category(void) const
+{
+    return qgcApp()->toolbox()->missionCommands()->categoryFromCommand(command());
 }

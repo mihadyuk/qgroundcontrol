@@ -44,7 +44,6 @@ QGC_LOGGING_CATEGORY(VehicleLog, "VehicleLog")
 const char* Vehicle::_settingsGroup =               "Vehicle%1";        // %1 replaced with mavlink system id
 const char* Vehicle::_joystickModeSettingsKey =     "JoystickMode";
 const char* Vehicle::_joystickEnabledSettingsKey =  "JoystickEnabled";
-const char* Vehicle::_communicationInactivityKey =  "CommunicationInactivity";
 
 Vehicle::Vehicle(LinkInterface*             link,
                  int                        vehicleId,
@@ -102,7 +101,6 @@ Vehicle::Vehicle(LinkInterface*             link,
     , _base_mode(0)
     , _custom_mode(0)
     , _nextSendMessageMultipleIndex(0)
-    , _communicationInactivityTimeoutMSecs(_communicationInactivityTimeoutMSecsDefault)
     , _firmwarePluginManager(firmwarePluginManager)
     , _autopilotPluginManager(autopilotPluginManager)
     , _joystickManager(joystickManager)
@@ -121,10 +119,10 @@ Vehicle::Vehicle(LinkInterface*             link,
     setLatitude(_uas->getLatitude());
     setLongitude(_uas->getLongitude());
 
-    connect(_uas, &UAS::latitudeChanged,            this, &Vehicle::setLatitude);
-    connect(_uas, &UAS::longitudeChanged,           this, &Vehicle::setLongitude);
-    connect(_uas, &UAS::imageReady,                 this, &Vehicle::_imageReady);
-    connect(_uas, &UAS::remoteControlRSSIChanged,   this, &Vehicle::_remoteControlRSSIChanged);
+    connect(_uas, &UAS::latitudeChanged,                this, &Vehicle::setLatitude);
+    connect(_uas, &UAS::longitudeChanged,               this, &Vehicle::setLongitude);
+    connect(_uas, &UAS::imageReady,                     this, &Vehicle::_imageReady);
+    connect(this, &Vehicle::remoteControlRSSIChanged,   this, &Vehicle::_remoteControlRSSIChanged);
 
     _firmwarePlugin     = _firmwarePluginManager->firmwarePluginForAutopilot(_firmwareType, _vehicleType);
     _autopilotPlugin    = _autopilotPluginManager->newAutopilotPluginForVehicle(this);
@@ -182,10 +180,6 @@ Vehicle::Vehicle(LinkInterface*             link,
 
     _mapTrajectoryTimer.setInterval(_mapTrajectoryMsecsBetweenPoints);
     connect(&_mapTrajectoryTimer, &QTimer::timeout, this, &Vehicle::_addNewMapTrajectoryPoint);
-
-    _communicationInactivityTimer.setInterval(_communicationInactivityTimeoutMSecs);
-    connect(&_communicationInactivityTimer, &QTimer::timeout, this, &Vehicle::_communicationInactivityTimedOut);
-    _communicationInactivityTimer.start();
 }
 
 Vehicle::~Vehicle()
@@ -209,8 +203,6 @@ void Vehicle::_mavlinkMessageReceived(LinkInterface* link, mavlink_message_t mes
         return;
     }
 
-    _communicationInactivityTimer.start();
-
     if (!_containsLink(link)) {
         _addLink(link);
     }
@@ -219,12 +211,18 @@ void Vehicle::_mavlinkMessageReceived(LinkInterface* link, mavlink_message_t mes
     _firmwarePlugin->adjustMavlinkMessage(&message);
 
     switch (message.msgid) {
-        case MAVLINK_MSG_ID_HOME_POSITION:
-            _handleHomePosition(message);
-            break;
-        case MAVLINK_MSG_ID_HEARTBEAT:
-            _handleHeartbeat(message);
-            break;
+    case MAVLINK_MSG_ID_HOME_POSITION:
+        _handleHomePosition(message);
+        break;
+    case MAVLINK_MSG_ID_HEARTBEAT:
+        _handleHeartbeat(message);
+        break;
+    case MAVLINK_MSG_ID_RC_CHANNELS:
+        _handleRCChannels(message);
+        break;
+    case MAVLINK_MSG_ID_RC_CHANNELS_RAW:
+        _handleRCChannelsRaw(message);
+        break;
     }
 
     emit mavlinkMessageReceived(message);
@@ -244,17 +242,18 @@ void Vehicle::_handleHomePosition(mavlink_message_t& message)
     QGeoCoordinate newHomePosition (homePos.latitude / 10000000.0,
                                     homePos.longitude / 10000000.0,
                                     homePos.altitude / 1000.0);
-    if (newHomePosition != _homePosition) {
+    if (!_homePositionAvailable || newHomePosition != _homePosition) {
         emitHomePositionChanged = true;
         _homePosition = newHomePosition;
     }
 
     if (!_homePositionAvailable) {
         emitHomePositionAvailableChanged = true;
+        _homePositionAvailable = true;
     }
-    _homePositionAvailable = true;
 
     if (emitHomePositionChanged) {
+        qCDebug(VehicleLog) << "New home position" << newHomePosition;
         emit homePositionChanged(_homePosition);
     }
     if (emitHomePositionAvailableChanged) {
@@ -289,6 +288,93 @@ void Vehicle::_handleHeartbeat(mavlink_message_t& message)
     }
 }
 
+void Vehicle::_handleRCChannels(mavlink_message_t& message)
+{
+    mavlink_rc_channels_t channels;
+
+    mavlink_msg_rc_channels_decode(&message, &channels);
+
+    uint16_t* _rgChannelvalues[cMaxRcChannels] = {
+        &channels.chan1_raw,
+        &channels.chan2_raw,
+        &channels.chan3_raw,
+        &channels.chan4_raw,
+        &channels.chan5_raw,
+        &channels.chan6_raw,
+        &channels.chan7_raw,
+        &channels.chan8_raw,
+        &channels.chan9_raw,
+        &channels.chan10_raw,
+        &channels.chan11_raw,
+        &channels.chan12_raw,
+        &channels.chan13_raw,
+        &channels.chan14_raw,
+        &channels.chan15_raw,
+        &channels.chan16_raw,
+        &channels.chan17_raw,
+        &channels.chan18_raw,
+    };
+    int pwmValues[cMaxRcChannels];
+
+    for (int i=0; i<cMaxRcChannels; i++) {
+        uint16_t channelValue = *_rgChannelvalues[i];
+
+        if (i < channels.chancount) {
+            pwmValues[i] = channelValue == UINT16_MAX ? -1 : channelValue;
+        } else {
+            pwmValues[i] = -1;
+        }
+    }
+
+    emit remoteControlRSSIChanged(channels.rssi);
+    emit rcChannelsChanged(channels.chancount, pwmValues);
+}
+
+void Vehicle::_handleRCChannelsRaw(mavlink_message_t& message)
+{
+    // We handle both RC_CHANNLES and RC_CHANNELS_RAW since different firmware will only
+    // send one or the other.
+
+    mavlink_rc_channels_raw_t channels;
+
+    mavlink_msg_rc_channels_raw_decode(&message, &channels);
+
+    uint16_t* _rgChannelvalues[cMaxRcChannels] = {
+        &channels.chan1_raw,
+        &channels.chan2_raw,
+        &channels.chan3_raw,
+        &channels.chan4_raw,
+        &channels.chan5_raw,
+        &channels.chan6_raw,
+        &channels.chan7_raw,
+        &channels.chan8_raw,
+    };
+
+    int pwmValues[cMaxRcChannels];
+    int channelCount = 0;
+
+    for (int i=0; i<cMaxRcChannels; i++) {
+        pwmValues[i] = -1;
+    }
+
+    for (int i=0; i<8; i++) {
+        uint16_t channelValue = *_rgChannelvalues[i];
+
+        if (channelValue == UINT16_MAX) {
+            pwmValues[i] = -1;
+        } else {
+            channelCount = i;
+            pwmValues[i] = channelValue;
+        }
+    }
+    for (int i=9; i<18; i++) {
+        pwmValues[i] = -1;
+    }
+
+    emit remoteControlRSSIChanged(channels.rssi);
+    emit rcChannelsChanged(channelCount, pwmValues);
+}
+
 bool Vehicle::_containsLink(LinkInterface* link)
 {
     return _links.contains(link);
@@ -311,6 +397,7 @@ void Vehicle::_linkInactiveOrDeleted(LinkInterface* link)
     _links.removeOne(link);
 
     if (_links.count() == 0 && !_allLinksInactiveSent) {
+        qCDebug(VehicleLog) << "All links inactive";
         // Make sure to not send this more than one time
         _allLinksInactiveSent = true;
         emit allLinksInactive(this);
@@ -771,7 +858,6 @@ void Vehicle::_loadSettings(void)
     }
 
     _joystickEnabled = settings.value(_joystickEnabledSettingsKey, false).toBool();
-    _communicationInactivityTimeoutMSecs = settings.value(_communicationInactivityKey, _communicationInactivityTimeoutMSecsDefault).toInt();
 }
 
 void Vehicle::_saveSettings(void)
@@ -782,7 +868,6 @@ void Vehicle::_saveSettings(void)
 
     settings.setValue(_joystickModeSettingsKey, _joystickMode);
     settings.setValue(_joystickEnabledSettingsKey, _joystickEnabled);
-    settings.setValue(_communicationInactivityKey, _communicationInactivityTimeoutMSecs);
 }
 
 int Vehicle::joystickMode(void)
@@ -999,7 +1084,7 @@ void Vehicle::sendMessageMultiple(mavlink_message_t message)
 void Vehicle::_missionManagerError(int errorCode, const QString& errorMsg)
 {
     Q_UNUSED(errorCode);
-    qgcApp()->showToolBarMessage(QString("Error during Mission communication with Vehicle: %1").arg(errorMsg));
+    qgcApp()->showMessage(QString("Error during Mission communication with Vehicle: %1").arg(errorMsg));
 }
 
 void Vehicle::_addNewMapTrajectoryPoint(void)
@@ -1035,13 +1120,13 @@ void Vehicle::_parametersReady(bool parametersReady)
     }
 }
 
-void Vehicle::_communicationInactivityTimedOut(void)
+void Vehicle::disconnectInactiveVehicle(void)
 {
-    // Vehicle is no longer communicating with us, disconnect all links inactive
+    // Vehicle is no longer communicating with us, disconnect all links
 
     LinkManager* linkMgr = qgcApp()->toolbox()->linkManager();
     for (int i=0; i<_links.count(); i++) {
-        linkMgr->disconnectLink(_links[i], false /* disconnectAutoconnectLink */);
+        linkMgr->disconnectLink(_links[i]);
     }
 }
 
@@ -1073,4 +1158,9 @@ void Vehicle::_remoteControlRSSIChanged(uint8_t rssi)
         _rcRSSI = filteredRSSI;
         emit rcRSSIChanged(_rcRSSI);
     }
+}
+
+void Vehicle::virtualTabletJoystickValue(double roll, double pitch, double yaw, double thrust)
+{
+    _uas->setExternalControlSetpoint(roll, pitch, yaw, thrust, 0, JoystickModeRC);
 }

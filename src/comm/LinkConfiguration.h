@@ -33,14 +33,20 @@ class LinkInterface;
 class LinkConfiguration : public QObject
 {
     Q_OBJECT
+    Q_ENUMS(LinkType)
 
 public:
     LinkConfiguration(const QString& name);
     LinkConfiguration(LinkConfiguration* copy);
     virtual ~LinkConfiguration() {}
 
-    Q_PROPERTY(QString name         READ name   WRITE setName   NOTIFY nameChanged)
-    Q_PROPERTY(LinkInterface* link  READ link   WRITE setLink   NOTIFY linkChanged)
+    Q_PROPERTY(QString          name                READ name           WRITE setName           NOTIFY nameChanged)
+    Q_PROPERTY(LinkInterface*   link                READ link           WRITE setLink           NOTIFY linkChanged)
+    Q_PROPERTY(LinkType         linkType            READ type                                   CONSTANT)
+    Q_PROPERTY(bool             dynamic             READ isDynamic      WRITE setDynamic        NOTIFY dynamicChanged)
+    Q_PROPERTY(bool             autoConnect         READ isAutoConnect  WRITE setAutoConnect    NOTIFY autoConnectChanged)
+    Q_PROPERTY(bool             autoConnectAllowed  READ isAutoConnectAllowed                   CONSTANT)
+    Q_PROPERTY(QString          settingsURL         READ settingsURL                            CONSTANT)
 
     // Property accessors
 
@@ -51,20 +57,28 @@ public:
     void            setLink(LinkInterface* link);
 
     ///  The link types supported by QGC
-    enum {
+    ///  Any changes here MUST be reflected in LinkManager::linkTypeStrings()
+    enum LinkType {
 #ifndef __ios__
         TypeSerial,     ///< Serial Link
 #endif
         TypeUdp,        ///< UDP Link
         TypeTcp,        ///< TCP Link
+#ifdef QGC_ENABLE_BLUETOOTH
+        TypeBluetooth,  ///< Bluetooth Link
+#endif
 #if 0
         // TODO Below is not yet implemented
         TypeForwarding, ///< Forwarding Link
         TypeXbee,       ///< XBee Proprietary Link
         TypeOpal,       ///< Opal-RT Link
 #endif
+#ifdef QT_DEBUG
         TypeMock,       ///< Mock Link for Unitesting
+#endif
+#ifndef __mobile__
         TypeLogReplay,
+#endif
         TypeLast        // Last type value (type >= TypeLast == invalid)
     };
 
@@ -76,11 +90,30 @@ public:
     bool isDynamic() { return _dynamic; }
 
     /*!
+     *
+     * Is this an Auto Connect configuration?
+     * @return True if this is an Auto Connect configuration (connects automatically at boot time).
+     */
+    bool isAutoConnect() { return _autoConnect; }
+
+    /*!
      * Set if this is this a dynamic configuration. (decided at runtime)
     */
-    void setDynamic(bool dynamic = true) { _dynamic = dynamic; }
+    void setDynamic(bool dynamic = true) { _dynamic = dynamic; emit dynamicChanged(); }
+
+    /*!
+     * Set if this is this an Auto Connect configuration.
+    */
+    void setAutoConnect(bool autoc = true) { _autoConnect = autoc; emit autoConnectChanged(); }
 
     /// Virtual Methods
+
+    /*!
+     *
+     * Is Auto Connect allowed for this type?
+     * @return True if this type can be set as an Auto Connect configuration
+     */
+    virtual bool isAutoConnectAllowed() { return true; }
 
     /*!
      * @brief Connection type
@@ -88,7 +121,7 @@ public:
      * Pure virtual method returning one of the -TypeXxx types above.
      * @return The type of links these settings belong to.
      */
-    virtual int type() = 0;
+    virtual LinkType type() = 0;
 
     /*!
      * @brief Load settings
@@ -107,6 +140,13 @@ public:
      * @param[in] root The root path of the setting.
      */
     virtual void saveSettings(QSettings& settings, const QString& root) = 0;
+
+    /*!
+     * @brief Settings URL
+     *
+     * Pure virtual method providing the URL for the (QML) settings dialog
+     */
+    virtual QString settingsURL() = 0;
 
     /*!
      * @brief Update settings
@@ -150,14 +190,17 @@ public:
     static LinkConfiguration* duplicateSettings(LinkConfiguration *source);
 
 signals:
-    void nameChanged(const QString& name);
-    void linkChanged(LinkInterface* link);
+    void nameChanged        (const QString& name);
+    void linkChanged        (LinkInterface* link);
+    void dynamicChanged     ();
+    void autoConnectChanged ();
 
 protected:
     LinkInterface* _link; ///< Link currently using this configuration (if any)
 private:
     QString _name;
-    bool    _dynamic;    ///< A connection added automatically and not persistent (unless it's edited).
+    bool    _dynamic;       ///< A connection added automatically and not persistent (unless it's edited).
+    bool    _autoConnect;   ///< This connection is started automatically at boot
 };
 
 #endif // LINKCONFIGURATION_H
