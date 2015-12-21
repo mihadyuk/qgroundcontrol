@@ -65,6 +65,7 @@
 #include "APMFlightModesComponentController.h"
 #include "AirframeComponentController.h"
 #include "SensorsComponentController.h"
+#include "APMSensorsComponentController.h"
 #include "PowerComponentController.h"
 #include "RadioComponentController.h"
 #include "ScreenToolsController.h"
@@ -76,6 +77,7 @@
 #include "APM/ArduCopterFirmwarePlugin.h"
 #include "APM/ArduPlaneFirmwarePlugin.h"
 #include "APM/ArduRoverFirmwarePlugin.h"
+#include "APM/APMAirframeComponentController.h"
 #include "PX4/PX4FirmwarePlugin.h"
 #include "Vehicle.h"
 #include "MavlinkQmlSingleton.h"
@@ -143,7 +145,11 @@ static QObject* mavlinkQmlSingletonFactory(QQmlEngine*, QJSEngine*)
 
 static QObject* qgroundcontrolQmlGlobalSingletonFactory(QQmlEngine*, QJSEngine*)
 {
-    return new QGroundControlQmlGlobal(qgcApp()->toolbox());
+    // We create this object as a QGCTool even though it isn't int he toolbox
+    QGroundControlQmlGlobal* qmlGlobal = new QGroundControlQmlGlobal(qgcApp());
+    qmlGlobal->setToolbox(qgcApp()->toolbox());
+
+    return qmlGlobal;
 }
 
 /**
@@ -330,7 +336,9 @@ QGCApplication::QGCApplication(int &argc, char* argv[], bool unitTesting)
     qDebug() << "Settings location" << settings.fileName() << settings.isWritable();
 
 #ifdef UNITTEST_BUILD
-    Q_ASSERT(settings.isWritable());
+    if (!settings.isWritable()) {
+        qWarning() << "Setings location is not writable";
+    }
 #endif
     // The setting will delete all settings on this boot
     fClearSettingsOptions |= settings.contains(_deleteAllSettingsKey);
@@ -397,10 +405,12 @@ void QGCApplication::_initCommon(void)
     qmlRegisterUncreatableType<JoystickManager>     ("QGroundControl.JoystickManager",  1, 0, "JoystickManager",        "Reference only");
     qmlRegisterUncreatableType<Joystick>            ("QGroundControl.JoystickManager",  1, 0, "Joystick",               "Reference only");
 
-    qmlRegisterType<ParameterEditorController>          ("QGroundControl.Controllers", 1, 0, "ParameterEditorController");
+    qmlRegisterType<ParameterEditorController>      ("QGroundControl.Controllers", 1, 0, "ParameterEditorController");
     qmlRegisterType<APMFlightModesComponentController>  ("QGroundControl.Controllers", 1, 0, "APMFlightModesComponentController");
     qmlRegisterType<FlightModesComponentController>     ("QGroundControl.Controllers", 1, 0, "FlightModesComponentController");
+    qmlRegisterType<APMAirframeComponentController>     ("QGroundControl.Controllers", 1, 0, "APMAirframeComponentController");
     qmlRegisterType<AirframeComponentController>        ("QGroundControl.Controllers", 1, 0, "AirframeComponentController");
+    qmlRegisterType<APMSensorsComponentController>      ("QGroundControl.Controllers", 1, 0, "APMSensorsComponentController");
     qmlRegisterType<SensorsComponentController>         ("QGroundControl.Controllers", 1, 0, "SensorsComponentController");
     qmlRegisterType<PowerComponentController>           ("QGroundControl.Controllers", 1, 0, "PowerComponentController");
     qmlRegisterType<RadioComponentController>           ("QGroundControl.Controllers", 1, 0, "RadioComponentController");
@@ -772,17 +782,37 @@ QObject* QGCApplication::_rootQmlObject(void)
 #ifdef __mobile__
     return _qmlAppEngine->rootObjects()[0];
 #else
-    return MainWindow::instance()->rootQmlObject();
+    MainWindow * mainWindow = MainWindow::instance();
+    if (mainWindow) {
+        return mainWindow->rootQmlObject();
+    } else if (runningUnitTests()){
+        // Unit test can run without a main window
+        return NULL;
+    } else {
+        qWarning() << "Why is MainWindow missing?";
+        return NULL;
+    }
 #endif
 }
 
 
 void QGCApplication::showMessage(const QString& message)
 {
-    QVariant varReturn;
-    QVariant varMessage = QVariant::fromValue(message);
+    QObject* rootQmlObject = _rootQmlObject();
 
-    QMetaObject::invokeMethod(_rootQmlObject(), "showMessage", Q_RETURN_ARG(QVariant, varReturn), Q_ARG(QVariant, varMessage));
+    if (rootQmlObject) {
+        QVariant varReturn;
+        QVariant varMessage = QVariant::fromValue(message);
+
+        QMetaObject::invokeMethod(_rootQmlObject(), "showMessage", Q_RETURN_ARG(QVariant, varReturn), Q_ARG(QVariant, varMessage));
+#ifndef __mobile__
+    } else if (runningUnitTests()){
+        // Unit test can run without a main window which will lead to no root qml object. Use QGCMessageBox instead
+        QGCMessageBox::information("Unit Test", message);
+#endif
+    } else {
+        qWarning() << "Internal error";
+    }
 }
 
 void QGCApplication::showFlyView(void)

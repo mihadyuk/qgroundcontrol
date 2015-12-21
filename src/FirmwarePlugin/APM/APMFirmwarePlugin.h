@@ -89,7 +89,7 @@ public:
     virtual void adjustMavlinkMessage(mavlink_message_t* message);
     virtual void initializeVehicle(Vehicle* vehicle);
     virtual bool sendHomePositionToVehicle(void);
-    virtual void addMetaDataToFact(Fact* fact);
+    virtual void addMetaDataToFact(Fact* fact, MAV_TYPE vehicleType);
     virtual QString getDefaultComponentIdParam(void) const { return QString("SYSID_SW_TYPE"); }
     virtual QList<MAV_CMD> supportedMissionCommands(void);
 
@@ -100,6 +100,7 @@ protected:
     
 private:
     void _adjustSeverity(mavlink_message_t* message) const;
+    void _adjustCalibrationMessageSeverity(mavlink_message_t* message) const;
     static bool _isTextSeverityAdjustmentNeeded(const APMFirmwareVersion& firmwareVersion);
 
     APMFirmwareVersion      _firmwareVersion;
