@@ -27,15 +27,15 @@ import QtQuick.Controls 1.3
 import QGroundControl.ScreenTools   1.0
 import QGroundControl.Controls      1.0
 import QGroundControl.Palette       1.0
+import QGroundControl               1.0
 
 Rectangle {
     property var    currentMissionItem          ///< Mission item to display status for
     property var    missionItems                ///< List of all available mission items
     property real   expandedWidth               ///< Width of control when expanded
-    property bool   homePositionValid:  false   /// true: home position in missionItems[0] is valid
 
     width:      _expanded ? expandedWidth : _collapsedWidth
-    height:     expandLabel.y + expandLabel.height + _margins
+    height:     azimuthLabel.y + azimuthLabel.height + _margins
     radius:     ScreenTools.defaultFontPixelWidth
     color:      qgcPal.window
     opacity:    0.80
@@ -45,13 +45,15 @@ Rectangle {
 
     property real   _collapsedWidth:    distanceLabel.width + (margins * 2)
     property bool   _expanded:          true
-    property real   _distance:          _currentMissionItem ? _currentMissionItem.distance : -1
-    property real   _altDifference:     _currentMissionItem ? _currentMissionItem.altDifference : -1
-    property real   _azimuth:           _currentMissionItem ? _currentMissionItem.azimuth : -1
-    property real   _isHomePosition:    _currentMissionItem ? _currentMissionItem.homePosition : false
-    property bool   _statusValid:       _distance != -1 && ((_isHomePosition && homePositionValid) || !_isHomePosition)
-    property string _distanceText:      _statusValid ? Math.round(_distance) + " meters" : ""
-    property string _altText:           _statusValid ? Math.round(_altDifference) + " meters" : ""
+    property real   _distance:          _statusValid ? _currentMissionItem.distance : 0
+    property real   _altDifference:     _statusValid ? _currentMissionItem.altDifference : 0
+    property real   _gradient:          _statusValid ? Math.atan(_currentMissionItem.altDifference / _currentMissionItem.distance) : 0
+    property real   _gradientPercent:   isNaN(_gradient) ? 0 : _gradient * 100
+    property real   _azimuth:           _statusValid ? _currentMissionItem.azimuth : -1
+    property bool   _statusValid:       currentMissionItem != undefined
+    property string _distanceText:      _statusValid ? QGroundControl.metersToAppSettingsDistanceUnits(_distance).toFixed(2) + " " + QGroundControl.appSettingsDistanceUnitsString : ""
+    property string _altText:           _statusValid ? QGroundControl.metersToAppSettingsDistanceUnits(_altDifference).toFixed(2) + " " + QGroundControl.appSettingsDistanceUnitsString : ""
+    property string _gradientText:      _statusValid ? _gradientPercent.toFixed(0) + "%" : ""
     property string _azimuthText:       _statusValid ? Math.round(_azimuth) : ""
 
     readonly property real _margins:    ScreenTools.defaultFontPixelWidth
@@ -77,26 +79,28 @@ Rectangle {
     }
 
     QGCLabel {
-        id:                 azimuthLabel
-        anchors.left:       altLabel.left
+        id:                 gradientLabel
+        anchors.left:       distanceLabel.left
         anchors.top:        altLabel.bottom
-        text:               "Azimuth: " + _azimuthText
+        text:               "Gradient: " + _gradientText
     }
 
     QGCLabel {
-        id:                 expandLabel
-        anchors.left:       azimuthLabel.left
-        anchors.top:        azimuthLabel.bottom
-        text:               _expanded ? "<<" : ">>"
+        id:                 azimuthLabel
+        anchors.left:       distanceLabel.left
+        anchors.top:        gradientLabel.bottom
+        text:               "Azimuth: " + _azimuthText
     }
 
-    Flickable {
+    QGCFlickable {
         anchors.leftMargin:     _margins
         anchors.rightMargin:    _margins
         anchors.left:           distanceLabel.right
         anchors.right:          parent.right
         anchors.top:            parent.top
         anchors.bottom:         parent.bottom
+        contentWidth:           graphRow.width
+        clip:                   true
 
         Row {
             id:             graphRow
@@ -108,14 +112,14 @@ Rectangle {
                 model: missionItems
 
                 Item {
-                    height: graphRow.height
-                    width:  ScreenTools.smallFontPixelWidth * 2
+                    height:     graphRow.height
+                    width:      ScreenTools.smallFontPixelWidth * 2
+                    visible:    object.specifiesCoordinate && !object.isStandaloneCoordinate
+
 
                     property real availableHeight: height - ScreenTools.smallFontPixelHeight - indicator.height
 
-                    // If home position is not valid we are graphing relative based on a home alt of 0. Because of this
-                    // we cannot graph absolute altitudes since we have no basis for comparison against the relative values.
-                    property bool graphAbsolute:    homePositionValid
+                    property bool graphAbsolute:    true
 
                     MissionItemIndexLabel {
                         id:                         indicator
@@ -123,16 +127,19 @@ Rectangle {
                         y:                          availableHeight - (availableHeight * object.altPercent)
                         small:                      true
                         isCurrentItem:              object.isCurrentItem
-                        label:                      object.homePosition ? "H" : object.sequenceNumber
+                        label:                      object.abbreviation
                         visible:                    object.relativeAltitude ? true : (object.homePosition || graphAbsolute)
                     }
 
+                    /*
+                      Taking these off for now since there really isn't room for the numbers
                     QGCLabel {
                         anchors.bottom:             parent.bottom
                         anchors.horizontalCenter:   parent.horizontalCenter
                         font.pixelSize:             ScreenTools.smallFontPixelSize
-                        text:                       (object.relativeAltitude ? "" : "=") + object.coordinate.altitude
+                        text:                       (object.relativeAltitude ? "" : "=") + object.coordinate.altitude.toFixed(0)
                     }
+                    */
                 }
 
             }

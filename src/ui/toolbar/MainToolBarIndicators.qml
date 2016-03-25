@@ -34,18 +34,16 @@ import QGroundControl.ScreenTools   1.0
 Row {
     spacing:  tbSpacing * 2
 
-    function getSatStrength(count) {
-        if (count < 1)
-            return 0
-        if (count < 4)
-            return 20
-        if (count < 6)
-            return 40
-        if (count < 8)
-            return 60
-        if (count < 10)
-            return 80
-        return 100
+    function getSatStrength(hdop) {
+        if (hdop <= 1.0)
+            return 100
+        if (hdop <= 1.4)
+            return 75
+        if (hdop <= 1.8)
+            return 50
+        if (hdop <= 3.0)
+            return 25
+        return 0
     }
 
     function getMessageColor() {
@@ -67,27 +65,22 @@ Row {
     }
 
     function getBatteryVoltageText() {
-        if (activeVehicle.batteryVoltage > 0) {
-            //-- TODO: Need number of cells so I can show cell voltage instead of total voltage
-            //if (battNumCells && battNumCells.value) {
-            //    return (activeVehicle.batteryVoltage / battNumCells.value).toFixed(2) + 'V'
-            //} else {
-                return activeVehicle.batteryVoltage.toFixed(1) + 'V'
-            //}
+        if (activeVehicle.battery.voltage.value >= 0) {
+            return activeVehicle.battery.voltage.valueString + activeVehicle.battery.voltage.units
         }
         return 'N/A';
     }
 
     function getBatteryPercentageText() {
         if(activeVehicle) {
-            if(activeVehicle.batteryPercent > 98.9) {
+            if(activeVehicle.battery.percentRemaining.value > 98.9) {
                 return "100%"
             }
-            if(activeVehicle.batteryPercent > 0.1) {
-                return activeVehicle.batteryPercent.toFixed(0) + "%"
+            if(activeVehicle.battery.percentRemaining.value > 0.1) {
+                return activeVehicle.battery.percentRemaining.valueString + activeVehicle.battery.percentRemaining.units
             }
-            if(activeVehicle.batteryVoltage > 0) {
-                return activeVehicle.batteryVoltage.toFixed(1) + "V"
+            if(activeVehicle.battery.voltage.value >= 0) {
+                return activeVehicle.battery.voltage.valueString + activeVehicle.battery.voltage.units
             }
         }
         return "N/A"
@@ -178,20 +171,20 @@ Row {
                 smooth:         true
                 width:          mainWindow.tbCellHeight * 0.65
                 height:         mainWindow.tbCellHeight * 0.5
-                opacity:        activeVehicle ? (activeVehicle.satelliteCount < 1 ? 0.5 : 1) : 0.5
+                opacity:        (activeVehicle && activeVehicle.gps.count.value >= 0) ? 1 : 0.5
                 anchors.verticalCenter: parent.verticalCenter
             }
             SignalStrength {
                 size:           mainWindow.tbCellHeight * 0.5
-                percent:        activeVehicle ? getSatStrength(activeVehicle.satelliteCount) : ""
+                percent:        activeVehicle ? getSatStrength(activeVehicle.gps.hdop.value) : ""
                 anchors.verticalCenter: parent.verticalCenter
             }
         }
         QGCLabel {
-            text:           activeVehicle ? activeVehicle.satelliteCount : 0
+            text:           activeVehicle ? activeVehicle.gps.hdop.valueString : ""
+            visible:        activeVehicle && !isNaN(activeVehicle.gps.hdop.value)
             font.pixelSize: tbFontSmall
             color:          colorWhite
-            opacity:        activeVehicle ? (activeVehicle.satelliteCount < 1 ? 0.5 : 1) : 0.5
             anchors.top:    parent.top
             anchors.leftMargin: gpsIcon.width
             anchors.left:   parent.left
@@ -278,7 +271,7 @@ Row {
         id: batteryStatus
         width:  battRow.width * 1.1
         height: mainWindow.tbCellHeight
-        opacity: activeVehicle ? ((activeVehicle.batteryVoltage > 0) ? 1 : 0.5) : 0.5
+        opacity: (activeVehicle && activeVehicle.battery.voltage.value >= 0) ? 1 : 0.5
         Row {
             id:         battRow
             height:     mainWindow.tbCellHeight
@@ -301,8 +294,10 @@ Row {
         MouseArea {
             anchors.fill:   parent
             onClicked: {
-                var centerX = mapToItem(toolBar, x, y).x + (width / 2)
-                mainWindow.showPopUp(batteryInfo, centerX)
+                if (activeVehicle) {
+                    var centerX = mapToItem(toolBar, x, y).x + (width / 2)
+                    mainWindow.showPopUp(batteryInfo, centerX)
+                }
             }
         }
     }
@@ -327,11 +322,10 @@ Row {
 
             MenuItem {
                 checkable:      true
-                checked:        vehicle ? vehicle.active : false
-                onTriggered:    multiVehicleManager.activeVehicle = vehicle
+                onTriggered:    QGroundControl.multiVehicleManager.activeVehicle = vehicle
 
                 property int vehicleId: Number(text.split(" ")[1])
-                property var vehicle:   multiVehicleManager.getVehicleById(vehicleId)
+                property var vehicle:   QGroundControl.multiVehicleManager.getVehicleById(vehicleId)
             }
         }
 
@@ -345,8 +339,8 @@ Row {
             vehicleMenuItems.length = 0
 
             // Add new items
-            for (var i=0; i<multiVehicleManager.vehicles.count; i++) {
-                var vehicle = multiVehicleManager.vehicles.get(i)
+            for (var i=0; i<QGroundControl.multiVehicleManager.vehicles.count; i++) {
+                var vehicle = QGroundControl.multiVehicleManager.vehicles.get(i)
                 var menuItem = vehicleMenuItemComponent.createObject(null, { "text": "Vehicle " + vehicle.id })
                 vehicleMenuItems.push(menuItem)
                 vehicleMenu.insertItem(i, menuItem)
@@ -356,8 +350,8 @@ Row {
         Component.onCompleted: updateVehicleMenu()
 
         Connections {
-            target:         multiVehicleManager.vehicles
-            onCountChanged: vehicleSelectorButton.updateVehicleMenu
+            target:         QGroundControl.multiVehicleManager.vehicles
+            onCountChanged: vehicleSelectorButton.updateVehicleMenu()
         }
     }
 
@@ -399,8 +393,6 @@ Row {
             id: flightModeMenuItemComponent
 
             MenuItem {
-                checkable:      true
-                checked:        activeVehicle ? (activeVehicle.flightMode === text) : false
                 onTriggered: {
                     if(activeVehicle) {
                         activeVehicle.flightMode = text
@@ -430,7 +422,7 @@ Row {
         Component.onCompleted: updateFlightModesMenu()
 
         Connections {
-            target:                 multiVehicleManager
+            target:                 QGroundControl.multiVehicleManager
             onActiveVehicleChanged: flightModeSelector.updateFlightModesMenu
         }
 
@@ -439,53 +431,6 @@ Row {
             anchors.fill:   parent
             onClicked: {
                 flightModesMenu.popup()
-            }
-        }
-    }
-
-    //-------------------------------------------------------------------------
-    //-- Arm/Disarm
-
-    Item {
-        width:  armCol.width * 1.1
-        height: mainWindow.tbCellHeight
-        anchors.verticalCenter: parent.verticalCenter
-        Row {
-            id:                 armCol
-            spacing:            tbSpacing * 0.5
-            anchors.verticalCenter: parent.verticalCenter
-            Image {
-                width:          mainWindow.tbCellHeight * 0.5
-                height:         mainWindow.tbCellHeight * 0.5
-                fillMode:       Image.PreserveAspectFit
-                mipmap:         true
-                smooth:         true
-                source:         activeVehicle ? (activeVehicle.armed ? "/qmlimages/Disarmed.svg" : "/qmlimages/Armed.svg") : "/qmlimages/Disarmed.svg"
-                anchors.verticalCenter: parent.verticalCenter
-            }
-            QGCLabel {
-                text:           activeVehicle ? (activeVehicle.armed ? "Armed" : "Disarmed") : ""
-                font.pixelSize: tbFontLarge
-                color:          colorWhite
-                anchors.verticalCenter: parent.verticalCenter
-            }
-        }
-        MouseArea {
-            anchors.fill:   parent
-            onClicked: {
-                armDialog.visible = true
-            }
-        }
-        MessageDialog {
-            id:         armDialog
-            visible:    false
-            icon:       StandardIcon.Warning
-            standardButtons: StandardButton.Yes | StandardButton.No
-            title:      activeVehicle ? (activeVehicle.armed ? "Disarming Vehicle" : "Arming Vehicle") : ""
-            text:       activeVehicle ? (activeVehicle.armed ? "Do you want to disarm? This will cut power to all motors." : "Do you want to arm? This will enable all motors.") : ""
-            onYes: {
-                activeVehicle.armed = !activeVehicle.armed
-                armDialog.visible = false
             }
         }
     }

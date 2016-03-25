@@ -102,6 +102,14 @@ public:
     virtual bool isLogReplay(void) { return false; }
 
     /**
+     * @Enable/Disable data rate collection
+     **/
+    void enableDataRate(bool enable)
+    {
+        _enableRateCollection = enable;
+    }
+
+    /**
      * @Brief Get the current incoming data rate.
      *
      * This should be over a short timespan, something like 100ms. A precise value isn't necessary,
@@ -130,10 +138,6 @@ public:
     /// mavlink channel to use for this link, as used by mavlink_parse_char. The mavlink channel is only
     /// set into the link when it is added to LinkManager
     uint8_t getMavlinkChannel(void) const { Q_ASSERT(_mavlinkChannelSet); return _mavlinkChannel; }
-
-    /// @return true: "sh /etc/init.d/rc.usb" must be sent on link to start mavlink
-    virtual bool requiresUSBMavlinkStart(void) const { return false; }
-
 
     // These are left unimplemented in order to cause linker errors which indicate incorrect usage of
     // connect/disconnect on link directly. All connect/disconnect calls should be made through LinkManager.
@@ -196,6 +200,7 @@ protected:
         QThread(0)
         , _mavlinkChannelSet(false)
         , _active(false)
+        , _enableRateCollection(false)
     {
         // Initialize everything for the data rate calculation buffers.
         _inDataIndex  = 0;
@@ -215,7 +220,8 @@ protected:
     ///     @param byteCount Number of bytes received
     ///     @param time Time in ms send occured
     void _logInputDataRate(quint64 byteCount, qint64 time) {
-        _logDataRateToBuffer(_inDataWriteAmounts, _inDataWriteTimes, &_inDataIndex, byteCount, time);
+        if(_enableRateCollection)
+            _logDataRateToBuffer(_inDataWriteAmounts, _inDataWriteTimes, &_inDataIndex, byteCount, time);
     }
     
     /// This function logs the send times and amounts of datas for output. Data is used for calculating
@@ -223,19 +229,10 @@ protected:
     ///     @param byteCount Number of bytes sent
     ///     @param time Time in ms receive occured
     void _logOutputDataRate(quint64 byteCount, qint64 time) {
-        _logDataRateToBuffer(_outDataWriteAmounts, _outDataWriteTimes, &_outDataIndex, byteCount, time);
+        if(_enableRateCollection)
+            _logDataRateToBuffer(_outDataWriteAmounts, _outDataWriteTimes, &_outDataIndex, byteCount, time);
     }
     
-protected slots:
-
-    /**
-     * @brief Read a number of bytes from the interface.
-     *
-     * @param bytes The pointer to write the bytes to
-     * @param maxLength The maximum length which can be written
-     **/
-    virtual void readBytes() = 0;
-
 private:
     /**
      * @brief logDataRateToBuffer Stores transmission times/amounts for statistics
@@ -358,6 +355,7 @@ private:
     mutable QMutex _dataRateMutex; // Mutex for accessing the data rate member variables
 
     bool _active;       ///< true: link is actively receiving mavlink messages
+    bool _enableRateCollection;
 };
 
 typedef QSharedPointer<LinkInterface> SharedLinkInterface;

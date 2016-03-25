@@ -35,21 +35,31 @@ import QGroundControl.FactControls  1.0
 import QGroundControl.ScreenTools   1.0
 
 QGCViewDialog {
+    id: root
+
     property Fact   fact
+    property bool   showRCToParam:  false
     property bool   validate:       false
     property string validateValue
 
     ParameterEditorController { id: controller; factPanel: parent }
 
+    QGCPalette { id: qgcPal; colorGroupEnabled: true }
+
     function accept() {
-        var errorString = fact.validate(valueField.text, forceSave.checked)
-        if (errorString == "") {
-            fact.value = valueField.text
-            fact.valueChanged(fact.value)
+        if (factCombo.visible) {
+            fact.enumIndex = factCombo.currentIndex
             hideDialog()
         } else {
-            validationError.text = errorString
-            forceSave.visible = true
+            var errorString = fact.validate(valueField.text, forceSave.checked)
+            if (errorString == "") {
+                fact.value = valueField.text
+                fact.valueChanged(fact.value)
+                hideDialog()
+            } else {
+                validationError.text = errorString
+                forceSave.visible = true
+            }
         }
     }
 
@@ -58,120 +68,158 @@ QGCViewDialog {
             validationError.text = fact.validate(validateValue, false /* convertOnly */)
             forceSave.visible = true
         }
-        // This was causing problems where it would never give up focus even when hidden!
         //valueField.forceActiveFocus()
     }
 
-    Column {
-        spacing:        defaultTextHeight
-        anchors.left:   parent.left
-        anchors.right:  parent.right
+    QGCFlickable {
+        anchors.fill:       parent
+        contentHeight:      _column.y + _column.height
+        flickableDirection: Flickable.VerticalFlick
 
-        QGCLabel {
-            width:      parent.width
-            wrapMode:   Text.WordWrap
-            text:       fact.shortDescription ? fact.shortDescription : "Description missing"
-        }
+        Column {
+            id:             _column
+            spacing:        defaultTextHeight
+            anchors.left:   parent.left
+            anchors.right:  parent.right
 
-        QGCLabel {
-            width:      parent.width
-            wrapMode:   Text.WordWrap
-            visible:    fact.longDescription
-            text:       fact.longDescription
-        }
+            QGCLabel {
+                width:      parent.width
+                wrapMode:   Text.WordWrap
+                text:       fact.shortDescription ? fact.shortDescription : "Description missing"
+            }
 
-        QGCTextField {
-            id:     valueField
-            text:   validate ? validateValue : fact.valueString
-            focus:  true
+            QGCLabel {
+                width:      parent.width
+                wrapMode:   Text.WordWrap
+                visible:    fact.longDescription
+                text:       fact.longDescription
+            }
 
-            // At this point all Facts are numeric
-            inputMethodHints:   Qt.ImhFormattedNumbersOnly
+            Row {
+                spacing: defaultTextWidth
 
-            onAccepted: accept()
+                QGCTextField {
+                    id:         valueField
+                    text:       validate ? validateValue : fact.valueString
+                    visible:    fact.enumStrings.length == 0 || validate
+                    //focus:  true
 
-            Keys.onReleased: {
-                if (event.key == Qt.Key_Escape) {
-                    reject()
+                    // At this point all Facts are numeric
+                    inputMethodHints:   Qt.ImhFormattedNumbersOnly
+                }
+
+                QGCButton {
+                    anchors.baseline:   valueField.baseline
+                    visible:            fact.defaultValueAvailable
+                    text:               "Reset to default"
+
+                    onClicked: {
+                        fact.value = fact.defaultValue
+                        fact.valueChanged(fact.value)
+                        hideDialog()
+                    }
                 }
             }
-        }
 
-        QGCLabel { text: fact.name }
+            QGCComboBox {
+                id:             factCombo
+                width:          valueField.width
+                visible:        _showCombo
+                model:          fact.enumStrings
 
-        Row {
-            spacing: defaultTextWidth
+                property bool _showCombo: fact.enumStrings.length != 0 && !validate
 
-            QGCLabel { text: "Units:" }
-            QGCLabel { text: fact.units ? fact.units : "none" }
-        }
+                Component.onCompleted: {
+                    // We can't bind directly to fact.enumIndex since that would add an unknown value
+                    // if there are no enum strings.
+                    if (_showCombo) {
+                        currentIndex = fact.enumIndex
+                    }
+                }
+            }
 
-        Row {
-            spacing: defaultTextWidth
-            visible: !fact.minIsDefaultForType
+            QGCLabel { text: fact.name }
 
-            QGCLabel { text: "Minimum value:" }
-            QGCLabel { text: fact.minString }
-        }
+            Row {
+                spacing: defaultTextWidth
 
-        Row {
-            spacing: defaultTextWidth
-            visible: !fact.maxIsDefaultForType
+                QGCLabel { text: "Units:" }
+                QGCLabel { text: fact.units ? fact.units : "none" }
+            }
 
-            QGCLabel { text: "Maximum value:" }
-            QGCLabel { text: fact.maxString }
-        }
+            Row {
+                spacing: defaultTextWidth
+                visible: !fact.minIsDefaultForType
 
-        Row {
-            spacing: defaultTextWidth
+                QGCLabel { text: "Minimum value:" }
+                QGCLabel { text: fact.minString }
+            }
 
-            QGCLabel { text: "Default value:" }
-            QGCLabel { text: fact.defaultValueAvailable ? fact.defaultValueString : "none" }
-        }
+            Row {
+                spacing: defaultTextWidth
+                visible: !fact.maxIsDefaultForType
 
-        QGCLabel {
-            width:      parent.width
-            wrapMode:   Text.WordWrap
-            text:       "Warning: Modifying parameters while vehicle is in flight can lead to vehicle instability and possible vehicle loss. " +
+                QGCLabel { text: "Maximum value:" }
+                QGCLabel { text: fact.maxString }
+            }
+
+            Row {
+                spacing: defaultTextWidth
+
+                QGCLabel { text: "Default value:" }
+                QGCLabel { text: fact.defaultValueAvailable ? fact.defaultValueString : "none" }
+            }
+
+            QGCLabel {
+                width:      parent.width
+                wrapMode:   Text.WordWrap
+                text:       "Warning: Modifying parameters while vehicle is in flight can lead to vehicle instability and possible vehicle loss. " +
                             "Make sure you know what you are doing and double-check your values before Save!"
-        }
+            }
 
-        QGCLabel {
-            id:         validationError
-            width:      parent.width
-            wrapMode:   Text.WordWrap
-            color:      "yellow"     
-        }
+            QGCLabel {
+                id:         validationError
+                width:      parent.width
+                wrapMode:   Text.WordWrap
+                color:      "yellow"
+            }
 
-        QGCCheckBox {
-            id:         forceSave
-            visible:    false
-            text:       "Force save (dangerous!)"
-        }
-    } // Column - Fact information
+            QGCCheckBox {
+                id:         forceSave
+                visible:    false
+                text:       "Force save (dangerous!)"
+            }
 
+            Row {
+                width:      parent.width
+                spacing:    ScreenTools.defaultFontPixelWidth / 2
+                visible:    showRCToParam
 
-    QGCButton {
-        id:                     bottomButton
-        anchors.rightMargin:    defaultTextWidth
-        anchors.right:          rcButton.left
-        anchors.bottom:         parent.bottom
-        visible:                fact.defaultValueAvailable
-        text:                   "Reset to default"
+                Rectangle {
+                    height: 1
+                    width:  ScreenTools.defaultFontPixelWidth * 5
+                    color:  qgcPal.text
+                    anchors.verticalCenter: _advanced.verticalCenter
+                }
 
-        onClicked: {
-            fact.value = fact.defaultValue
-            fact.valueChanged(fact.value)
-            hideDialog()
-        }
-    }
+                QGCCheckBox {
+                    id:     _advanced
+                    text:   "Advanced settings"
+                }
 
-    QGCButton {
-        id:             rcButton
-        anchors.right:  parent.right
-        anchors.bottom: parent.bottom
-        text:           "Set RC to Param..."
-        visible:        !validate && !ScreenTools.isMobile
-        onClicked:      controller.setRCToParam(fact.name)
+                Rectangle {
+                    height: 1
+                    width:  ScreenTools.defaultFontPixelWidth * 5
+                    color:  qgcPal.text
+                    anchors.verticalCenter: _advanced.verticalCenter
+                }
+            }
+
+            QGCButton {
+                text:           "Set RC to Param..."
+                visible:        _advanced.checked && !validate && showRCToParam
+                onClicked:      controller.setRCToParam(fact.name)
+            }
+        } // Column
     }
 } // QGCViewDialog

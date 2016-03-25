@@ -131,8 +131,7 @@ public:
 
     /// Sets a failure mode for unit testing
     ///     @param failureMode Type of failure to simulate
-    ///     @param firstTimeOnly true: fail first call, success subsequent calls, false: fail all calls
-    void setMissionItemFailureMode(MockLinkMissionItemHandler::FailureMode_t failureMode, bool firstTimeOnly);
+    void setMissionItemFailureMode(MockLinkMissionItemHandler::FailureMode_t failureMode);
 
     /// Called to send a MISSION_ACK message while the MissionManager is in idle state
     void sendUnexpectedMissionAck(MAV_MISSION_RESULT ackType) { _missionItemHandler.sendUnexpectedMissionAck(ackType); }
@@ -157,10 +156,6 @@ signals:
 
 public slots:
     virtual void writeBytes(const char *bytes, qint64 cBytes);
-
-protected slots:
-    // FIXME: This should not be part of LinkInterface. It is an internal link implementation detail.
-    virtual void readBytes(void);
 
 private slots:
     void _run1HzTasks(void);
@@ -188,10 +183,12 @@ private:
     void _handleParamRequestRead(const mavlink_message_t& msg);
     void _handleFTP(const mavlink_message_t& msg);
     void _handleCommandLong(const mavlink_message_t& msg);
+    void _handleManualControl(const mavlink_message_t& msg);
     float _floatUnionForParam(int componentId, const QString& paramName);
     void _setParamFloatUnionIntoMap(int componentId, const QString& paramName, float paramFloat);
     void _sendHomePosition(void);
     void _sendGpsRawInt(void);
+    void _sendVibration(void);
     void _sendStatusTextMessages(void);
 
     static MockLink* _startMockLink(MockConfiguration* mockConfig);

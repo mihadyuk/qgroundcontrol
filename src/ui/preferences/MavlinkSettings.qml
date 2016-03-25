@@ -43,20 +43,19 @@ Rectangle {
         colorGroupEnabled:  enabled
     }
 
-    Flickable {
+    QGCFlickable {
         clip:               true
         anchors.fill:       parent
         anchors.margins:    ScreenTools.defaultFontPixelWidth
         contentHeight:      settingsColumn.height
-        contentWidth:       __mavlinkRoot.width
-        flickableDirection: Flickable.VerticalFlick
-        boundsBehavior:     Flickable.StopAtBounds
+        contentWidth:       settingsColumn.width
 
         Column {
             id:                 settingsColumn
-            width:              __mavlinkRoot.width
             spacing:            ScreenTools.defaultFontPixelHeight
             anchors.margins:    ScreenTools.defaultFontPixelWidth
+            anchors.left:       parent.left
+            anchors.top:        parent.top
             QGCLabel {
                 text:   "MavLink Settings"
                 font.pixelSize: ScreenTools.mediumFontPixelSize
@@ -89,9 +88,9 @@ Rectangle {
             //-- Mavlink Heartbeats
             QGCCheckBox {
                 text:       "Emit heartbeat"
-                checked:    QGroundControl.isHeartBeatEnabled
+                checked:    QGroundControl.multiVehicleManager.gcsHeartBeatEnabled
                 onClicked: {
-                    QGroundControl.isHeartBeatEnabled = checked
+                    QGroundControl.multiVehicleManager.gcsHeartBeatEnabled = checked
                 }
             }
             //-----------------------------------------------------------------

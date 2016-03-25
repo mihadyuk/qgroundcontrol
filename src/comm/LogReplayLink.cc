@@ -102,7 +102,7 @@ LogReplayLink::~LogReplayLink(void)
 bool LogReplayLink::_connect(void)
 {
     // Disallow replay when any links are connected
-    if (qgcApp()->toolbox()->linkManager()->anyActiveLinks()) {
+    if (qgcApp()->toolbox()->multiVehicleManager()->activeVehicle()) {
         emit communicationError(_errorTitle, "You must close all connections prior to replaying a log.");
         return false;
     }
@@ -148,11 +148,6 @@ void LogReplayLink::_replayError(const QString& errorMsg)
 {
     qDebug() << _errorTitle << errorMsg;
     emit communicationError(_errorTitle, errorMsg);
-}
-
-void LogReplayLink::readBytes(void)
-{
-    // FIXME: This is a bad virtual from LinkInterface?
 }
 
 /// Since this is log replay, we just drops writes on the floor

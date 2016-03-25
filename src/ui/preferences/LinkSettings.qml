@@ -58,7 +58,7 @@ Rectangle {
         settingLoader.sourceComponent = null
     }
 
-    Flickable {
+    QGCFlickable {
         clip:               true
         anchors.top:        parent.top
         width:              parent.width
@@ -66,7 +66,6 @@ Rectangle {
         contentHeight:      settingsColumn.height
         contentWidth:       _linkRoot.width
         flickableDirection: Flickable.VerticalFlick
-        boundsBehavior:     Flickable.StopAtBounds
 
         Column {
             id:                 settingsColumn
@@ -135,7 +134,6 @@ Rectangle {
             }
         }
         QGCButton {
-            width:      ScreenTools.defaultFontPixelWidth * 10
             text:       "Edit"
             enabled:    _currentSelection && !_currentSelection.link
             onClicked: {
@@ -143,14 +141,12 @@ Rectangle {
             }
         }
         QGCButton {
-            width:      ScreenTools.defaultFontPixelWidth * 10
             text:       "Add"
             onClicked: {
                 _linkRoot.openCommSettings(null)
             }
         }
         QGCButton {
-            width:      ScreenTools.defaultFontPixelWidth * 10
             text:       "Connect"
             enabled:    _currentSelection && !_currentSelection.link
             onClicked: {
@@ -159,7 +155,6 @@ Rectangle {
             }
         }
         QGCButton {
-            width:      ScreenTools.defaultFontPixelWidth * 10
             text:       "Disconnect"
             enabled:    _currentSelection && _currentSelection.link
             onClicked: {
@@ -201,7 +196,7 @@ Rectangle {
                     editConfig = null
                 }
             }
-            Flickable {
+            QGCFlickable {
                 id:                 settingsFlick
                 clip:               true
                 anchors.top:        parent.top
@@ -302,6 +297,7 @@ Rectangle {
                         height: ScreenTools.defaultFontPixelHeight * 0.5
                         width:  parent.width
                     }
+                    /*
                     //-- Auto Connect
                     QGCCheckBox {
                         text:       "Automatically Connect on Start"
@@ -317,6 +313,7 @@ Rectangle {
                                 checked = editConfig.autoConnect
                         }
                     }
+                    */
                     Item {
                         height: ScreenTools.defaultFontPixelHeight
                         width:  parent.width

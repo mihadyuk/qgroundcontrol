@@ -45,22 +45,22 @@ Rectangle {
 
     readonly property real      _defaultTextHeight: ScreenTools.defaultFontPixelHeight
     readonly property real      _defaultTextWidth:  ScreenTools.defaultFontPixelWidth
-    readonly property real      _margin:            _defaultTextHeight / 2
-    readonly property real      _buttonWidth:       _defaultTextWidth * 18
+    readonly property real      _margin:            Math.round(_defaultTextHeight / 2)
+    readonly property real      _buttonWidth:       Math.round(_defaultTextWidth * 18)
     readonly property string    _armedVehicleText:  "This operation cannot be performed while vehicle is armed."
 
     property string _messagePanelText:              "missing message panel text"
-    property bool   _fullParameterVehicleAvailable: multiVehicleManager.parameterReadyVehicleAvailable && !multiVehicleManager.activeVehicle.missingParameters
+    property bool   _fullParameterVehicleAvailable: QGroundControl.multiVehicleManager.parameterReadyVehicleAvailable && !QGroundControl.multiVehicleManager.activeVehicle.missingParameters
 
     function showSummaryPanel()
     {
         if (_fullParameterVehicleAvailable) {
-            if (multiVehicleManager.activeVehicle.autopilot.vehicleComponents.length == 0) {
+            if (QGroundControl.multiVehicleManager.activeVehicle.autopilot.vehicleComponents.length == 0) {
                 panelLoader.sourceComponent = noComponentsVehicleSummaryComponent
             } else {
                 panelLoader.source = "VehicleSummary.qml";
             }
-        } else if (multiVehicleManager.parameterReadyVehicleAvailable) {
+        } else if (QGroundControl.multiVehicleManager.parameterReadyVehicleAvailable) {
             panelLoader.sourceComponent = missingParametersVehicleSummaryComponent
         } else {
             panelLoader.sourceComponent = disconnectedVehicleSummaryComponent
@@ -70,7 +70,7 @@ Rectangle {
     function showFirmwarePanel()
     {
         if (!ScreenTools.isMobile) {
-            if (multiVehicleManager.activeVehicleAvailable && multiVehicleManager.activeVehicle.armed) {
+            if (QGroundControl.multiVehicleManager.activeVehicleAvailable && QGroundControl.multiVehicleManager.activeVehicle.armed) {
                 _messagePanelText = _armedVehicleText
                 panelLoader.sourceComponent = messagePanelComponent
             } else {
@@ -81,7 +81,7 @@ Rectangle {
 
     function showJoystickPanel()
     {
-        if (multiVehicleManager.activeVehicleAvailable && multiVehicleManager.activeVehicle.armed) {
+        if (QGroundControl.multiVehicleManager.activeVehicleAvailable && QGroundControl.multiVehicleManager.activeVehicle.armed) {
             _messagePanelText = _armedVehicleText
             panelLoader.sourceComponent = messagePanelComponent
         } else {
@@ -101,7 +101,7 @@ Rectangle {
 
     function showVehicleComponentPanel(vehicleComponent)
     {
-        if (multiVehicleManager.activeVehicle.armed) {
+        if (QGroundControl.multiVehicleManager.activeVehicle.armed && !vehicleComponent.allowSetupWhileArmed) {
             _messagePanelText = _armedVehicleText
             panelLoader.sourceComponent = messagePanelComponent
         } else {
@@ -117,11 +117,17 @@ Rectangle {
     Component.onCompleted: showSummaryPanel()
 
     Connections {
-        target: multiVehicleManager
+        target: QGroundControl.multiVehicleManager
 
         onParameterReadyVehicleAvailableChanged: {
-            summaryButton.checked = true
-            showSummaryPanel()
+            if (parameterReadyVehicleAvailable || summaryButton.checked || setupButtonGroup.current != firmwareButton) {
+                // Show/Reload the Summary panel when:
+                //      A new vehicle shows up
+                //      The summary panel is already showing and the active vehicle goes away
+                //      The active vehicle goes away and we are not on the Firmware panel.
+                summaryButton.checked = true
+                showSummaryPanel()
+            }
         }
     }
 
@@ -159,7 +165,8 @@ Rectangle {
                 horizontalAlignment:    Text.AlignHCenter
                 wrapMode:               Text.WordWrap
                 font.pixelSize:         ScreenTools.largeFontPixelSize
-                text:                   "Connect vehicle to your device and QGroundControl will automatically detect to it. Click Firmware on the left to upgrade your vehicle."
+                text:                   "Connect vehicle to your device and QGroundControl will automatically detect it." +
+                                            (ScreenTools.isMobile ? "" : " Click Firmware on the left to upgrade your vehicle.")
 
                 onLinkActivated: Qt.openUrlExternally(link)
             }
@@ -211,16 +218,13 @@ Rectangle {
         anchors.right:      parent.right
         color:              qgcPal.window
 
-        Flickable {
+        QGCFlickable {
             id:                 buttonScroll
             width:              buttonColumn.width
             anchors.topMargin:  _defaultTextHeight / 2
             anchors.top:        parent.top
             anchors.bottom:     parent.bottom
-            clip:               true
             contentHeight:      buttonColumn.height
-            contentWidth:       buttonColumn.width
-            boundsBehavior:     Flickable.StopAtBounds
             flickableDirection: Flickable.VerticalFlick
 
             Column {
@@ -291,7 +295,7 @@ Rectangle {
 
                 Repeater {
                     id:     componentRepeater
-                    model:  _fullParameterVehicleAvailable ? multiVehicleManager.activeVehicle.autopilot.vehicleComponents : 0
+                    model:  _fullParameterVehicleAvailable ? QGroundControl.multiVehicleManager.activeVehicle.autopilot.vehicleComponents : 0
 
                     SubMenuButton {
                         imageResource:  modelData.iconResource
@@ -309,7 +313,7 @@ Rectangle {
                 SubMenuButton {
                     setupIndicator: false
                     exclusiveGroup: setupButtonGroup
-                    visible:        multiVehicleManager.parameterReadyVehicleAvailable
+                    visible:        QGroundControl.multiVehicleManager.parameterReadyVehicleAvailable
                     text:           "Parameters"
 
                     onClicked: showParametersPanel()

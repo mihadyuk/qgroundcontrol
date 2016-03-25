@@ -24,29 +24,31 @@
 /// @file
 ///     @author Don Gagne <don@thegagnes.com>
 
-import QtQuick 2.3
-import QtQuick.Controls 1.3
-import QtQuick.Controls.Styles 1.2
-import QtQuick.Dialogs 1.2
+import QtQuick                  2.5
+import QtQuick.Controls         1.3
+import QtQuick.Dialogs          1.2
 
-import QGroundControl.Controls 1.0
-import QGroundControl.Palette 1.0
-import QGroundControl.ScreenTools 1.0
-import QGroundControl.Controllers 1.0
-import QGroundControl.FactSystem 1.0
-import QGroundControl.FactControls 1.0
+import QGroundControl               1.0
+import QGroundControl.Controls      1.0
+import QGroundControl.Palette       1.0
+import QGroundControl.ScreenTools   1.0
+import QGroundControl.Controllers   1.0
+import QGroundControl.FactSystem    1.0
+import QGroundControl.FactControls  1.0
 
 QGCView {
-    viewPanel: panel
+    id:         qgcView
+    viewPanel:  panel
 
     QGCPalette { id: __qgcPal; colorGroupEnabled: true }
 
-    property Fact   __editorDialogFact: Fact { }
+    property Fact   _editorDialogFact: Fact { }
     property int    _rowHeight:         ScreenTools.defaultFontPixelHeight * 2
     property int    _rowWidth:          10      // Dynamic adjusted at runtime
     property bool   _searchFilter:      false   ///< true: showing results of search
     property var    _searchResults              ///< List of parameter names from search results
     property string _currentGroup:      ""
+    property bool   _showRCToParam:     !ScreenTools.isMobile && QGroundControl.multiVehicleManager.activeVehicle.px4Firmware
 
     ParameterEditorController {
         id: controller;
@@ -119,24 +121,34 @@ QGCView {
                         }
                         MenuItem {
                             text:           "Search..."
-                            onTriggered:    showDialog(searchDialogComponent, "Parameter Search", 50, StandardButton.Reset | StandardButton.Apply)
+                            onTriggered:    showDialog(searchDialogComponent, "Parameter Search", qgcView.showDialogDefaultWidth, StandardButton.Reset | StandardButton.Apply)
                         }
-                        MenuSeparator { visible: !ScreenTools.isMobile }
+                        MenuSeparator { }
                         MenuItem {
                             text:           "Load from file..."
-                            onTriggered:	controller.loadFromFile()
-                            visible:        !ScreenTools.isMobile
+                            onTriggered: {
+                                if (ScreenTools.isMobile) {
+                                    qgcView.showDialog(mobileFilePicker, "Select Parameter File", qgcView.showDialogDefaultWidth, StandardButton.Yes | StandardButton.Cancel)
+                                } else {
+                                    controller.loadFromFilePicker()
+                                }
+                            }
                         }
                         MenuItem {
                             text:           "Save to file..."
-                            onTriggered:	controller.saveToFile()
-                            visible:        !ScreenTools.isMobile
+                            onTriggered: {
+                                if (ScreenTools.isMobile) {
+                                    qgcView.showDialog(mobileFileSaver, "Save Parameter File", qgcView.showDialogDefaultWidth, StandardButton.Save | StandardButton.Cancel)
+                                } else {
+                                    controller.saveToFilePicker()
+                                }
+                            }
                         }
-                        MenuSeparator { visible: !ScreenTools.isMobile }
+                        MenuSeparator { visible: _showRCToParam }
                         MenuItem {
                             text:           "Clear RC to Param"
                             onTriggered:	controller.clearRCToParam()
-                            visible:        !ScreenTools.isMobile
+                            visible:        _showRCToParam
                         }
                     }
                 }
@@ -164,7 +176,7 @@ QGCView {
         Row {
             spacing: ScreenTools.defaultFontPixelWidth * 0.5
             //-- Parameter Groups
-            Flickable {
+            QGCFlickable {
                 id :                groupScroll
                 width:              ScreenTools.defaultFontPixelWidth * 25
                 height:             parent.height
@@ -172,7 +184,6 @@ QGCView {
                 pixelAligned:       true
                 contentHeight:      groupedViewComponentColumn.height
                 contentWidth:       groupedViewComponentColumn.width
-                boundsBehavior:     Flickable.OvershootBounds
                 flickableDirection: Flickable.VerticalFlick
                 Column {
                     id: groupedViewComponentColumn
@@ -198,12 +209,15 @@ QGCView {
                                     exclusiveGroup: setupButtonGroup
                                     onClicked: {
                                         checked = true
-                                        factRowsLoader.sourceComponent  = null
+                                        // Clear the rows from the component first. This allows us to change the componentId without
+                                        // breaking any bindings.
+                                        factRowsLoader.parameterNames   = [ ]
                                         _rowWidth                       = 10
                                         factRowsLoader.componentId      = componentId
                                         factRowsLoader.parameterNames   = controller.getParametersForGroup(componentId, modelData)
-                                        factRowsLoader.sourceComponent  = factRowsComponent
                                         _currentGroup                   = modelData
+                                        factScrollView.contentX         = 0
+                                        factScrollView.contentY         = 0
                                     }
                                 }
                             }
@@ -218,7 +232,7 @@ QGCView {
                 opacity:    0.1
             }
             //-- Parameters
-            Flickable {
+            QGCFlickable {
                 id:             factScrollView
                 width:          parent.width - groupScroll.width
                 height:         parent.height
@@ -245,7 +259,7 @@ QGCView {
     Component {
         id: searchResultsViewComponent
         Item {
-            Flickable {
+            QGCFlickable {
                 id:             factScrollView
                 width:          parent.width
                 height:         parent.height
@@ -285,12 +299,14 @@ QGCView {
                             id:     nameLabel
                             width:  ScreenTools.defaultFontPixelWidth  * 20
                             text:   factRow.modelFact.name
+                            clip:   true
                         }
                         QGCLabel {
                             id:     valueLabel
                             width:  ScreenTools.defaultFontPixelWidth  * 20
                             color:  factRow.modelFact.defaultValueAvailable ? (factRow.modelFact.valueEqualsDefault ? __qgcPal.text : __qgcPal.warningText) : __qgcPal.text
-                            text:   factRow.modelFact.valueString + " " + factRow.modelFact.units
+                            text:   factRow.modelFact.enumStrings.length == 0 ? factRow.modelFact.valueString + " " + factRow.modelFact.units : factRow.modelFact.enumStringValue
+                            clip:   true
                         }
                         QGCLabel {
                             text:   factRow.modelFact.shortDescription
@@ -313,8 +329,8 @@ QGCView {
                         anchors.fill:       parent
                         acceptedButtons:    Qt.LeftButton
                         onClicked: {
-                            __editorDialogFact = factRow.modelFact
-                            showDialog(editorDialogComponent, "Parameter Editor", 50, StandardButton.Cancel | StandardButton.Save)
+                            _editorDialogFact = factRow.modelFact
+                            showDialog(editorDialogComponent, "Parameter Editor", qgcView.showDialogDefaultWidth, StandardButton.Cancel | StandardButton.Save)
                         }
                     }
                 }
@@ -324,7 +340,11 @@ QGCView {
 
     Component {
         id: editorDialogComponent
-        ParameterEditorDialog { fact: __editorDialogFact }
+
+        ParameterEditorDialog {
+            fact:           _editorDialogFact
+            showRCToParam:  _showRCToParam
+        }
     }
 
     Component {
@@ -355,30 +375,6 @@ QGCView {
                 width:              ScreenTools.defaultFontPixelWidth * 20
             }
 
-/*
-            // Leaving in for possible future use. We'll see if needed from user comments.
-            QGCLabel {
-                id:                 searchInLabel
-                anchors.topMargin:  defaultTextHeight
-                anchors.top:        searchFor.bottom
-                text:               "Search in:"
-            }
-
-            QGCCheckBox {
-                id:                 searchInName
-                anchors.topMargin:  defaultTextHeight / 3
-                anchors.top:        searchInLabel.bottom
-                text:               "Name"
-            }
-
-            QGCCheckBox {
-                id:                 searchInDescriptions
-                anchors.topMargin:  defaultTextHeight / 3
-                anchors.top:        searchInName.bottom
-                text:               "Descriptions"
-            }
-*/
-
             QGCLabel {
                 anchors.topMargin:  defaultTextHeight
                 anchors.top:        searchFor.bottom
@@ -389,4 +385,22 @@ QGCView {
         }
     }
 
+    Component {
+        id: mobileFilePicker
+
+        QGCMobileFileDialog {
+            fileExtension:      QGroundControl.parameterFileExtension
+            onFilenameReturned: controller.loadFromFile(filename)
+        }
+    }
+
+    Component {
+        id: mobileFileSaver
+
+        QGCMobileFileDialog {
+            openDialog:         false
+            fileExtension:      QGroundControl.parameterFileExtension
+            onFilenameReturned: controller.saveToFile(filename)
+        }
+    }
 } // QGCView

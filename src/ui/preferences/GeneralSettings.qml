@@ -40,24 +40,24 @@ Rectangle {
     anchors.fill:       parent
     anchors.margins:    ScreenTools.defaultFontPixelWidth
 
+    property Fact _percentRemainingAnnounce: QGroundControl.multiVehicleManager.disconnectedVehicle.battery.percentRemainingAnnounce
+
     QGCPalette {
         id:                 qgcPal
         colorGroupEnabled:  enabled
     }
 
-    Flickable {
+    QGCFlickable {
         clip:               true
         anchors.fill:       parent
         contentHeight:      settingsColumn.height
-        contentWidth:       _generalRoot.width
-        flickableDirection: Flickable.VerticalFlick
-        boundsBehavior:     Flickable.StopAtBounds
+        contentWidth:       settingsColumn.width
 
         Column {
             id:                 settingsColumn
-            width:              _generalRoot.width
             anchors.margins:    ScreenTools.defaultFontPixelWidth
             spacing:            ScreenTools.defaultFontPixelHeight / 2
+
             QGCLabel {
                 text:   "General Settings"
                 font.pixelSize: ScreenTools.mediumFontPixelSize
@@ -70,6 +70,54 @@ Rectangle {
             Item {
                 height: ScreenTools.defaultFontPixelHeight / 2
                 width:  parent.width
+            }
+
+            //-----------------------------------------------------------------
+            //-- Units
+
+            Row {
+                spacing:    ScreenTools.defaultFontPixelWidth
+
+                QGCLabel {
+                    id:                 distanceUnitsLabel
+                    anchors.baseline:   distanceUnitsCombo.baseline
+                    text:               "Distance units:"
+                }
+
+                FactComboBox {
+                    id:         distanceUnitsCombo
+                    width:      ScreenTools.defaultFontPixelWidth * 10
+                    fact:       QGroundControl.distanceUnits
+                    indexModel: false
+                }
+
+                QGCLabel {
+                    anchors.baseline:   distanceUnitsCombo.baseline
+                    text:               "(requires reboot to take affect)"
+                }
+
+            }
+
+            Row {
+                spacing:    ScreenTools.defaultFontPixelWidth
+
+                QGCLabel {
+                    anchors.baseline:   speedUnitsCombo.baseline
+                    width:              distanceUnitsLabel.width
+                    text:               "Speed units:"
+                }
+
+                FactComboBox {
+                    id:         speedUnitsCombo
+                    width:      ScreenTools.defaultFontPixelWidth * 20
+                    fact:       QGroundControl.speedUnits
+                    indexModel: false
+                }
+
+                QGCLabel {
+                    anchors.baseline:   distanceUnitsCombo.baseline
+                    text:               "(requires reboot to take affect)"
+                }
             }
 
             //-----------------------------------------------------------------
@@ -129,19 +177,45 @@ Rectangle {
                     }
                 }
             }
+            //-----------------------------------------------------------------
+            //-- Battery talker
+            Row {
+                spacing: ScreenTools.defaultFontPixelWidth
+
+                QGCCheckBox {
+                    id:                 announcePercentCheckbox
+                    anchors.baseline:   announcePercent.baseline
+                    text:               "Announce battery percent lower than:"
+                    checked:            _percentRemainingAnnounce.value != 0
+
+                    onClicked: {
+                        if (checked) {
+                            _percentRemainingAnnounce.value = _percentRemainingAnnounce.defaultValueString
+                        } else {
+                            _percentRemainingAnnounce.value = 0
+                        }
+                    }
+                }
+
+                FactTextField {
+                    id:         announcePercent
+                    fact:       _percentRemainingAnnounce
+                    enabled:    announcePercentCheckbox.checked
+                }
+            }
 
             Item {
                 height: ScreenTools.defaultFontPixelHeight / 2
                 width:  parent.width
             }
-
             //-----------------------------------------------------------------
             //-- Map Providers
             Row {
                 spacing:    ScreenTools.defaultFontPixelWidth
                 QGCLabel {
-                    width: ScreenTools.defaultFontPixelWidth * 16
-                    text: "Map Providers"
+                    anchors.baseline:   mapProviders.baseline
+                    width:              ScreenTools.defaultFontPixelWidth * 16
+                    text:               "Map Providers:"
                 }
                 QGCComboBox {
                     id:     mapProviders
@@ -169,10 +243,12 @@ Rectangle {
             Row {
                 spacing:    ScreenTools.defaultFontPixelWidth
                 QGCLabel {
-                    width: ScreenTools.defaultFontPixelWidth * 16
-                    text: "Style"
+                    anchors.baseline:   paletteCombo.baseline
+                    width:              ScreenTools.defaultFontPixelWidth * 16
+                    text:               "Style:"
                 }
                 QGCComboBox {
+                    id: paletteCombo
                     width: ScreenTools.defaultFontPixelWidth * 16
                     model: [ "Dark", "Light" ]
                     currentIndex: QGroundControl.isDarkStyle ? 0 : 1
@@ -206,7 +282,7 @@ Rectangle {
                 }
 
                 QGCCheckBox {
-                    text:       "3DR Radio"
+                    text:       "SiK Radio"
                     visible:    !ScreenTools.isiOS
                     checked:    QGroundControl.linkManager.autoconnect3DRRadio
                     onClicked:  QGroundControl.linkManager.autoconnect3DRRadio = checked
@@ -244,6 +320,8 @@ Rectangle {
                 width:  parent.width
             }
 
+            //-----------------------------------------------------------------
+            //-- Offline mission editing settings
             Row {
                 spacing: ScreenTools.defaultFontPixelWidth
 
@@ -258,6 +336,19 @@ Rectangle {
                     fact:       QGroundControl.offlineEditingFirmwareType
                     indexModel: false
                 }
+            }
+
+            Item {
+                height: ScreenTools.defaultFontPixelHeight / 2
+                width:  parent.width
+            }
+
+            //-----------------------------------------------------------------
+            //-- Experimental Survey settings
+            QGCCheckBox {
+                text:       "Experimental Survey [WIP - no bugs reports please]"
+                checked:    QGroundControl.experimentalSurvey
+                onClicked:  QGroundControl.experimentalSurvey = checked
             }
         }
     }

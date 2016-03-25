@@ -34,6 +34,8 @@
 #include "MainWindow.h"
 #endif
 
+#include <QStandardPaths>
+
 /// @Brief Constructs a new ParameterEditorController Widget. This widget is used within the PX4VehicleConfig set of screens.
 ParameterEditorController::ParameterEditorController(void)
 {
@@ -69,7 +71,7 @@ QStringList ParameterEditorController::searchParametersForComponent(int componen
 {
     QStringList list;
     
-    foreach(QString paramName, _autopilot->parameterNames(componentId)) {
+    foreach(const QString &paramName, _autopilot->parameterNames(componentId)) {
         if (searchText.isEmpty()) {
             list += paramName;
         } else {
@@ -93,24 +95,18 @@ void ParameterEditorController::clearRCToParam(void)
 	_uas->unsetRCToParameterMap();
 }
 
-void ParameterEditorController::saveToFile(void)
+void ParameterEditorController::saveToFile(const QString& filename)
 {
-#ifndef __mobile__
-	Q_ASSERT(_autopilot);
-	
-    QString msgTitle("Save Parameters");
-    
-	QString fileName = QGCFileDialog::getSaveFileName(NULL,
-                                                      msgTitle,
-                                                      qgcApp()->savedParameterFilesLocation(),
-                                                      "Parameter Files (*.params)",
-                                                      "params",
-                                                      true);
-	if (!fileName.isEmpty()) {
-		QFile file(fileName);
+    if (!_autopilot) {
+        qWarning() << "Internal error _autopilot==NULL";
+        return;
+    }
+
+    if (!filename.isEmpty()) {
+        QFile file(filename);
         
 		if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-            qgcApp()->showMessage("Unable to create file");
+            qgcApp()->showMessage(QString("Unable to create file: %1").arg(filename));
 			return;
 		}
         
@@ -118,27 +114,35 @@ void ParameterEditorController::saveToFile(void)
 		_autopilot->writeParametersToStream(stream);
 		file.close();
 	}
+}
+
+void ParameterEditorController::saveToFilePicker(void)
+{
+#ifndef __mobile__
+    QString fileName = QGCFileDialog::getSaveFileName(NULL,
+                                                      "Save Parameters",
+                                                      QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation),
+                                                      "Parameter Files (*.params)",
+                                                      "params",
+                                                      true);
+    saveToFile(fileName);
 #endif
 }
 
-void ParameterEditorController::loadFromFile(void)
+void ParameterEditorController::loadFromFile(const QString& filename)
 {
-#ifndef __mobile__
     QString errors;
     
-    Q_ASSERT(_autopilot);
-    
-    QString msgTitle("Load Parameters");
-    
-	QString fileName = QGCFileDialog::getOpenFileName(NULL,
-                                                      msgTitle,
-                                                      qgcApp()->savedParameterFilesLocation(),
-													  "Parameter Files (*.params);;All Files (*)");
-    if (!fileName.isEmpty()) {
-        QFile file(fileName);
+    if (!_autopilot) {
+        qWarning() << "Internal error _autopilot==NULL";
+        return;
+    }
+
+    if (!filename.isEmpty()) {
+        QFile file(filename);
         
         if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-            qgcApp()->showMessage("Unable to open file");
+            qgcApp()->showMessage(QString("Unable to open file: %1").arg(filename));
             return;
         }
         
@@ -150,6 +154,16 @@ void ParameterEditorController::loadFromFile(void)
             emit showErrorMessage(errors);
         }
     }
+}
+
+void ParameterEditorController::loadFromFilePicker(void)
+{
+#ifndef __mobile__
+    QString fileName = QGCFileDialog::getOpenFileName(NULL,
+                                                      "Load Parameters",
+                                                      QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation),
+                                                      "Parameter Files (*.params);;All Files (*)");
+    loadFromFile(fileName);
 #endif
 }
 

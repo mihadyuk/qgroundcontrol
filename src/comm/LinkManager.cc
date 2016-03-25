@@ -32,6 +32,7 @@ This file is part of the QGROUNDCONTROL project
 #include <QList>
 #include <QApplication>
 #include <QDebug>
+#include <QSignalSpy>
 
 #ifndef __ios__
 #include "QGCSerialPortInfo.h"
@@ -87,13 +88,17 @@ LinkManager::LinkManager(QGCApplication* app)
     _autoconnectPixhawk =   settings.value(_autoconnectPixhawkKey, true).toBool();
     _autoconnect3DRRadio =  settings.value(_autoconnect3DRRadioKey, true).toBool();
     _autoconnectPX4Flow =   settings.value(_autoconnectPX4FlowKey, true).toBool();
+
+#ifndef __ios__
+    _activeLinkCheckTimer.setInterval(_activeLinkCheckTimeoutMSecs);
+    _activeLinkCheckTimer.setSingleShot(false);
+    connect(&_activeLinkCheckTimer, &QTimer::timeout, this, &LinkManager::_activeLinkCheck);
+#endif
 }
 
 LinkManager::~LinkManager()
 {
-    if (anyActiveLinks()) {
-        qWarning() << "Why are there still active links?";
-    }
+
 }
 
 void LinkManager::setToolbox(QGCToolbox *toolbox)
@@ -101,7 +106,6 @@ void LinkManager::setToolbox(QGCToolbox *toolbox)
    QGCTool::setToolbox(toolbox);
 
    _mavlinkProtocol = _toolbox->mavlinkProtocol();
-   connect(_mavlinkProtocol, &MAVLinkProtocol::vehicleHeartbeatInfo, this, &LinkManager::_vehicleHeartbeatInfo);
 
     connect(&_portListTimer, &QTimer::timeout, this, &LinkManager::_updateAutoConnectLinks);
     _portListTimer.start(_autoconnectUpdateTimerMSecs); // timeout must be long enough to get past bootloader on second pass
@@ -115,8 +119,19 @@ LinkInterface* LinkManager::createConnectedLink(LinkConfiguration* config)
     switch(config->type()) {
 #ifndef __ios__
         case LinkConfiguration::TypeSerial:
-            pLink = new SerialLink(dynamic_cast<SerialConfiguration*>(config));
-            break;
+        {
+            SerialConfiguration* serialConfig = dynamic_cast<SerialConfiguration*>(config);
+            if (serialConfig) {
+                pLink = new SerialLink(serialConfig);
+                if (serialConfig->usbDirect()) {
+                    _activeLinkCheckList.append((SerialLink*)pLink);
+                    if (!_activeLinkCheckTimer.isActive()) {
+                        _activeLinkCheckTimer.start();
+                    }
+                }
+            }
+        }
+        break;
 #endif
         case LinkConfiguration::TypeUdp:
             pLink = new UDPLink(dynamic_cast<UDPConfiguration*>(config));
@@ -173,14 +188,21 @@ void LinkManager::_addLink(LinkInterface* link)
     }
 
     if (!_links.contains(link)) {
+        bool channelSet = false;
+
         // Find a mavlink channel to use for this link
         for (int i=0; i<32; i++) {
-            if (!(_mavlinkChannelsUsedBitMask && 1 << i)) {
+            if (!(_mavlinkChannelsUsedBitMask & 1 << i)) {
                 mavlink_reset_channel_status(i);
                 link->_setMavlinkChannel(i);
                 _mavlinkChannelsUsedBitMask |= i << i;
+                channelSet = true;
                 break;
             }
+        }
+
+        if (!channelSet) {
+            qWarning() << "Ran out of mavlink channels";
         }
 
         _links.append(link);
@@ -189,8 +211,6 @@ void LinkManager::_addLink(LinkInterface* link)
 
     connect(link, &LinkInterface::communicationError,   _app,               &QGCApplication::criticalMessageBoxOnMainThread);
     connect(link, &LinkInterface::bytesReceived,        _mavlinkProtocol,   &MAVLinkProtocol::receiveBytes);
-    connect(link, &LinkInterface::connected,            _mavlinkProtocol,   &MAVLinkProtocol::linkConnected);
-    connect(link, &LinkInterface::disconnected,         _mavlinkProtocol,   &MAVLinkProtocol::linkDisconnected);
 
     _mavlinkProtocol->resetMetadataForLink(link);
 
@@ -214,16 +234,7 @@ bool LinkManager::connectLink(LinkInterface* link)
         return false;
     }
 
-    bool previousAnyConnectedLinks = anyConnectedLinks();
-
-    if (link->_connect()) {
-        if (!previousAnyConnectedLinks) {
-            emit anyConnectedLinksChanged(true);
-        }
-        return true;
-    } else {
-        return false;
-    }
+    return link->_connect();
 }
 
 void LinkManager::disconnectLink(LinkInterface* link)
@@ -239,6 +250,7 @@ void LinkManager::disconnectLink(LinkInterface* link)
     }
     _deleteLink(link);
     if (_autoconnectConfigurations.contains(config)) {
+        qCDebug(LinkManagerLog) << "Removing disconnected autoconnect config" << config->name();
         _autoconnectConfigurations.removeOne(config);
         delete config;
     }
@@ -454,7 +466,7 @@ void LinkManager::_updateAutoConnectLinks(void)
             break;
         }
     }
-    if (!foundUDP) {
+    if (!foundUDP && _autoconnectUDP) {
         qCDebug(LinkManagerLog) << "New auto-connect UDP port added";
         UDPConfiguration* udpConfig = new UDPConfiguration(_defaultUPDLinkName);
         udpConfig->setLocalPort(QGC_UDP_LOCAL_PORT);
@@ -510,11 +522,13 @@ void LinkManager::_updateAutoConnectLinks(void)
                 case QGCSerialPortInfo::BoardTypePX4FMUV4:
                     if (_autoconnectPixhawk) {
                         pSerialConfig = new SerialConfiguration(QString("Pixhawk on %1").arg(portInfo.portName().trimmed()));
+                        pSerialConfig->setUsbDirect(true);
                     }
                     break;
                 case QGCSerialPortInfo::BoardTypeAeroCore:
                     if (_autoconnectPixhawk) {
                         pSerialConfig = new SerialConfiguration(QString("AeroCore on %1").arg(portInfo.portName().trimmed()));
+                        pSerialConfig->setUsbDirect(true);
                     }
                     break;
                 case QGCSerialPortInfo::BoardTypePX4Flow:
@@ -522,9 +536,9 @@ void LinkManager::_updateAutoConnectLinks(void)
                         pSerialConfig = new SerialConfiguration(QString("PX4Flow on %1").arg(portInfo.portName().trimmed()));
                     }
                     break;
-                case QGCSerialPortInfo::BoardType3drRadio:
+                case QGCSerialPortInfo::BoardTypeSikRadio:
                     if (_autoconnect3DRRadio) {
-                        pSerialConfig = new SerialConfiguration(QString("3DR Radio on %1").arg(portInfo.portName().trimmed()));
+                        pSerialConfig = new SerialConfiguration(QString("SiK Radio on %1").arg(portInfo.portName().trimmed()));
                     }
                     break;
                 default:
@@ -534,7 +548,7 @@ void LinkManager::_updateAutoConnectLinks(void)
 
                 if (pSerialConfig) {
                     qCDebug(LinkManagerLog) << "New auto-connect port added: " << pSerialConfig->name() << portInfo.systemLocation();
-                    pSerialConfig->setBaud(boardType == QGCSerialPortInfo::BoardType3drRadio ? 57600 : 115200);
+                    pSerialConfig->setBaud(boardType == QGCSerialPortInfo::BoardTypeSikRadio ? 57600 : 115200);
                     pSerialConfig->setDynamic(true);
                     pSerialConfig->setPortName(portInfo.systemLocation());
                     _autoconnectConfigurations.append(pSerialConfig);
@@ -550,13 +564,17 @@ void LinkManager::_updateAutoConnectLinks(void)
         SerialConfiguration* linkConfig = _autoconnectConfigurations.value<SerialConfiguration*>(i);
         if (linkConfig) {
             if (!currentPorts.contains(linkConfig->portName())) {
-                // We don't remove links which are still connected even though at this point the cable may
-                // have been pulled. This is due to the fact that whether a serial port goes away from the
-                // list when the cable is pulled is OS dependant. By not disconnecting in this case, we keep
-                // things working the same across all OS.
-                if (!linkConfig->link() || !linkConfig->link()->isConnected()) {
-                    _confToDelete.append(linkConfig);
+                if (linkConfig->link()) {
+                    if (linkConfig->link()->isConnected()) {
+                        if (linkConfig->link()->active()) {
+                            // We don't remove links which are still connected which have been active with a vehicle on them
+                            // even though at this point the cable may have been pulled. Instead we wait for the user to
+                            // Disconnect. Once the user disconnects, the link will be removed.
+                            continue;
+                        }
+                    }
                 }
+                _confToDelete.append(linkConfig);
             }
         } else {
             qWarning() << "Internal error";
@@ -567,72 +585,12 @@ void LinkManager::_updateAutoConnectLinks(void)
     foreach (LinkConfiguration* pDeleteConfig, _confToDelete) {
         qCDebug(LinkManagerLog) << "Removing unused autoconnect config" << pDeleteConfig->name();
         _autoconnectConfigurations.removeOne(pDeleteConfig);
+        if (pDeleteConfig->link()) {
+            disconnectLink(pDeleteConfig->link());
+        }
         delete pDeleteConfig;
     }
 #endif // __ios__
-}
-
-bool LinkManager::anyConnectedLinks(void)
-{
-    bool found = false;
-    for (int i=0; i<_links.count(); i++) {
-        LinkInterface* link = _links.value<LinkInterface*>(i);
-
-        if (link && link->isConnected()) {
-            found = true;
-            break;
-        }
-    }
-    return found;
-}
-
-bool LinkManager::anyActiveLinks(void)
-{
-    bool found = false;
-    for (int i=0; i<_links.count(); i++) {
-        LinkInterface* link = _links.value<LinkInterface*>(i);
-
-        if (link && link->active()) {
-            found = true;
-            break;
-        }
-    }
-    return found;
-}
-
-void LinkManager::_vehicleHeartbeatInfo(LinkInterface* link, int vehicleId, int vehicleMavlinkVersion, int vehicleFirmwareType, int vehicleType)
-{
-    if (!link->active() && !_ignoreVehicleIds.contains(vehicleId)) {
-        qCDebug(LinkManagerLog) << "New heartbeat on link:vehicleId:vehicleMavlinkVersion:vehicleFirmwareType:vehicleType "
-                                << link->getName()
-                                << vehicleId
-                                << vehicleMavlinkVersion
-                                << vehicleFirmwareType
-                                << vehicleType;
-
-        if (vehicleId == _mavlinkProtocol->getSystemId()) {
-            _app->showMessage(QString("Warning: A vehicle is using the same system id as QGroundControl: %1").arg(vehicleId));
-        }
-
-        QSettings settings;
-        bool mavlinkVersionCheck = settings.value("VERSION_CHECK_ENABLED", true).toBool();
-        if (mavlinkVersionCheck && vehicleMavlinkVersion != MAVLINK_VERSION) {
-            _ignoreVehicleIds += vehicleId;
-            _app->showMessage(QString("The MAVLink protocol version on vehicle #%1 and QGroundControl differ! "
-                                                 "It is unsafe to use different MAVLink versions. "
-                                                 "QGroundControl therefore refuses to connect to vehicle #%1, which sends MAVLink version %2 (QGroundControl uses version %3).").arg(vehicleId).arg(vehicleMavlinkVersion).arg(MAVLINK_VERSION));
-            return;
-        }
-
-        bool previousAnyActiveLinks = anyActiveLinks();
-
-        link->setActive(true);
-        emit linkActive(link, vehicleId, vehicleFirmwareType, vehicleType);
-
-        if (!previousAnyActiveLinks) {
-            emit anyActiveLinksChanged(true);
-        }
-    }
 }
 
 void LinkManager::shutdown(void)
@@ -892,3 +850,49 @@ bool LinkManager::isBluetoothAvailable(void)
 {
     return qgcApp()->isBluetoothAvailable();
 }
+
+#ifndef __ios__
+void LinkManager::_activeLinkCheck(void)
+{
+    SerialLink* link = NULL;
+    bool found = false;
+
+    if (_activeLinkCheckList.count() != 0) {
+        link = _activeLinkCheckList.takeFirst();
+        if (_links.contains(link) && link->isConnected()) {
+            // Make sure there is a vehicle on the link
+            QmlObjectListModel* vehicles = _toolbox->multiVehicleManager()->vehicles();
+            for (int i=0; i<vehicles->count(); i++) {
+                Vehicle* vehicle = qobject_cast<Vehicle*>(vehicles->get(i));
+                if (vehicle->containsLink(link)) {
+                    found = true;
+                    break;
+                }
+            }
+        } else {
+            link = NULL;
+        }
+    }
+
+    if (_activeLinkCheckList.count() == 0) {
+        _activeLinkCheckTimer.stop();
+    }
+
+    if (!found && link) {
+        // See if we can get an NSH prompt on this link
+        bool foundNSHPrompt = false;
+        link->writeBytes("\r", 1);
+        QSignalSpy spy(link, SIGNAL(bytesReceived(LinkInterface*, QByteArray)));
+        if (spy.wait(100)) {
+            QList<QVariant> arguments = spy.takeFirst();
+            if (arguments[1].value<QByteArray>().contains("nsh>")) {
+                foundNSHPrompt = true;
+            }
+        }
+
+        qgcApp()->showMessage(foundNSHPrompt ?
+                                  QStringLiteral("Please check to make sure you have an SD Card inserted in your Vehicle and try again.") :
+                                  QStringLiteral("Your Vehicle is not responding. If this continues shutdown QGroundControl, restart the Vehicle letting it boot completely, then start QGroundControl."));
+    }
+}
+#endif

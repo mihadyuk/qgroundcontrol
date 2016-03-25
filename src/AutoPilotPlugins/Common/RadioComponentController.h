@@ -159,18 +159,15 @@ private:
         rcCalFunctionLoiterSwitch,
         rcCalFunctionReturnSwitch,
         rcCalFunctionAcroSwitch,
-        rcCalFunctionFlaps,
-        rcCalFunctionAux1,
-        rcCalFunctionAux2,
         rcCalFunctionMax,
         
         // Attitude functions are roll/pitch/yaw/throttle
         rcCalFunctionFirstAttitudeFunction = rcCalFunctionRoll,
         rcCalFunctionLastAttitudeFunction = rcCalFunctionThrottle,
         
-        // Non-Attitude functions are everthing else
+        // Non-Attitude functions are everything else
         rcCalFunctionFirstNonAttitudeFunction = rcCalFunctionModeSwitch,
-        rcCalFunctionLastNonAttitudeFunction = rcCalFunctionAux2,
+        rcCalFunctionLastNonAttitudeFunction = rcCalFunctionAcroSwitch,
     };
     
     /// @brief The states of the calibration state machine.
@@ -224,15 +221,10 @@ private:
     void _inputStickMin(enum rcCalFunctions function, int channel, int value);
     void _inputCenterWait(enum rcCalFunctions function, int channel, int value);
     void _inputSwitchMinMax(enum rcCalFunctions function, int channel, int value);
-    void _inputFlapsDown(enum rcCalFunctions function, int channel, int value);
-    void _inputFlapsUp(enum rcCalFunctions function, int channel, int value);
     void _inputSwitchDetect(enum rcCalFunctions function, int channel, int value);
-    void _inputFlapsDetect(enum rcCalFunctions function, int channel, int value);
     
     void _switchDetect(enum rcCalFunctions function, int channel, int value, bool moveToNextStep);
     
-    void _saveFlapsDown(void);
-    void _skipFlaps(void);
     void _saveAllTrims(void);
     
     bool _stickSettleComplete(int value);
@@ -300,6 +292,8 @@ private:
     static const int _chanMinimum = 5;  ///< Minimum numner of channels required to run
     
     struct ChannelInfo _rgChannelInfo[_chanMaxAny];    ///< Information associated with each rc channel
+
+    QList<int> _apmPossibleMissingRCChannelParams;  ///< List of possible missing RC*_* params for APM stack
     
     enum rcCalStates _rcCalState;       ///< Current calibration state
     int _rcCalStateCurrentChannel;      ///< Current channel being worked on in rcCalStateIdentify and rcCalStateDetectInversion

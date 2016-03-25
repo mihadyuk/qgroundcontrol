@@ -46,7 +46,7 @@ TCPLink::TCPLink(TCPConfiguration *config)
     // We're doing it wrong - because the Qt folks got the API wrong:
     // http://blog.qt.digia.com/blog/2010/06/17/youre-doing-it-wrong/
     moveToThread(this);
-    qDebug() << "TCP Created " << _config->name();
+    //qDebug() << "TCP Created " << _config->name();
 }
 
 TCPLink::~TCPLink()
@@ -156,10 +156,14 @@ bool TCPLink::_hardwareConnect()
 {
     Q_ASSERT(_socket == NULL);
     _socket = new QTcpSocket();
-    QSignalSpy errorSpy(_socket, SIGNAL(error(QAbstractSocket::SocketError)));
+
+    QSignalSpy errorSpy(_socket, static_cast<void (QTcpSocket::*)(QAbstractSocket::SocketError)>(&QTcpSocket::error));
     _socket->connectToHost(_config->address(), _config->port());
-    QObject::connect(_socket, SIGNAL(readyRead()), this, SLOT(readBytes()));
-    QObject::connect(_socket, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(_socketError(QAbstractSocket::SocketError)));
+    QObject::connect(_socket, &QTcpSocket::readyRead, this, &TCPLink::readBytes);
+
+    QObject::connect(_socket,static_cast<void (QTcpSocket::*)(QAbstractSocket::SocketError)>(&QTcpSocket::error),
+                     this, &TCPLink::_socketError);
+
     // Give the socket a second to connect to the other side otherwise error out
     if (!_socket->waitForConnected(1000))
     {

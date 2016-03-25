@@ -24,8 +24,6 @@
 #include <QSettings>
 #include <QDesktopWidget>
 
-#include <QDir>
-
 #include "SettingsDialog.h"
 #include "MainWindow.h"
 #include "ui_SettingsDialog.h"
@@ -40,7 +38,7 @@
 #include "MainToolBarController.h"
 #include "FlightMapSettings.h"
 
-SettingsDialog::SettingsDialog(QWidget *parent, int showTab, Qt::WindowFlags flags)
+SettingsDialog::SettingsDialog(QWidget *parent, Qt::WindowFlags flags)
     : QDialog(parent, flags)
     , _ui(new Ui::SettingsDialog)
 {
@@ -61,89 +59,12 @@ SettingsDialog::SettingsDialog(QWidget *parent, int showTab, Qt::WindowFlags fla
 
     this->window()->setWindowTitle(tr("QGroundControl Settings"));
 
-#if 1
-    QDir dir;
-    QStringList entry;
-    entry.append("*.qm");
-    QStringList trList = dir.entryList(entry, QDir::Files);
-    qDebug()<<"Current path:"<<dir.currentPath();
-    _ui->localeComboBox->addItem("Default");
-    foreach(QString str, trList){
+    _ui->tabWidget->setCurrentWidget(pMavsettings);
 
-        _ui->localeComboBox->addItem(str.left(str.indexOf(".")));
-
-    }
-    _ui->localeComboBox->setCurrentIndex(0);
-
-    QSettings settings;
-
-    if(settings.contains("LANG_FILE_NAME"))
-    {
-
-        QString filename = settings.value("LANG_FILE_NAME").toString();
-        if(filename.length() > 0){
-            filename = filename.left(filename.indexOf("."));
-            for(int i = 0; i <_ui->localeComboBox->count(); i++){
-                if(_ui->localeComboBox->itemText(i) == filename){
-                    _ui->localeComboBox->setCurrentIndex(i);
-                }
-            }
-        }
-    }
-#endif
-    
-    _ui->savedFilesLocation->setText(qgcApp()->savedFilesLocation());
-
-    // Connect signals
-    connect(_ui->browseSavedFilesLocation, &QPushButton::clicked, this, &SettingsDialog::_selectSavedFilesDirectory);
-    connect(_ui->buttonBox, &QDialogButtonBox::accepted, this, &SettingsDialog::_validateBeforeClose);
-
-    if (showTab == ShowMavlink) {
-        _ui->tabWidget->setCurrentWidget(pMavsettings);
-    }
+    connect(_ui->buttonBox, &QDialogButtonBox::accepted, this, &SettingsDialog::accept);
 }
 
 SettingsDialog::~SettingsDialog()
 {
     delete _ui;
-}
-
-/// @brief Validates the settings before closing
-void SettingsDialog::_validateBeforeClose(void)
-{
-    QGCApplication* app = qgcApp();
-    // Validate the saved file location
-    QString saveLocation = _ui->savedFilesLocation->text();
-    if (!app->validatePossibleSavedFilesLocation(saveLocation)) {
-        QGCMessageBox::warning(
-            tr("Invalid Save Location"),
-            tr("The location to save files is invalid, or cannot be written to. Please provide a valid directory."));
-        return;
-    }
-    // Locations is valid, save
-    app->setSavedFilesLocation(saveLocation);
-#if 1
-    if(_ui->localeComboBox->currentText() != "Default"){
-
-            qgcApp()->setLocaleFileName(_ui->localeComboBox->currentText() + ".qm");
-
-    }
-    else
-        qgcApp()->setLocaleFileName("");
-#endif
-
-    // Close dialog
-    accept();
-}
-
-/// @brief Displays a directory picker dialog to allow the user to select a saved file location
-void SettingsDialog::_selectSavedFilesDirectory(void)
-{
-    QString newLocation = QGCFileDialog::getExistingDirectory(
-        this,
-        tr("Select the directory where you want to save files to."),
-        _ui->savedFilesLocation->text());
-    if (!newLocation.isEmpty()) {
-        _ui->savedFilesLocation->setText(newLocation);
-    }
 }

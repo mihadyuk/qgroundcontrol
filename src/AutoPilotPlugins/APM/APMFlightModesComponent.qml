@@ -35,8 +35,13 @@ QGCView {
     id:         rootQGCView
     viewPanel:  panel
 
-    property real _margins: ScreenTools.defaultFontPixelHeight
-    property bool _channelOptionsAvailable: controller.parameterExists(-1, "CH7_OPT")   // Not available in all firmware types
+    property real   _margins:                   ScreenTools.defaultFontPixelHeight
+    property bool   _channel7OptionsAvailable:  controller.parameterExists(-1, "CH7_OPT")   // Not available in all firmware types
+    property bool   _channel9OptionsAvailable:  controller.parameterExists(-1, "CH9_OPT")   // Not available in all firmware types
+    property int    _channelOptionCount:         _channel7OptionsAvailable ? (_channel9OptionsAvailable ? 6 : 2) : 0
+    property Fact   _nullFact
+    property bool   _fltmodeChExists:           controller.parameterExists(-1, "FLTMODE_CH")
+    property Fact   _fltmodeCh:                 _fltmodeChExists ? controller.getParameterFact(-1, "FLTMODE_CH") : _nullFact
 
     QGCPalette { id: qgcPal; colorGroupEnabled: panel.enabled }
 
@@ -49,16 +54,15 @@ QGCView {
         id:             panel
         anchors.fill:   parent
 
-        Flickable {
+        QGCFlickable {
             anchors.fill:       parent
             clip:               true
-            boundsBehavior:     Flickable.StopAtBounds
             flickableDirection: Flickable.VerticalFlick
             contentHeight:      flightModeSettings.y + flightModeSettings.height
 
             QGCLabel {
                 id:             flightModeLabel
-                text:           "Channel 5 Flight Mode Settings"
+                text:           "Flight Mode Settings" + (_fltmodeChExists ? "" : " (Channel 5)")
                 font.weight:    Font.DemiBold
             }
 
@@ -74,9 +78,27 @@ QGCView {
                     id:                 flightModeColumn
                     anchors.margins:    ScreenTools.defaultFontPixelWidth
                     anchors.left:       parent.left
-                    //  anchors.right:      parent.right
                     anchors.top:        parent.top
                     spacing:            ScreenTools.defaultFontPixelHeight
+
+                    Row {
+                        spacing:    _margins
+                        visible:    _fltmodeChExists
+
+                        QGCLabel {
+                            id:                 modeChannelLabel
+                            anchors.baseline:   modeChannelCombo.baseline
+                            text:               "Flight mode channel:"
+                        }
+
+                        QGCComboBox {
+                            id:             modeChannelCombo
+                            width:          ScreenTools.defaultFontPixelWidth * 15
+                            model:          [ "Not assigned", "Channel 1", "Channel 2","Channel 3","Channel 4","Channel 5","Channel 6","Channel 7","Channel 8" ]
+                            currentIndex:   _fltmodeCh.value
+                            onActivated:    _fltmodeCh.value = index
+                        }
+                    }
 
                     Repeater {
                         model:  6
@@ -91,7 +113,7 @@ QGCView {
                             QGCLabel {
                                 anchors.baseline:   modeCombo.baseline
                                 text:               "Flight Mode " + index + ":"
-                                color:              controller.activeFlightMode == index ? qgcPal.buttonHighlight : qgcPal.text
+                                color:              controller.activeFlightMode == index ? "yellow" : qgcPal.text
                             }
 
                             FactComboBox {
@@ -117,7 +139,7 @@ QGCView {
                 anchors.left:       flightModeSettings.right
                 text:               "Channel Options"
                 font.weight:        Font.DemiBold
-                visible:            _channelOptionsAvailable
+                visible:            _channelOptionCount != 0
             }
 
             Rectangle {
@@ -128,7 +150,7 @@ QGCView {
                 width:              channelOptColumn.width + (_margins * 2)
                 height:             channelOptColumn.height + ScreenTools.defaultFontPixelHeight
                 color:              qgcPal.windowShade
-                visible:            _channelOptionsAvailable
+                visible:            _channelOptionCount != 0
 
                 Column {
                     id:                 channelOptColumn
@@ -138,7 +160,7 @@ QGCView {
                     spacing:            ScreenTools.defaultFontPixelHeight
 
                     Repeater {
-                        model: 6
+                        model: _channelOptionCount
 
                         Row {
                             spacing: ScreenTools.defaultFontPixelWidth
@@ -149,19 +171,19 @@ QGCView {
                             QGCLabel {
                                 anchors.baseline:   optCombo.baseline
                                 text:               "Channel option " + index + ":"
-                                color:              controller.channelOptionEnabled[modelData] ? qgcPal.buttonHighlight : qgcPal.text
+                                color:              controller.channelOptionEnabled[modelData] ? "yellow" : qgcPal.text
                             }
 
                             FactComboBox {
                                 id:         optCombo
                                 width:      ScreenTools.defaultFontPixelWidth * 15
-                                fact:       _channelOptionsAvailable ? controller.getParameterFact(-1, "CH" + index + "_OPT") : nullFact
+                                fact:       controller.getParameterFact(-1, "CH" + index + "_OPT")
                                 indexModel: false
                             }
                         }
                     } // Repeater -- Channel options
                 } // Column - Channel options
             } // Rectangle - Channel options
-        } // FLickable
+        } // QGCFlickable
     } // QGCViewPanel
 } // QGCView

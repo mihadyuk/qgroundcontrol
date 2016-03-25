@@ -35,6 +35,7 @@
 #include <QApplication>
 #include <QTranslator>
 #include <QTimer>
+#include <QQmlApplicationEngine>
 
 #include "LinkConfiguration.h"
 #include "LinkManager.h"
@@ -78,6 +79,10 @@ public:
     QGCApplication(int &argc, char* argv[], bool unitTesting);
     ~QGCApplication();
 
+    static const char* parameterFileExtension;
+    static const char* missionFileExtension;
+    static const char* telemetryFileExtension;
+
     /// @brief Sets the persistent flag to delete all settings the next time QGroundControl is started.
     void setLocaleFileName(QString filename);
 
@@ -86,21 +91,6 @@ public:
 
     /// @brief Clears the persistent flag to delete all settings the next time QGroundControl is started.
     void clearDeleteAllSettingsNextBoot(void);
-
-    /// @brief Returns the location of user visible saved file associated with QGroundControl
-    QString savedFilesLocation(void);
-
-    /// @brief Sets the location of user visible saved file associated with QGroundControl
-    void setSavedFilesLocation(QString& location);
-
-    /// @brief Location to save and load parameter files from.
-    QString savedParameterFilesLocation(void);
-
-    /// @brief Location to save and load mavlink log files from
-    QString mavlinkLogFilesLocation(void);
-
-    /// @brief Validates that the specified location will work for the saved files location.
-    bool validatePossibleSavedFilesLocation(QString& location);
 
     /// @return true: Prompt to save log file when vehicle goes away
     bool promptFlightDataSave(void);
@@ -140,6 +130,9 @@ public:
     /// Do we have Bluetooth Support?
     bool isBluetoothAvailable() { return _bluetoothAvailable; }
 
+    QGeoCoordinate lastKnownHomePosition(void) { return _lastKnownHomePosition; }
+    void setLastKnownHomePosition(QGeoCoordinate& lastKnownHomePosition);
+
 public slots:
     /// You can connect to this slot to show an information message box from a different thread.
     void informationMessageBoxOnMainThread(const QString& title, const QString& msg);
@@ -154,7 +147,7 @@ public slots:
     void showPlanView(void);
     void showSetupView(void);
 
-    void showWindowCloseMessage(void);
+    void qmlAttemptWindowClose(void);
 
 #ifndef __mobile__
     /// Save the specified Flight Data Log
@@ -203,17 +196,6 @@ private:
     QQmlApplicationEngine* _qmlAppEngine;
 #endif
 
-    static const char* _settingsVersionKey;             ///< Settings key which hold settings version
-    static const char* _deleteAllSettingsKey;           ///< If this settings key is set on boot, all settings will be deleted
-    static const char* _savedFilesLocationKey;          ///< Settings key for user visible saved files location
-    static const char* _promptFlightDataSave;           ///< Settings key for promptFlightDataSave
-    static const char* _promptFlightDataSaveNotArmed;   ///< Settings key for promptFlightDataSaveNotArmed
-    static const char* _styleKey;                       ///< Settings key for UI style
-
-    static const char* _defaultSavedFileDirectoryName;      ///< Default name for user visible save file directory
-    static const char* _savedFileMavlinkLogDirectoryName;   ///< Name of mavlink log subdirectory
-    static const char* _savedFileParameterDirectoryName;    ///< Name of parameter subdirectory
-
     bool _runningUnitTests; ///< true: running unit tests, false: normal app
 
     static const char*  _darkStyleFile;
@@ -233,6 +215,17 @@ private:
     QGCToolbox* _toolbox;
 
     bool _bluetoothAvailable;
+
+    QGeoCoordinate _lastKnownHomePosition;    ///< Map position when all other sources fail
+
+    static const char* _settingsVersionKey;             ///< Settings key which hold settings version
+    static const char* _deleteAllSettingsKey;           ///< If this settings key is set on boot, all settings will be deleted
+    static const char* _promptFlightDataSave;           ///< Settings key for promptFlightDataSave
+    static const char* _promptFlightDataSaveNotArmed;   ///< Settings key for promptFlightDataSaveNotArmed
+    static const char* _styleKey;                       ///< Settings key for UI style
+    static const char* _lastKnownHomePositionLatKey;
+    static const char* _lastKnownHomePositionLonKey;
+    static const char* _lastKnownHomePositionAltKey;
 
     /// Unit Test have access to creating and destroying singletons
     friend class UnitTest;

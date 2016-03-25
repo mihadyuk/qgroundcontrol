@@ -96,7 +96,7 @@ public:
     void saveLastUsedConnection(const QString connection);
 
     // Called from MainWindow.qml when the user accepts the window close dialog
-    Q_INVOKABLE void acceptWindowClose(void);
+    Q_INVOKABLE void reallyClose(void);
 
     /// @return Root qml object of main window QML
     QObject* rootQmlObject(void);
@@ -116,31 +116,9 @@ public slots:
 
 protected slots:
     /**
-     * @brief Unchecks the normalActionItem.
-     * Used as a triggered() callback by the fullScreenAction to make sure only one of it or the
-     * normalAction are checked at a time, as they're mutually exclusive.
-     */
-    void fullScreenActionItemCallback(bool);
-    /**
-     * @brief Unchecks the fullScreenActionItem.
-     * Used as a triggered() callback by the normalAction to make sure only one of it or the
-     * fullScreenAction are checked at a time, as they're mutually exclusive.
-     */
-    void normalActionItemCallback(bool);
-    /**
      * @brief Enable/Disable Status Bar
      */
     void showStatusBarCallback(bool checked);
-
-    /**
-     * @brief Disable the other QActions that trigger view mode changes
-     *
-     * When a user hits Ctrl+1, Ctrl+2, Ctrl+3  - only one view is set to active
-     * (and in the QML file for the MainWindow the others are set to have
-     * visibility = false), but on the Menu all of them would be selected making
-     * this incoherent.
-     */
-    void handleActiveViewActionState(bool triggered);
 
 signals:
     void initStatusChanged(const QString& message, int alignment, const QColor &color);
@@ -218,12 +196,6 @@ private:
 
     void _openUrl(const QString& url, const QString& errorMessage);
 
-    // Center widgets
-    QPointer<QWidget> _planView;
-    QPointer<QWidget> _flightView;
-    QPointer<QWidget> _setupView;
-    QPointer<QWidget> _missionEditorView;
-
 #ifndef __mobile__
     QMap<QString, QGCDockWidget*>   _mapName2DockWidget;
     QMap<QString, QAction*>         _mapName2Action;
@@ -233,7 +205,7 @@ private:
     void _loadCurrentViewState(void);
 
 #ifndef __mobile__
-    void _createInnerDockWidget(const QString& widgetName);
+    bool _createInnerDockWidget(const QString& widgetName);
     void _buildCommonWidgets(void);
     void _hideAllDockWidgets(void);
     void _showDockWidget(const QString &name, bool show);
@@ -247,6 +219,8 @@ private:
     Ui::MainWindow          _ui;
 
     QGCQmlWidgetHolder*     _mainQmlWidgetHolder;
+
+    bool    _forceClose;
 
     QString _getWindowGeometryKey();
 };

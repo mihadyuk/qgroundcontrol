@@ -94,34 +94,6 @@ void SerialLink::writeBytes(const char* data, qint64 size)
 }
 
 /**
- * @brief Read a number of bytes from the interface.
- *
- * @param data Pointer to the data byte array to write the bytes to
- * @param maxLength The maximum number of bytes to write
- **/
-void SerialLink::readBytes()
-{
-    if(_port && _port->isOpen()) {
-        const qint64 maxLength = 2048;
-        char data[maxLength];
-        _dataMutex.lock();
-        qint64 numBytes = _port->bytesAvailable();
-
-        if (numBytes > 0) {
-            /* Read as much data in buffer as possible without overflow */
-            if(maxLength < numBytes) numBytes = maxLength;
-
-            _logInputDataRate(numBytes, QDateTime::currentMSecsSinceEpoch());
-
-            _port->read(data, numBytes);
-            QByteArray b(data, numBytes);
-            emit bytesReceived(this, b);
-        }
-        _dataMutex.unlock();
-    }
-}
-
-/**
  * @brief Disconnect the connection.
  *
  * @return True if connection has been disconnected, false if connection couldn't be disconnected.
@@ -215,7 +187,8 @@ bool SerialLink::_hardwareConnect(QSerialPort::SerialPortError& error, QString& 
         return false; // couldn't create serial port.
     }
 
-    QObject::connect(_port, SIGNAL(error(QSerialPort::SerialPortError)), this, SLOT(linkError(QSerialPort::SerialPortError)));
+    QObject::connect(_port, static_cast<void (QSerialPort::*)(QSerialPort::SerialPortError)>(&QSerialPort::error),
+                     this, &SerialLink::linkError);
     QObject::connect(_port, &QIODevice::readyRead, this, &SerialLink::_readBytes);
 
     //  port->setCommTimeouts(QSerialPort::CtScheme_NonBlockingRead);
@@ -266,8 +239,7 @@ bool SerialLink::_hardwareConnect(QSerialPort::SerialPortError& error, QString& 
 void SerialLink::_readBytes(void)
 {
     qint64 byteCount = _port->bytesAvailable();
-    if (byteCount)
-    {
+    if (byteCount) {
         QByteArray buffer;
         buffer.resize(byteCount);
         _port->read(buffer.data(), buffer.size());
@@ -377,15 +349,6 @@ LinkConfiguration* SerialLink::getLinkConfiguration()
     return _config;
 }
 
-bool SerialLink::requiresUSBMavlinkStart(void) const
-{
-    if (_port) {
-        return QGCSerialPortInfo(*_port).boardTypePixhawk();
-    } else {
-        return false;
-    }
-}
-
 //--------------------------------------------------------------------------
 //-- SerialConfiguration
 
@@ -396,6 +359,7 @@ SerialConfiguration::SerialConfiguration(const QString& name) : LinkConfiguratio
     _parity     = QSerialPort::NoParity;
     _dataBits   = 8;
     _stopBits   = 1;
+    _usbDirect  = false;
 }
 
 SerialConfiguration::SerialConfiguration(SerialConfiguration* copy) : LinkConfiguration(copy)
@@ -407,6 +371,7 @@ SerialConfiguration::SerialConfiguration(SerialConfiguration* copy) : LinkConfig
     _stopBits           = copy->stopBits();
     _portName           = copy->portName();
     _portDisplayName    = copy->portDisplayName();
+    _usbDirect          = copy->_usbDirect;
 }
 
 void SerialConfiguration::copyFrom(LinkConfiguration *source)
@@ -421,6 +386,7 @@ void SerialConfiguration::copyFrom(LinkConfiguration *source)
     _stopBits           = ssource->stopBits();
     _portName           = ssource->portName();
     _portDisplayName    = ssource->portDisplayName();
+    _usbDirect          = ssource->_usbDirect;
 }
 
 void SerialConfiguration::updateSettings()
@@ -562,3 +528,10 @@ void SerialConfiguration::_initBaudRates()
     kSupportedBaudRates << "921600";
 }
 
+void SerialConfiguration::setUsbDirect(bool usbDirect)
+{
+    if (_usbDirect != usbDirect) {
+        _usbDirect = usbDirect;
+        emit usbDirectChanged(_usbDirect);
+    }
+}

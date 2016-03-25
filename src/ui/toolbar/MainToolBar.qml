@@ -45,7 +45,7 @@ Rectangle {
 
     QGCPalette { id: qgcPal; colorGroupEnabled: true }
 
-    property var  activeVehicle:        multiVehicleManager.activeVehicle
+    property var  activeVehicle:        QGroundControl.multiVehicleManager.activeVehicle
     property var  mainWindow:           null
     property bool isMessageImportant:   activeVehicle ? !activeVehicle.messageTypeNormal && !activeVehicle.messageTypeNone : false
     property bool isBackgroundDark:     true
@@ -165,13 +165,13 @@ Rectangle {
 
     function getBatteryColor() {
         if(activeVehicle) {
-            if(activeVehicle.batteryPercent > 75) {
+            if(activeVehicle.battery.percentRemaining.value > 75) {
                 return colorGreen
             }
-            if(activeVehicle.batteryPercent > 50) {
+            if(activeVehicle.battery.percentRemaining.value > 50) {
                 return colorOrange
             }
-            if(activeVehicle.batteryPercent > 0.1) {
+            if(activeVehicle.battery.percentRemaining.value > 0.1) {
                 return colorRed
             }
         }
@@ -186,22 +186,6 @@ Rectangle {
         if(value > -90)
             return colorOrange;
         return colorRed;
-    }
-
-    function getGpsLockStatus() {
-        if(activeVehicle) {
-            if(activeVehicle.satelliteLock == 0) {
-                return "No Satellite Link"
-            }
-            if(activeVehicle.satelliteLock == 1) {
-                return "No GPS Lock"
-            }
-            if(activeVehicle.satelliteLock == 2) {
-                return "2D Lock"
-            }
-            return "3D Lock"
-        }
-        return "N/A"
     }
 
     Component.onCompleted: {
@@ -226,14 +210,14 @@ Rectangle {
                 anchors.centerIn:   parent
                 QGCLabel {
                     id:         gpsLabel
-                    text:       (activeVehicle && (activeVehicle.satelliteCount > 0)) ? "GPS Status" : "GPS Data Unavailable"
+                    text:       (activeVehicle && activeVehicle.gps.count.value >= 0) ? "GPS Status" : "GPS Data Unavailable"
                     font.weight:Font.DemiBold
                     color:      colorWhite
                     anchors.horizontalCenter: parent.horizontalCenter
                 }
                 GridLayout {
                     id:                 gpsGrid
-                    visible:            (activeVehicle && (activeVehicle.satelliteCount > 0))
+                    visible:            (activeVehicle && activeVehicle.gps.count.value >= 0)
                     anchors.margins:    ScreenTools.defaultFontPixelHeight
                     columnSpacing:      ScreenTools.defaultFontPixelWidth
                     anchors.horizontalCenter: parent.horizontalCenter
@@ -243,7 +227,7 @@ Rectangle {
                         color:  colorWhite
                     }
                     QGCLabel {
-                        text:   activeVehicle ? (activeVehicle.satelliteCount) : "N/A"
+                        text:   activeVehicle ? activeVehicle.gps.count.valueString : "N/A"
                         color:  colorWhite
                     }
                     QGCLabel {
@@ -251,7 +235,31 @@ Rectangle {
                         color:  colorWhite
                     }
                     QGCLabel {
-                        text:   getGpsLockStatus()
+                        text:   activeVehicle ? activeVehicle.gps.lock.enumStringValue : "N/A"
+                        color:  colorWhite
+                    }
+                    QGCLabel {
+                        text:   "HDOP:"
+                        color:  colorWhite
+                    }
+                    QGCLabel {
+                        text:   activeVehicle ? activeVehicle.gps.hdop.valueString : "--.--"
+                        color:  colorWhite
+                    }
+                    QGCLabel {
+                        text:   "VDOP:"
+                        color:  colorWhite
+                    }
+                    QGCLabel {
+                        text:   activeVehicle ? activeVehicle.gps.vdop.valueString : "--.--"
+                        color:  colorWhite
+                    }
+                    QGCLabel {
+                        text:   "Course Over Ground:"
+                        color:  colorWhite
+                    }
+                    QGCLabel {
+                        text:   activeVehicle ? activeVehicle.gps.courseOverGround.valueString : "--.--"
                         color:  colorWhite
                     }
                 }
@@ -268,27 +276,29 @@ Rectangle {
     // Battery Info
     Component {
         id: batteryInfo
+
         Rectangle {
             color:          Qt.rgba(0,0,0,0.75)
             width:          battCol.width   + ScreenTools.defaultFontPixelWidth  * 3
             height:         battCol.height  + ScreenTools.defaultFontPixelHeight * 2
             radius:         ScreenTools.defaultFontPixelHeight * 0.5
+
             Column {
                 id:                 battCol
                 spacing:            ScreenTools.defaultFontPixelHeight * 0.5
                 width:              Math.max(battGrid.width, battLabel.width)
                 anchors.margins:    ScreenTools.defaultFontPixelHeight
                 anchors.centerIn:   parent
+
                 QGCLabel {
                     id:         battLabel
-                    text:       (activeVehicle && (activeVehicle.batteryVoltage > 0)) ? "Battery Status" : "Battery Data Unavailable"
+                    text:       "Battery Status"
                     color:      colorWhite
                     font.weight:Font.DemiBold
                     anchors.horizontalCenter: parent.horizontalCenter
                 }
                 GridLayout {
                     id:                 battGrid
-                    visible:            (activeVehicle && (activeVehicle.batteryVoltage > 0))
                     anchors.margins:    ScreenTools.defaultFontPixelHeight
                     columnSpacing:      ScreenTools.defaultFontPixelWidth
                     anchors.horizontalCenter: parent.horizontalCenter
@@ -298,29 +308,20 @@ Rectangle {
                         color:  colorWhite
                     }
                     QGCLabel {
-                        text:   activeVehicle ? (activeVehicle.batteryVoltage.toFixed(1) + " V") : "N/A"
+                        text:   (activeVehicle && activeVehicle.battery.voltage.value != -1) ? (activeVehicle.battery.voltage.valueString + " " + activeVehicle.battery.voltage.units) : "N/A"
                         color:  getBatteryColor()
                     }
-                    // TODO: What "controller" provides "Facts"?
-                    /*
-                    QGCLabel {
-                        text:   "Cell Voltage:"
-                    }
-                    QGCLabel {
-                        text:   (activeVehicle.batteryVoltage / controller.getParameterFact(-1, "BAT_N_CELLS").value) + "V"
-                        color:  getBatteryColor()
-                    }
-                    */
                     QGCLabel {
                         text:   "Accumulated Consumption:"
                         color:  colorWhite
                     }
                     QGCLabel {
-                        text:   activeVehicle ? (activeVehicle.batteryConsumed + " mA") : "N/A"
+                        text:   (activeVehicle && activeVehicle.battery.mahConsumed.value != -1) ? (activeVehicle.battery.mahConsumed.valueString + " " + activeVehicle.battery.mahConsumed.units) : "N/A"
                         color:  getBatteryColor()
                     }
                 }
             }
+
             Component.onCompleted: {
                 var pos = mapFromItem(toolBar, centerX - (width / 2), toolBar.height)
                 x = pos.x
@@ -554,23 +555,23 @@ Rectangle {
         anchors.right:          parent.right
         anchors.verticalCenter: parent.verticalCenter
 
-        property bool vehicleInactive: activeVehicle ? activeVehicle.heartbeatTimeout != 0 : false
+        property bool vehicleConnectionLost: activeVehicle ? activeVehicle.connectionLost : false
 
         Loader {
-            source:                 activeVehicle && !parent.vehicleInactive ? "MainToolBarIndicators.qml" : ""
+            source:                 activeVehicle && !parent.vehicleConnectionLost ? "MainToolBarIndicators.qml" : ""
             anchors.left:           parent.left
             anchors.verticalCenter: parent.verticalCenter
         }
 
         QGCLabel {
             id:                     connectionLost
-            text:                   "CONNECTION LOST"
+            text:                   "COMMUNICATION LOST"
             font.pixelSize:         tbFontLarge
             font.weight:            Font.DemiBold
             color:                  colorRed
             anchors.left:           parent.left
             anchors.verticalCenter: parent.verticalCenter
-            visible:                parent.vehicleInactive
+            visible:                parent.vehicleConnectionLost
 
         }
 
@@ -579,7 +580,7 @@ Rectangle {
             anchors.right:          parent.right
             anchors.verticalCenter: parent.verticalCenter
             text:                   "Disconnect"
-            visible:                parent.vehicleInactive
+            visible:                parent.vehicleConnectionLost
             onClicked:              activeVehicle.disconnectInactiveVehicle()
         }
     }

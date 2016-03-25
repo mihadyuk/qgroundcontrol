@@ -81,7 +81,8 @@ bool QGCFileDownload::download(const QString& remoteFile)
 
     connect(networkReply, &QNetworkReply::downloadProgress, this, &QGCFileDownload::downloadProgress);
     connect(networkReply, &QNetworkReply::finished, this, &QGCFileDownload::_downloadFinished);
-    connect(networkReply, SIGNAL(error(QNetworkReply::NetworkError)), this, SLOT(_downloadError(QNetworkReply::NetworkError)));
+    connect(networkReply, static_cast<void (QNetworkReply::*)(QNetworkReply::NetworkError)>(&QNetworkReply::error),
+            this, &QGCFileDownload::_downloadError);
 
     return true;
 }
@@ -120,6 +121,10 @@ void QGCFileDownload::_downloadError(QNetworkReply::NetworkError code)
     
     if (code == QNetworkReply::OperationCanceledError) {
         errorMsg = "Download cancelled";
+
+    } else if (code == QNetworkReply::ContentNotFoundError) {
+        errorMsg = "Error: File Not Found";
+
     } else {
         errorMsg = QString("Error during download. Error: %1").arg(code);
     }

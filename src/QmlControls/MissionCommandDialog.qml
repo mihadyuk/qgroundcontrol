@@ -30,6 +30,8 @@ import QGroundControl.ScreenTools   1.0
 import QGroundControl.Palette       1.0
 
 QGCViewDialog {
+    id: root
+
     property var missionItem
 
     property var _vehicle: QGroundControl.multiVehicleManager.activeVehicle
@@ -71,6 +73,7 @@ QGCViewDialog {
         anchors.bottom:     parent.bottom
         spacing:            ScreenTools.defaultFontPixelHeight / 2
         orientation:        ListView.Vertical
+        clip:               true
 
         delegate: Rectangle {
             width:  parent.width
@@ -88,8 +91,9 @@ QGCViewDialog {
                 anchors.top:        parent.top
 
                 QGCLabel {
-                    text:   mavCmdInfo.friendlyName
-                    color:  textColor
+                    text:           mavCmdInfo.friendlyName
+                    color:          textColor
+                    font.weight:    Font.DemiBold
                 }
 
                 QGCLabel {
@@ -106,7 +110,7 @@ QGCViewDialog {
                 anchors.fill:   parent
                 onClicked: {
                     missionItem.command = mavCmdInfo.command
-                    accept()
+                    root.reject()
                 }
             }
         }

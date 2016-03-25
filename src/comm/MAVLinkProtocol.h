@@ -72,12 +72,6 @@ public:
     int getSystemId();
     /** @brief Get the component id of this application */
     int getComponentId();
-    /** @brief The auto heartbeat emission rate in Hertz */
-    int getHeartbeatRate();
-    /** @brief Get heartbeat state */
-    bool heartbeatsEnabled() const {
-        return _heartbeatsEnabled;
-    }
     
     /** @brief Get protocol version check state */
     bool versionCheckEnabled() const {
@@ -155,16 +149,8 @@ public slots:
     /** @brief Receive bytes from a communication interface */
     void receiveBytes(LinkInterface* link, QByteArray b);
     
-    void linkConnected(void);
-    void linkDisconnected(void);
-    
-    /** @brief Set the rate at which heartbeats are emitted */
-    void setHeartbeatRate(int rate);
     /** @brief Set the system id of this application */
     void setSystemId(int id);
-
-    /** @brief Enable / disable the heartbeat emission */
-    void enableHeartbeats(bool enabled);
 
     /** @brief Enabled/disable packet multiplexing */
     void enableMultiplexing(bool enabled);
@@ -194,9 +180,6 @@ public slots:
     void setAuthKey(QString key) {
         m_authKey = key;
     }
-
-    /** @brief Send an extra heartbeat to all connected units */
-    void sendHeartbeat();
 
     /** @brief Load protocol settings */
     void loadSettings();
@@ -237,8 +220,6 @@ signals:
 
     /** @brief Message received and directly copied via signal */
     void messageReceived(LinkInterface* link, mavlink_message_t message);
-    /** @brief Emitted if heartbeat emission mode is changed */
-    void heartbeatChanged(bool heartbeats);
     /** @brief Emitted if multiplexing is started / stopped */
     void multiplexingChanged(bool enabled);
     /** @brief Emitted if authentication support is enabled / disabled */
@@ -285,7 +266,6 @@ private slots:
     void _vehicleCountChanged(int count);
     
 private:
-    void _linkStatusChanged(LinkInterface* link, bool connected);
     void _sendMessage(mavlink_message_t message);
     void _sendMessage(LinkInterface* link, mavlink_message_t message);
     void _sendMessage(LinkInterface* link, mavlink_message_t message, quint8 systemid, quint8 componentid);
@@ -303,10 +283,6 @@ private:
     static const char*  _tempLogFileTemplate;    ///< Template for temporary log file
     static const char*  _logFileExtension;       ///< Extension for log files
 #endif
-
-    QTimer  _heartbeatTimer;    ///< Timer to emit heartbeats
-    int     _heartbeatRate;     ///< Heartbeat rate, controls the timer interval
-    bool    _heartbeatsEnabled; ///< Enabled/disable heartbeat emission
 
     LinkManager*            _linkMgr;
     MultiVehicleManager*    _multiVehicleManager;
