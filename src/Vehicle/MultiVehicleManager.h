@@ -35,6 +35,7 @@
 
 class FirmwarePluginManager;
 class AutoPilotPluginManager;
+class FollowMe;
 class JoystickManager;
 class QGCApplication;
 class MAVLinkProtocol;
@@ -79,6 +80,12 @@ public:
 
     bool gcsHeartbeatEnabled(void) const { return _gcsHeartbeatEnabled; }
     void setGcsHeartbeatEnabled(bool gcsHeartBeatEnabled);
+
+    /// Determines if the link is in use by a Vehicle
+    ///     @param link Link to test against
+    ///     @param skipVehicle Don't consider this Vehicle as part of the test
+    /// @return true: link is in use by one or more Vehicles
+    bool linkInUse(LinkInterface* link, Vehicle* skipVehicle);
 
     // Override from QGCTool
     virtual void setToolbox(QGCToolbox *toolbox);

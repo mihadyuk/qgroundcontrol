@@ -38,6 +38,7 @@
 const FactMetaData::BuiltInTranslation_s FactMetaData::_rgBuiltInTranslations[] = {
     { "centi-degrees",  "degrees",  FactMetaData::_centiDegreesToDegrees,   FactMetaData::_degreesToCentiDegrees },
     { "radians",        "degrees",  FactMetaData::_radiansToDegrees,        FactMetaData::_degreesToRadians },
+    { "norm",           "%",  FactMetaData::_normToPercent,           FactMetaData::_percentToNorm },
 };
 
 // Translations driven by app settings
@@ -56,7 +57,7 @@ const FactMetaData::AppSettingsTranslation_s FactMetaData::_rgAppSettingsTransla
 FactMetaData::FactMetaData(QObject* parent)
     : QObject(parent)
     , _type(valueTypeInt32)
-    , _decimalPlaces(defaultDecimalPlaces)
+    , _decimalPlaces(unknownDecimalPlaces)
     , _rawDefaultValue(0)
     , _defaultValueAvailable(false)
     , _group("*Default Group")
@@ -75,7 +76,7 @@ FactMetaData::FactMetaData(QObject* parent)
 FactMetaData::FactMetaData(ValueType_t type, QObject* parent)
     : QObject(parent)
     , _type(type)
-    , _decimalPlaces(defaultDecimalPlaces)
+    , _decimalPlaces(unknownDecimalPlaces)
     , _rawDefaultValue(0)
     , _defaultValueAvailable(false)
     , _group("*Default Group")
@@ -147,7 +148,7 @@ void FactMetaData::setRawDefaultValue(const QVariant& rawDefaultValue)
 
 void FactMetaData::setRawMin(const QVariant& rawMin)
 {
-    if (rawMin > _minForType()) {
+    if (rawMin >= _minForType()) {
         _rawMin = rawMin;
         _minIsDefaultForType = false;
     } else {
@@ -449,6 +450,16 @@ QVariant FactMetaData::_knotsToMetersPerSecond(const QVariant& knots)
     return QVariant(knots.toDouble() * 0.51444444444);
 }
 
+QVariant FactMetaData::_percentToNorm(const QVariant& percent)
+{
+    return QVariant(percent.toDouble() / 100.0);
+}
+
+QVariant FactMetaData::_normToPercent(const QVariant& normalized)
+{
+    return QVariant(normalized.toDouble() * 100.0);
+}
+
 void FactMetaData::setRawUnits(const QString& rawUnits)
 {
     _rawUnits = rawUnits;
@@ -577,4 +588,43 @@ QString FactMetaData::appSettingsDistanceUnitsString(void)
     } else {
         return QStringLiteral("m");
     }
+}
+
+int FactMetaData::decimalPlaces(void) const
+{
+    int actualDecimalPlaces = defaultDecimalPlaces;
+    int incrementDecimalPlaces = unknownDecimalPlaces;
+
+    // First determine decimal places from increment
+    double increment = _rawTranslator(this->increment()).toDouble();
+    if (!qIsNaN(increment)) {
+        double integralPart;
+
+        // Get the fractional part only
+        increment = fabs(modf(increment, &integralPart));
+        if (increment == 0.0) {
+            // No fractional part, so no decimal places
+            incrementDecimalPlaces = 0;
+        } else {
+            incrementDecimalPlaces = -ceil(log10(increment));
+        }
+    }
+
+    // Correct decimal places is the larger of the two, increment or meta data value
+    if (incrementDecimalPlaces != unknownDecimalPlaces && _decimalPlaces == unknownDecimalPlaces) {
+        actualDecimalPlaces = incrementDecimalPlaces;
+    } else {
+
+        int settingsDecimalPlaces = _decimalPlaces;
+        double ctest = _rawTranslator(1.0).toDouble();
+
+        settingsDecimalPlaces += -log10(ctest);
+
+        settingsDecimalPlaces = qMin(25, settingsDecimalPlaces);
+        settingsDecimalPlaces = qMax(0, settingsDecimalPlaces);
+
+        actualDecimalPlaces = qMax(settingsDecimalPlaces, incrementDecimalPlaces);
+    }
+
+    return actualDecimalPlaces;
 }

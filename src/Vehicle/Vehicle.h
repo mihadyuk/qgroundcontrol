@@ -286,6 +286,7 @@ public:
     Q_PROPERTY(bool                 fixedWing               READ fixedWing                              CONSTANT)
     Q_PROPERTY(bool                 multiRotor              READ multiRotor                             CONSTANT)
     Q_PROPERTY(bool                 autoDisconnect          MEMBER _autoDisconnect                      NOTIFY autoDisconnectChanged)
+    Q_PROPERTY(QString              prearmError             READ prearmError        WRITE setPrearmError NOTIFY prearmErrorChanged)
 
     /// true: Vehicle is flying, false: Vehicle is on ground
     Q_PROPERTY(bool flying      READ flying     WRITE setFlying     NOTIFY flyingChanged)
@@ -359,6 +360,12 @@ public:
     /// Alter the current mission item on the vehicle
     Q_INVOKABLE void setCurrentMissionSequence(int seq);
 
+    /// Reboot vehicle
+    Q_INVOKABLE void rebootVehicle();
+
+    /// Clear Messages
+    Q_INVOKABLE void clearMessages();
+
     bool guidedModeSupported(void) const;
     bool pauseVehicleSupported(void) const;
 
@@ -394,6 +401,7 @@ public:
     int id(void) { return _id; }
     MAV_AUTOPILOT firmwareType(void) const { return _firmwareType; }
     MAV_TYPE vehicleType(void) const { return _vehicleType; }
+    Q_INVOKABLE QString vehicleTypeName(void) const;
 
     /// Returns the highest quality link available to the Vehicle
     LinkInterface* priorityLink(void);
@@ -404,6 +412,10 @@ public:
     /// Sends a message to the specified link
     /// @return true: message sent, false: Link no longer connected
     bool sendMessageOnLink(LinkInterface* link, mavlink_message_t message);
+
+    /// Sends a message to the priority link
+    /// @return true: message sent, false: Link no longer connected
+    bool sendMessageOnPriorityLink(mavlink_message_t message) { return sendMessageOnLink(priorityLink(), message); }
 
     /// Sends the specified messages multiple times to the vehicle in order to attempt to
     /// guarantee that it makes it to the vehicle.
@@ -442,6 +454,9 @@ public:
 
     void setFlying(bool flying);
     void setGuidedMode(bool guidedMode);
+
+    QString prearmError(void) const { return _prearmError; }
+    void setPrearmError(const QString& prearmError);
 
     QmlObjectListModel* trajectoryPoints(void) { return &_mapTrajectoryList; }
 
@@ -486,6 +501,8 @@ public:
     uint            messagesLost        () { return _messagesLost; }
     bool            flying              () const { return _flying; }
     bool            guidedMode          () const;
+    uint8_t         baseMode            () const { return _base_mode; }
+    uint32_t        customMode          () const { return _custom_mode; }
 
     Fact* roll              (void) { return &_rollFact; }
     Fact* heading           (void) { return &_headingFact; }
@@ -510,6 +527,12 @@ public:
     bool containsLink(LinkInterface* link) { return _links.contains(link); }
     void doCommandLong(int component, MAV_CMD command, float param1 = 0.0f, float param2 = 0.0f, float param3 = 0.0f, float param4 = 0.0f, float param5 = 0.0f, float param6 = 0.0f, float param7 = 0.0f);
 
+    int firmwareMajorVersion(void) const { return _firmwareMajorVersion; }
+    int firmwareMinorVersion(void) const { return _firmwareMinorVersion; }
+    int firmwarePatchVersion(void) const { return _firmwarePatchVersion; }
+    void setFirmwareVersion(int majorVersion, int minorVersion, int patchVersion);
+    static const int versionNotSetValue = -1;
+
 public slots:
     void setLatitude(double latitude);
     void setLongitude(double longitude);
@@ -533,6 +556,8 @@ signals:
     void autoDisconnectChanged(bool autoDisconnectChanged);
     void flyingChanged(bool flying);
     void guidedModeChanged(bool guidedMode);
+    void prearmErrorChanged(const QString& prearmError);
+    void commandLongAck(uint8_t compID, uint16_t command, uint8_t result);
 
     void messagesReceivedChanged    ();
     void messagesSentChanged        ();
@@ -594,6 +619,7 @@ private slots:
     /** @brief A new camera image has arrived */
     void _imageReady                        (UASInterface* uas);
     void _connectionLostTimeout(void);
+    void _prearmErrorTimeout(void);
 
 private:
     bool _containsLink(LinkInterface* link);
@@ -610,6 +636,7 @@ private:
     void _handleWind(mavlink_message_t& message);
     void _handleVibration(mavlink_message_t& message);
     void _handleExtendedSysState(mavlink_message_t& message);
+    void _handleCommandAck(mavlink_message_t& message);
     void _missionManagerError(int errorCode, const QString& errorMsg);
     void _mapTrajectoryStart(void);
     void _mapTrajectoryStop(void);
@@ -662,6 +689,10 @@ private:
     bool            _autoDisconnect;    ///< true: Automatically disconnect vehicle when last connection goes away or lost heartbeat
     bool            _flying;
 
+    QString             _prearmError;
+    QTimer              _prearmErrorTimer;
+    static const int    _prearmErrorTimeoutMSecs = 35 * 1000;   ///< Take away prearm error after 35 seconds
+
     // Lost connection handling
     bool                _connectionLost;
     bool                _connectionLostEnabled;
@@ -712,6 +743,10 @@ private:
     uint8_t             _messageSeq;
     uint8_t             _compID;
     bool                _heardFrom;
+
+    int _firmwareMajorVersion;
+    int _firmwareMinorVersion;
+    int _firmwarePatchVersion;
 
     static const int    _lowBatteryAnnounceRepeatMSecs; // Amount of time in between each low battery announcement
     QElapsedTimer       _lowBatteryAnnounceTimer;

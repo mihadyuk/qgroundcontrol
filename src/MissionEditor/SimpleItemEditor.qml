@@ -38,13 +38,14 @@ Rectangle {
             spacing:        _margin
 
             QGCLabel {
-                width:      parent.width
-                wrapMode:   Text.WordWrap
-                text:       missionItem.sequenceNumber == 0 ?
-                                "Planned home position." :
-                                (missionItem.rawEdit ?
-                                     "Provides advanced access to all commands/parameters. Be very careful!" :
-                                     missionItem.commandDescription)
+                width:          parent.width
+                wrapMode:       Text.WordWrap
+                font.pointSize: ScreenTools.smallFontPointSize
+                text:           missionItem.sequenceNumber == 0 ?
+                                    qsTr("Planned home position.") :
+                                    (missionItem.rawEdit ?
+                                        qsTr("Provides advanced access to all commands/parameters. Be very careful!") :
+                                        missionItem.commandDescription)
             }
 
             Repeater {
@@ -113,7 +114,7 @@ Rectangle {
             }
 
             QGCButton {
-                text:       "Move Home to map center"
+                text:       qsTr("Move Home to map center")
                 visible:    missionItem.homePosition
                 onClicked:  editorRoot.moveHomeToMapCenter()
                 anchors.horizontalCenter: parent.horizontalCenter

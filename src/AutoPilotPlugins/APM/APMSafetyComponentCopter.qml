@@ -79,8 +79,8 @@ QGCView {
 
             QGCLabel {
                 id:         failsafeLabel
-                text:       "Failsafe Triggers"
-                font.weight: Font.DemiBold
+                text:       qsTr("Failsafe Triggers")
+                font.family: ScreenTools.demiboldFontFamily
             }
 
             Rectangle {
@@ -98,7 +98,7 @@ QGCView {
                     anchors.margins:    _margins
                     anchors.left:       parent.left
                     anchors.baseline:   gcsEnableCombo.baseline
-                    text:               "Ground Station failsafe:"
+                    text:               qsTr("Ground Station failsafe:")
                 }
 
                 FactComboBox {
@@ -117,7 +117,7 @@ QGCView {
                     anchors.margins:    _margins
                     anchors.left:       parent.left
                     anchors.baseline:   throttleEnableCombo.baseline
-                    text:               "Throttle failsafe:"
+                    text:               qsTr("Throttle failsafe:")
                 }
 
                 QGCComboBox {
@@ -126,7 +126,8 @@ QGCView {
                     anchors.left:       gcsEnableCombo.left
                     anchors.top:        gcsEnableCombo.bottom
                     width:              voltageField.width
-                    model:              ["Disabled", "Always RTL", "Continue with Mission in Auto Mode", "Always Land"]
+                    model:              [qsTr("Disabled"), qsTr("Always RTL"),
+                        qsTr("Continue with Mission in Auto Mode"), qsTr("Always Land")]
                     currentIndex:       _failsafeThrEnable.value
 
                     onActivated: _failsafeThrEnable.value = index
@@ -137,7 +138,7 @@ QGCView {
                     anchors.margins:    _margins
                     anchors.left:       parent.left
                     anchors.baseline:   throttlePWMField.baseline
-                    text:               "PWM threshold:"
+                    text:               qsTr("PWM threshold:")
                 }
 
                 FactTextField {
@@ -154,7 +155,7 @@ QGCView {
                     anchors.margins:    _margins
                     anchors.left:       parent.left
                     anchors.baseline:   batteryEnableCombo.baseline
-                    text:               "Battery failsafe:"
+                    text:               qsTr("Battery failsafe:")
                 }
 
                 QGCComboBox {
@@ -163,7 +164,7 @@ QGCView {
                     anchors.left:       gcsEnableCombo.left
                     anchors.top:        throttlePWMField.bottom
                     width:              voltageField.width
-                    model:              ["Disabled", "Land", "Return to Launch"]
+                    model:              [qsTr("Disabled"), qsTr("Land"), qsTr("Return to Launch")]
                     currentIndex:       _failsafeBattEnable.value
 
                     onActivated: _failsafeBattEnable.value = index
@@ -174,7 +175,7 @@ QGCView {
                     anchors.margins:    _margins
                     anchors.left:       parent.left
                     anchors.baseline:   voltageField.baseline
-                    text:               "Voltage threshold:"
+                    text:               qsTr("Voltage threshold:")
                     checked:            _failsafeBattVoltage.value != 0
 
                     onClicked: _failsafeBattVoltage.value = checked ? 10.5 : 0
@@ -194,7 +195,7 @@ QGCView {
                     anchors.margins:    _margins
                     anchors.left:       parent.left
                     anchors.baseline:   mahField.baseline
-                    text:               "MAH threshold:"
+                    text:               qsTr("MAH threshold:")
                     checked:            _failsafeBattMah.value != 0
 
                     onClicked: _failsafeBattMah.value = checked ? 600 : 0
@@ -215,8 +216,8 @@ QGCView {
                 anchors.leftMargin: _margins
                 anchors.left:       failsafeSettings.right
                 anchors.top:        parent.top
-                text:               "GeoFence"
-                font.weight:        Font.DemiBold
+                text:               qsTr("GeoFence")
+                font.family:        ScreenTools.demiboldFontFamily
             }
 
             Rectangle {
@@ -233,7 +234,7 @@ QGCView {
                     anchors.margins:    _margins
                     anchors.left:       parent.left
                     anchors.top:        parent.top
-                    text:               "Circle GeoFence enabled"
+                    text:               qsTr("Circle GeoFence enabled")
                     checked:            _fenceEnable.value != 0 && _fenceType.value & 2
 
                     onClicked: {
@@ -258,7 +259,7 @@ QGCView {
                     anchors.topMargin:  _margins / 2
                     anchors.left:       circleGeo.left
                     anchors.top:        circleGeo.bottom
-                    text:               "Altitude GeoFence enabled"
+                    text:               qsTr("Altitude GeoFence enabled")
                     checked:            _fenceEnable.value != 0 && _fenceType.value & 1
 
                     onClicked: {
@@ -283,7 +284,7 @@ QGCView {
                     anchors.margins:    _margins
                     anchors.left:       parent.left
                     anchors.top:        altitudeGeo.bottom
-                    text:               "Report only"
+                    text:               qsTr("Report only")
                     exclusiveGroup:     fenceActionRadioGroup
                     checked:            _fenceAction.value == 0
 
@@ -295,7 +296,7 @@ QGCView {
                     anchors.topMargin:  _margins / 2
                     anchors.left:       circleGeo.left
                     anchors.top:        geoReportRadio.bottom
-                    text:               "RTL or Land"
+                    text:               qsTr("RTL or Land")
                     exclusiveGroup:     fenceActionRadioGroup
                     checked:            _fenceAction.value == 1
 
@@ -306,7 +307,7 @@ QGCView {
                     id:                 fenceRadiusLabel
                     anchors.left:       circleGeo.left
                     anchors.baseline:   fenceRadiusField.baseline
-                    text:               "Max radius:"
+                    text:               qsTr("Max radius:")
                 }
 
                 FactTextField {
@@ -322,7 +323,7 @@ QGCView {
                     id:                 fenceAltMaxLabel
                     anchors.left:       circleGeo.left
                     anchors.baseline:   fenceAltMaxField.baseline
-                    text:               "Max altitude:"
+                    text:               qsTr("Max altitude:")
                 }
 
                 FactTextField {
@@ -340,8 +341,8 @@ QGCView {
                 id:                 rtlLabel
                 anchors.topMargin:  _margins
                 anchors.top:        geoFenceSettings.bottom
-                text:               "Return to Launch"
-                font.weight:        Font.DemiBold
+                text:               qsTr("Return to Launch")
+                font.family:        ScreenTools.demiboldFontFamily
             }
 
             Rectangle {
@@ -360,6 +361,7 @@ QGCView {
                     anchors.top:        parent.top
                     height:             ScreenTools.defaultFontPixelWidth * 20
                     width:              ScreenTools.defaultFontPixelWidth * 20
+                    sourceSize.width:   width
                     mipmap:             true
                     fillMode:           Image.PreserveAspectFit
                     visible:            false
@@ -377,7 +379,7 @@ QGCView {
                     anchors.leftMargin: _margins
                     anchors.left:       icon.right
                     anchors.top:        icon.top
-                    text:               "Return at current altitude"
+                    text:               qsTr("Return at current altitude")
                     checked:            _rtlAltFact.value == 0
                     exclusiveGroup:     returnAltRadioGroup
 
@@ -389,7 +391,7 @@ QGCView {
                     anchors.topMargin:  _margins
                     anchors.left:       returnAtCurrentRadio.left
                     anchors.top:        returnAtCurrentRadio.bottom
-                    text:               "Return at specified altitude:"
+                    text:               qsTr("Return at specified altitude:")
                     exclusiveGroup:     returnAltRadioGroup
                     checked:            _rtlAltFact.value != 0
 
@@ -411,7 +413,7 @@ QGCView {
                     anchors.left:       returnAtCurrentRadio.left
                     anchors.baseline:   landDelayField.baseline
                     checked:            _rtlLoitTimeFact.value > 0
-                    text:               "Loiter above Home for:"
+                    text:               qsTr("Loiter above Home for:")
 
                     onClicked: _rtlLoitTimeFact.value = (checked ? 60 : 0)
                 }
@@ -430,7 +432,7 @@ QGCView {
                     id:                 landRadio
                     anchors.left:       returnAtCurrentRadio.left
                     anchors.baseline:   landSpeedField.baseline
-                    text:               "Land with descent speed:"
+                    text:               qsTr("Land with descent speed:")
                     checked:            _rtlAltFinalFact.value == 0
                     exclusiveGroup:     landLoiterRadioGroup
 
@@ -451,7 +453,7 @@ QGCView {
                     id:                 finalLoiterRadio
                     anchors.left:       returnAtCurrentRadio.left
                     anchors.baseline:   rltAltFinalField.baseline
-                    text:               "Final loiter altitude:"
+                    text:               qsTr("Final loiter altitude:")
                     exclusiveGroup:     landLoiterRadioGroup
 
                     onClicked: _rtlAltFinalFact.value = _rtlAltFact.value
@@ -473,8 +475,8 @@ QGCView {
                 anchors.topMargin:  _margins
                 anchors.left:       parent.left
                 anchors.top:        rtlSettings.bottom
-                text:               "Arming Checks"
-                font.weight:        Font.DemiBold
+                text:               qsTr("Arming Checks")
+                font.family:        ScreenTools.demiboldFontFamily
             }
 
             Rectangle {
@@ -490,7 +492,7 @@ QGCView {
                     id:         armingCheckColumn
                     spacing:    _margins
 
-                    QGCLabel { text: "Be very careful when turning off arming checks. Could lead to loss of Vehicle control." }
+                    QGCLabel { text: qsTr("Be very careful when turning off arming checks. Could lead to loss of Vehicle control.") }
                     FactBitmask { fact: _armingCheck }
                 }
             }

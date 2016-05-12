@@ -35,15 +35,15 @@ Rectangle {
     property real   expandedWidth               ///< Width of control when expanded
 
     width:      _expanded ? expandedWidth : _collapsedWidth
-    height:     azimuthLabel.y + azimuthLabel.height + _margins
-    radius:     ScreenTools.defaultFontPixelWidth
+    height:     valueGrid.height + (_margins * 2)
+    radius:     ScreenTools.defaultFontPixelWidth * 0.5
     color:      qgcPal.window
     opacity:    0.80
     clip:       true
 
     readonly property real margins: ScreenTools.defaultFontPixelWidth
 
-    property real   _collapsedWidth:    distanceLabel.width + (margins * 2)
+    property real   _collapsedWidth:    valueGrid.width + (margins * 2)
     property bool   _expanded:          true
     property real   _distance:          _statusValid ? _currentMissionItem.distance : 0
     property real   _altDifference:     _statusValid ? _currentMissionItem.altDifference : 0
@@ -63,85 +63,79 @@ Rectangle {
         onClicked:      _expanded = !_expanded
     }
 
-    QGCLabel {
-        id:                 distanceLabel
+    Row {
+        anchors.fill:       parent
         anchors.margins:    _margins
-        anchors.left:       parent.left
-        anchors.top:        parent.top
-        text:               "Distance: " + _distanceText
-    }
+        spacing:            _margins
 
-    QGCLabel {
-        id:                 altLabel
-        anchors.left:       distanceLabel.left
-        anchors.top:        distanceLabel.bottom
-        text:               "Alt diff: " + _altText
-    }
+        Grid {
+            id:                 valueGrid
+            columns:            2
+            columnSpacing:      _margins
+            anchors.verticalCenter: parent.verticalCenter
 
-    QGCLabel {
-        id:                 gradientLabel
-        anchors.left:       distanceLabel.left
-        anchors.top:        altLabel.bottom
-        text:               "Gradient: " + _gradientText
-    }
+            QGCLabel { text: qsTr("Distance:") }
+            QGCLabel { text: _distanceText }
 
-    QGCLabel {
-        id:                 azimuthLabel
-        anchors.left:       distanceLabel.left
-        anchors.top:        gradientLabel.bottom
-        text:               "Azimuth: " + _azimuthText
-    }
+            QGCLabel { text: qsTr("Alt diff:") }
+            QGCLabel { text: _altText }
 
-    QGCFlickable {
-        anchors.leftMargin:     _margins
-        anchors.rightMargin:    _margins
-        anchors.left:           distanceLabel.right
-        anchors.right:          parent.right
-        anchors.top:            parent.top
-        anchors.bottom:         parent.bottom
-        contentWidth:           graphRow.width
-        clip:                   true
+            QGCLabel { text: qsTr("Gradient:") }
+            QGCLabel { text: _gradientText }
 
-        Row {
-            id:             graphRow
-            anchors.top:    parent.top
-            anchors.bottom: parent.bottom
-            spacing:        ScreenTools.smallFontPixelWidth
+            QGCLabel { text: qsTr("Azimuth:") }
+            QGCLabel { text: _azimuthText }
+        }
 
-            Repeater {
-                model: missionItems
+        QGCFlickable {
+            anchors.leftMargin:     _margins
+            anchors.rightMargin:    _margins
+            anchors.top:            parent.top
+            anchors.bottom:         parent.bottom
+            width:                  parent.width - valueGrid.width - (_margins * 2)
+            contentWidth:           graphRow.width
+            visible:                _expanded
+            clip:                   true
 
-                Item {
-                    height:     graphRow.height
-                    width:      ScreenTools.smallFontPixelWidth * 2
-                    visible:    object.specifiesCoordinate && !object.isStandaloneCoordinate
+            Row {
+                id:                 graphRow
+                anchors.top:        parent.top
+                anchors.bottom:     parent.bottom
+                //anchors.margins:    ScreenTools.defaultFontPixelWidth * ScreenTools.smallFontPointRatio
+                spacing:            ScreenTools.defaultFontPixelWidth * ScreenTools.smallFontPointRatio
 
+                Repeater {
+                    model: missionItems
 
-                    property real availableHeight: height - ScreenTools.smallFontPixelHeight - indicator.height
+                    Item {
+                        height:     graphRow.height
+                        width:      indicator.width
+                        visible:    object.specifiesCoordinate && !object.isStandaloneCoordinate
 
-                    property bool graphAbsolute:    true
+                        property real availableHeight:  height - indicator.height
+                        property bool graphAbsolute:    true
 
-                    MissionItemIndexLabel {
-                        id:                         indicator
-                        anchors.horizontalCenter:   parent.horizontalCenter
-                        y:                          availableHeight - (availableHeight * object.altPercent)
-                        small:                      true
-                        isCurrentItem:              object.isCurrentItem
-                        label:                      object.abbreviation
-                        visible:                    object.relativeAltitude ? true : (object.homePosition || graphAbsolute)
+                        MissionItemIndexLabel {
+                            id:                         indicator
+                            anchors.horizontalCenter:   parent.horizontalCenter
+                            y:                          availableHeight - (availableHeight * object.altPercent)
+                            small:                      true
+                            isCurrentItem:              object.isCurrentItem
+                            label:                      object.abbreviation
+                            visible:                    object.relativeAltitude ? true : (object.homePosition || graphAbsolute)
+                        }
+
+                        /*
+                          Taking these off for now since there really isn't room for the numbers
+                        QGCLabel {
+                            anchors.bottom:             parent.bottom
+                            anchors.horizontalCenter:   parent.horizontalCenter
+                            font.pointSize:             ScreenTools.smallFontPointSize
+                            text:                       (object.relativeAltitude ? "" : "=") + object.coordinate.altitude.toFixed(0)
+                        }
+                        */
                     }
-
-                    /*
-                      Taking these off for now since there really isn't room for the numbers
-                    QGCLabel {
-                        anchors.bottom:             parent.bottom
-                        anchors.horizontalCenter:   parent.horizontalCenter
-                        font.pixelSize:             ScreenTools.smallFontPixelSize
-                        text:                       (object.relativeAltitude ? "" : "=") + object.coordinate.altitude.toFixed(0)
-                    }
-                    */
                 }
-
             }
         }
     }

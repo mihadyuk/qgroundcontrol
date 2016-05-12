@@ -41,8 +41,11 @@ Item {
     property alias animateHideDialog: __animateHideDialog
 
     readonly property int  __animationDuration: 100
-    readonly property real __closeButtonSize:   ScreenTools.defaultFontPixelHeight * 2
-    readonly property real _margins:            ScreenTools.defaultFontPixelHeight / 2
+    readonly property real __closeButtonSize:   ScreenTools.defaultFontPixelHeight * 1.5
+    readonly property real _margins:            ScreenTools.defaultFontPixelHeight * 0.5
+    readonly property real _buttonHeight:       ScreenTools.isTinyScreen ? ScreenTools.defaultFontPixelHeight * 3 : ScreenTools.defaultFontPixelHeight * 2
+
+    QGCPalette { id: qgcPal }
 
     onVisibleChanged: {
         //-- Unselect any selected button
@@ -106,13 +109,14 @@ Item {
         anchors.bottom: parent.bottom
         anchors.left:   parent.left
         opacity:        0.0
-        color:          __qgcPal.window
+        color:          qgcPal.window
         visible:        __rightPanel.source == ""
         // Dismiss if clicked outside menu area
         MouseArea {
             anchors.fill: parent
             onClicked: {
-                mainWindow.hideLeftMenu()
+                if (!__animateShowDialog.running)
+                    mainWindow.hideLeftMenu()
             }
         }
     }
@@ -130,11 +134,11 @@ Item {
     // This is the menu dialog panel which is anchored to the left edge
     Rectangle {
         id:             __leftMenu
-        width:          ScreenTools.defaultFontPixelWidth * 14
+        width:          ScreenTools.defaultFontPixelWidth * 16
         anchors.left:   parent.left
         anchors.top:    __topSeparator.bottom
         anchors.bottom: parent.bottom
-        color:          __qgcPal.windowShadeDark
+        color:          qgcPal.windowShadeDark
 
         QGCFlickable {
             anchors.fill:       parent
@@ -152,17 +156,18 @@ Item {
                 anchors.right:          parent.right
                 anchors.topMargin:      _margins
                 anchors.top:            parent.top
-                spacing:                 ScreenTools.defaultFontPixelHeight
+                spacing:                ScreenTools.defaultFontPixelHeight * 0.5
 
                 QGCLabel {
-                    text:           "Preferences"
+                    text:           qsTr("Preferences")
                     anchors.horizontalCenter: parent.horizontalCenter
                 }
 
                 QGCButton {
+                    height:         _buttonHeight
                     anchors.left:   parent.left
                     anchors.right:  parent.right
-                    text:           "General"
+                    text:           qsTr("General")
                     exclusiveGroup: panelActionGroup
                     onClicked: {
                         if(__rightPanel.source != "GeneralSettings.qml") {
@@ -173,9 +178,10 @@ Item {
                 }
 
                 QGCButton {
+                    height:         _buttonHeight
                     anchors.left:   parent.left
                     anchors.right:  parent.right
-                    text:           "Comm Links"
+                    text:           qsTr("Comm Links")
                     exclusiveGroup: panelActionGroup
                     onClicked: {
                         if(__rightPanel.source != "LinkSettings.qml") {
@@ -186,9 +192,10 @@ Item {
                 }
 
                 QGCButton {
+                    height:         _buttonHeight
                     anchors.left:   parent.left
                     anchors.right:  parent.right
-                    text:           "Offline Maps"
+                    text:           qsTr("Offline Maps")
                     exclusiveGroup: panelActionGroup
                     onClicked: {
                         if(__rightPanel.source != "OfflineMap.qml") {
@@ -199,9 +206,10 @@ Item {
                 }
 
                 QGCButton {
+                    height:         _buttonHeight
                     anchors.left:   parent.left
                     anchors.right:  parent.right
-                    text:           "MavLink"
+                    text:           qsTr("MavLink")
                     exclusiveGroup: panelActionGroup
                     onClicked: {
                         if(__rightPanel.source != "MavlinkSettings.qml") {
@@ -212,9 +220,24 @@ Item {
                 }
 
                 QGCButton {
+                    height:         _buttonHeight
                     anchors.left:   parent.left
                     anchors.right:  parent.right
-                    text:           "Mock Link"
+                    text:           qsTr("Console")
+                    exclusiveGroup: panelActionGroup
+                    onClicked: {
+                        if(__rightPanel.source != "QGroundControl/Controls/AppMessages.qml") {
+                            __rightPanel.source = "QGroundControl/Controls/AppMessages.qml"
+                        }
+                        checked = true
+                    }
+                }
+
+                QGCButton {
+                    height:         _buttonHeight
+                    anchors.left:   parent.left
+                    anchors.right:  parent.right
+                    text:           qsTr("Mock Link")
                     visible:        ScreenTools.isDebug
                     exclusiveGroup: panelActionGroup
                     onClicked: {
@@ -226,9 +249,10 @@ Item {
                 }
 
                 QGCButton {
+                    height:         _buttonHeight
                     anchors.left:   parent.left
                     anchors.right:  parent.right
-                    text:           "Debug"
+                    text:           qsTr("Debug")
                     visible:        ScreenTools.isDebug
                     exclusiveGroup: panelActionGroup
                     onClicked: {
@@ -249,7 +273,8 @@ Item {
         anchors.right:  parent.right
         height:         toolBar.height
         onClicked: {
-            mainWindow.hideLeftMenu()
+            if (!__animateShowDialog.running)
+                mainWindow.hideLeftMenu()
         }
     }
 
@@ -265,12 +290,13 @@ Item {
 
     //-- Main Setting Display Area
     Rectangle {
+        id:             settingDisplayArea
         anchors.left:   __verticalSeparator.right
         width:          mainWindow.width - __leftMenu.width - __verticalSeparator.width
         height:         parent.height - toolBar.height - __topSeparator.height
         anchors.bottom: parent.bottom
         visible:        __rightPanel.source != ""
-        color:          __qgcPal.window
+        color:          qgcPal.window
         //-- Panel Contents
         Loader {
             id:             __rightPanel
@@ -283,21 +309,24 @@ Item {
             height:          __closeButtonSize
             anchors.right:   parent.right
             anchors.top:     parent.top
-            anchors.margins: ScreenTools.defaultFontPixelSize * 0.5
+            anchors.margins: ScreenTools.defaultFontPixelHeight * 0.5
             QGCColoredImage {
                 source:       "/res/XDelete.svg"
                 mipmap:       true
                 fillMode:     Image.PreserveAspectFit
-                color:        __qgcPal.text
+                color:        qgcPal.text
                 width:        parent.width  * 0.75
                 height:       parent.height * 0.75
+                sourceSize.height: height
                 anchors.centerIn: parent
             }
             MouseArea {
                 anchors.fill: parent
                 onClicked: {
-                    __rightPanel.source = ""
-                    mainWindow.hideLeftMenu()
+                    if (!__animateShowDialog.running) {
+                        __rightPanel.source = ""
+                        mainWindow.hideLeftMenu()
+                    }
                 }
             }
 

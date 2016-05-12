@@ -32,6 +32,7 @@ import QGroundControl.Controls              1.0
 import QGroundControl.FlightDisplay         1.0
 import QGroundControl.ScreenTools           1.0
 import QGroundControl.MultiVehicleManager   1.0
+import QGroundControl.QGCPositionManager   1.0
 
 /// Inner common QML for mainWindow
 Item {
@@ -42,13 +43,12 @@ Item {
     readonly property string _planViewSource:   "MissionEditor.qml"
     readonly property string _setupViewSource:  "SetupView.qml"
 
-    QGCPalette { id: __qgcPal; colorGroupEnabled: true }
+    QGCPalette { id: qgcPal; colorGroupEnabled: true }
 
-    property real   tbHeight:           ScreenTools.isMobile ? (ScreenTools.isTinyScreen ? (mainWindow.width * 0.0666) : (mainWindow.width * 0.05)) : ScreenTools.defaultFontPixelSize * 4
+    property real   tbHeight:           ScreenTools.isMobile ? (ScreenTools.isTinyScreen ? (mainWindow.width * 0.0666) : (mainWindow.width * 0.05)) : ScreenTools.defaultFontPixelHeight * 3
     property int    tbCellHeight:       tbHeight * 0.75
     property real   tbSpacing:          ScreenTools.isMobile ? width * 0.00824 : 9.54
     property real   tbButtonWidth:      tbCellHeight * 1.35
-    property real   availableHeight:    height - tbHeight
     property real   menuButtonWidth:    (tbButtonWidth * 2) + (tbSpacing * 4) + 1
     property var    gcsPosition:        QtPositioning.coordinate()  // Starts as invalid coordinate
     property var    currentPopUp:       null
@@ -56,10 +56,18 @@ Item {
     property var    activeVehicle:      QGroundControl.multiVehicleManager.activeVehicle
     property string formatedMessage:    activeVehicle ? activeVehicle.formatedMessage : ""
 
+    onHeightChanged: {
+        //-- We only deal with the available height if within the Fly or Plan view
+        if(!setupViewLoader.visible) {
+            ScreenTools.availableHeight = parent.height - toolBar.height
+        }
+    }
+
     function showFlyView() {
         if(currentPopUp) {
             currentPopUp.close()
         }
+        ScreenTools.availableHeight = parent.height - toolBar.height
         flightView.visible          = true
         setupViewLoader.visible     = false
         planViewLoader.visible      = false
@@ -73,6 +81,7 @@ Item {
         if (planViewLoader.source   != _planViewSource) {
             planViewLoader.source   = _planViewSource
         }
+        ScreenTools.availableHeight = parent.height - toolBar.height
         flightView.visible          = false
         setupViewLoader.visible     = false
         planViewLoader.visible      = true
@@ -83,6 +92,8 @@ Item {
         if(currentPopUp) {
             currentPopUp.close()
         }
+        //-- In setup view, the full height is available. Set to 0 so it is ignored.
+        ScreenTools.availableHeight = 0
         if (setupViewLoader.source  != _setupViewSource) {
             setupViewLoader.source  = _setupViewSource
         }
@@ -125,8 +136,8 @@ Item {
 
     MessageDialog {
         id:                 unsavedMissionCloseDialog
-        title:              "QGroundControl close"
-        text:               "You have a mission edit in progress which has not been saved/sent. If you close you will lose changes. Are you sure you want to close?"
+        title:              qsTr("QGroundControl close")
+        text:               qsTr("You have a mission edit in progress which has not been saved/sent. If you close you will lose changes. Are you sure you want to close?")
         standardButtons:    StandardButton.Yes | StandardButton.No
         modality:           Qt.ApplicationModal
         visible:            false
@@ -144,8 +155,8 @@ Item {
 
     MessageDialog {
         id:                 activeConnectionsCloseDialog
-        title:              "QGroundControl close"
-        text:               "There are still active connections to vehicles. Do you want to disconnect these before closing?"
+        title:              qsTr("QGroundControl close")
+        text:               qsTr("There are still active connections to vehicles. Do you want to disconnect these before closing?")
         standardButtons:    StandardButton.Yes | StandardButton.Cancel
         modality:           Qt.ApplicationModal
         visible:            false
@@ -173,18 +184,16 @@ Item {
 
 
     //-- Detect tablet position
-    PositionSource {
-        id:             positionSource
-        updateInterval: 1000
-        active:         true
+    Connections {
+        target: QGroundControl.qgcPositionManger
 
-        onPositionChanged: {
-            if(positionSource.valid) {
-                if(positionSource.position.coordinate.latitude) {
-                    if(Math.abs(positionSource.position.coordinate.latitude)  > 0.001) {
-                        if(positionSource.position.coordinate.longitude) {
-                            if(Math.abs(positionSource.position.coordinate.longitude)  > 0.001) {
-                                gcsPosition = positionSource.position.coordinate
+        onLastPositionUpdated: {
+            if(valid) {
+                if(lastPosition.latitude) {
+                    if(Math.abs(lastPosition.latitude)  > 0.001) {
+                        if(lastPosition.longitude) {
+                            if(Math.abs(lastPosition.longitude)  > 0.001) {
+                                gcsPosition = QtPositioning.coordinate(lastPosition.latitude,lastPosition.longitude)
                             }
                         }
                     }
@@ -220,9 +229,16 @@ Item {
         }
     }
 
+    function formatMessage(message) {
+        message = message.replace(new RegExp("<#E>", "g"), "color: #f95e5e; font: " + (ScreenTools.defaultFontPointSize.toFixed(0) - 1) + "pt monospace;");
+        message = message.replace(new RegExp("<#I>", "g"), "color: #f9b55e; font: " + (ScreenTools.defaultFontPointSize.toFixed(0) - 1) + "pt monospace;");
+        message = message.replace(new RegExp("<#N>", "g"), "color: #ffffff; font: " + (ScreenTools.defaultFontPointSize.toFixed(0) - 1) + "pt monospace;");
+        return message;
+    }
+
     onFormatedMessageChanged: {
         if(messageArea.visible) {
-            messageText.append(formatedMessage)
+            messageText.append(formatMessage(formatedMessage))
             //-- Hack to scroll down
             messageFlick.flick(0,-500)
         }
@@ -233,13 +249,13 @@ Item {
             currentPopUp.close()
         }
         if(QGroundControl.multiVehicleManager.activeVehicleAvailable) {
-            messageText.text = activeVehicle.formatedMessages
+            messageText.text = formatMessage(activeVehicle.formatedMessages)
             //-- Hack to scroll to last message
             for (var i = 0; i < activeVehicle.messageCount; i++)
                 messageFlick.flick(0,-5000)
             activeVehicle.resetMessages()
         } else {
-            messageText.text = "No Messages"
+            messageText.text = qsTr("No Messages")
         }
         currentPopUp = messageArea
         messageArea.visible = true
@@ -277,16 +293,17 @@ Item {
         opaqueBackground:   leftPanel.visible
         isBackgroundDark:   flightView.isBackgroundDark
         z:                  QGroundControl.zOrderTopMost
-
         onShowSetupView:    mainWindow.showSetupView()
         onShowPlanView:     mainWindow.showPlanView()
         onShowFlyView:      mainWindow.showFlyView()
+        Component.onCompleted: {
+            ScreenTools.availableHeight = parent.height - toolBar.height
+        }
     }
 
     FlightDisplayView {
         id:                 flightView
         anchors.fill:       parent
-        availableHeight:    mainWindow.availableHeight
         visible:            true
     }
 
@@ -298,7 +315,10 @@ Item {
 
     Loader {
         id:                 setupViewLoader
-        anchors.fill:       parent
+        anchors.left:       parent.left
+        anchors.right:      parent.right
+        anchors.top:        toolBar.bottom
+        anchors.bottom:     parent.bottom
         visible:            false
     }
 
@@ -329,21 +349,28 @@ Item {
     //-- System Message Area
     Rectangle {
         id:                 messageArea
-
         function close() {
             currentPopUp = null
             messageText.text    = ""
             messageArea.visible = false
         }
-
         width:              mainWindow.width  * 0.5
         height:             mainWindow.height * 0.5
         color:              Qt.rgba(0,0,0,0.8)
         visible:            false
         radius:             ScreenTools.defaultFontPixelHeight * 0.5
+        border.color:       "#808080"
+        border.width:       2
         anchors.horizontalCenter:   parent.horizontalCenter
         anchors.top:                parent.top
         anchors.topMargin:          tbHeight + ScreenTools.defaultFontPixelHeight
+        MouseArea {
+            // This MouseArea prevents the Map below it from getting Mouse events. Without this
+            // things like mousewheel will scroll the Flickable and then scroll the map as well.
+            anchors.fill:       parent
+            preventStealing:    true
+            onWheel:            wheel.accepted = true
+        }
         QGCFlickable {
             id:                 messageFlick
             anchors.margins:    ScreenTools.defaultFontPixelHeight
@@ -353,35 +380,60 @@ Item {
             pixelAligned:       true
             clip:               true
             TextEdit {
-                id:         messageText
-                readOnly:   true
-                textFormat: TextEdit.RichText
-                color:      "white"
+                id:             messageText
+                readOnly:       true
+                textFormat:     TextEdit.RichText
+                color:          "white"
             }
         }
         //-- Dismiss System Message
         Image {
-            anchors.margins:    ScreenTools.defaultFontPixelHeight
+            anchors.margins:    ScreenTools.defaultFontPixelHeight * 0.5
             anchors.top:        parent.top
             anchors.right:      parent.right
-            width:              ScreenTools.defaultFontPixelHeight * 1.5
-            height:             ScreenTools.defaultFontPixelHeight * 1.5
+            width:              ScreenTools.isMobile ? ScreenTools.defaultFontPixelHeight * 1.5 : ScreenTools.defaultFontPixelHeight
+            height:             width
+            sourceSize.height:  width
             source:             "/res/XDelete.svg"
+            fillMode:           Image.PreserveAspectFit
+            mipmap:             true
+            smooth:             true
+            MouseArea {
+                anchors.fill:       parent
+                anchors.margins:    ScreenTools.isMobile ? -ScreenTools.defaultFontPixelHeight : 0
+                onClicked: {
+                    messageArea.close()
+                }
+            }
+        }
+        //-- Clear Messages
+        Image {
+            anchors.bottom:     parent.bottom
+            anchors.right:      parent.right
+            anchors.margins:    ScreenTools.defaultFontPixelHeight * 0.5
+            height:             ScreenTools.isMobile ? ScreenTools.defaultFontPixelHeight * 1.5 : ScreenTools.defaultFontPixelHeight
+            width:              height
+            sourceSize.height:   height
+            source:             "/res/TrashDelete.svg"
             fillMode:           Image.PreserveAspectFit
             mipmap:             true
             smooth:             true
             MouseArea {
                 anchors.fill:   parent
                 onClicked: {
-                    messageArea.close()
+                    if(QGroundControl.multiVehicleManager.activeVehicleAvailable) {
+                        activeVehicle.clearMessages();
+                        messageArea.close()
+                    }
                 }
             }
         }
     }
+
     //-------------------------------------------------------------------------
     //-- Critical Message Area
     Rectangle {
-        id:                 criticalMmessageArea
+        id: criticalMmessageArea
 
         function close() {
             //-- Are there messages in the waiting queue?
@@ -389,7 +441,8 @@ Item {
                 criticalMessageText.text = ""
                 //-- Show all messages in queue
                 for (var i = 0; i < mainWindow.messageQueue.length; i++) {
-                    criticalMessageText.append(mainWindow.messageQueue[i])
+                    var text = mainWindow.messageQueue[i]
+                    criticalMessageText.append(text)
                 }
                 //-- Clear it
                 mainWindow.messageQueue = []
@@ -400,13 +453,15 @@ Item {
         }
 
         width:              mainWindow.width  * 0.55
-        height:             ScreenTools.defaultFontPixelHeight * ScreenTools.fontHRatio * 6
-        color:              Qt.rgba(0,0,0,0.8)
+        height:             ScreenTools.defaultFontPixelHeight * 6
+        color:              "#eecc44"
         visible:            false
         radius:             ScreenTools.defaultFontPixelHeight * 0.5
         anchors.horizontalCenter:   parent.horizontalCenter
         anchors.bottom:             parent.bottom
         anchors.bottomMargin:       ScreenTools.defaultFontPixelHeight
+        border.color:       "#808080"
+        border.width:       2
 
         MouseArea {
             // This MouseArea prevents the Map below it from getting Mouse events. Without this
@@ -425,32 +480,35 @@ Item {
             boundsBehavior:     Flickable.StopAtBounds
             pixelAligned:       true
             clip:               true
+
             TextEdit {
                 id:             criticalMessageText
                 width:          criticalMmessageArea.width - criticalClose.width - (ScreenTools.defaultFontPixelHeight * 2)
                 anchors.left:   parent.left
                 readOnly:       true
                 textFormat:     TextEdit.RichText
-                font.weight:    Font.DemiBold
+                font.pointSize: ScreenTools.defaultFontPointSize
+                font.family:    ScreenTools.demiboldFontFamily
                 wrapMode:       TextEdit.WordWrap
-                color:          "#fdfd3b"
+                color:          "black"
             }
         }
 
         //-- Dismiss Critical Message
-        Image {
+        QGCColoredImage {
             id:                 criticalClose
-            anchors.margins:    ScreenTools.defaultFontPixelHeight
+            anchors.margins:    ScreenTools.defaultFontPixelHeight * 0.5
             anchors.top:        parent.top
             anchors.right:      parent.right
-            width:              ScreenTools.defaultFontPixelHeight * 1.5
-            height:             ScreenTools.defaultFontPixelHeight * 1.5
+            width:              ScreenTools.isMobile ? ScreenTools.defaultFontPixelHeight * 1.5 : ScreenTools.defaultFontPixelHeight
+            height:             width
+            sourceSize.height:  width
             source:             "/res/XDelete.svg"
             fillMode:           Image.PreserveAspectFit
-            mipmap:             true
-            smooth:             true
+            color:              "black"
             MouseArea {
-                anchors.fill:   parent
+                anchors.fill:       parent
+                anchors.margins:    ScreenTools.isMobile ? -ScreenTools.defaultFontPixelHeight : 0
                 onClicked: {
                     criticalMmessageArea.close()
                 }
@@ -458,17 +516,17 @@ Item {
         }
 
         //-- More text below indicator
-        Image {
-            anchors.margins:    ScreenTools.defaultFontPixelHeight
+        QGCColoredImage {
+            anchors.margins:    ScreenTools.defaultFontPixelHeight * 0.5
             anchors.bottom:     parent.bottom
             anchors.right:      parent.right
-            width:              ScreenTools.defaultFontPixelHeight * 1.5
-            height:             ScreenTools.defaultFontPixelHeight * 1.5
+            width:              ScreenTools.isMobile ? ScreenTools.defaultFontPixelHeight * 1.5 : ScreenTools.defaultFontPixelHeight
+            height:             width
+            sourceSize.height:  width
             source:             "/res/ArrowDown.svg"
             fillMode:           Image.PreserveAspectFit
-            mipmap:             true
-            smooth:             true
             visible:            criticalMessageText.lineCount > 5
+            color:              "black"
             MouseArea {
                 anchors.fill:   parent
                 onClicked: {

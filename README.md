@@ -44,7 +44,7 @@ You need to install Qt like this instead of using packages from say a Linux dist
 
 ###### Install additional packages:
 * Ubuntu: sudo apt-get install espeak libespeak-dev libudev-dev libsdl1.2-dev
-* Fedora: sudo yum install espeak espeak-devel SDL-devel SDL-static systemd-devel
+* Fedora: sudo dnf install espeak espeak-devel SDL-devel SDL-static systemd-devel
 * Arch Linux: pacman -Sy espeak
 * Windows: [USB Driver](http://www.pixhawk.org/firmware/downloads) to connect to Pixhawk/PX4Flow/3DR Radio
 * Android: [Qt Android Setup](http://doc.qt.io/qt-5/androidgs.html)
@@ -59,7 +59,7 @@ You need to install Qt like this instead of using packages from say a Linux dist
 
 #### Vagrant
 
-A Vagrantfile is provided to build QGroundControl using the [Vagrant](https://www.vagrantup.com/) system.  This will produce a native Linux build which can be run in the Vagrant Virtual Machine or on the host machine if it is compatible.
+A Vagrantfile is provided to build QGroundControl using the [Vagrant](https://www.vagrantup.com/) system. This will produce a native Linux build which can be run in the Vagrant Virtual Machine or on the host machine if it is compatible.
 
 * [Download](https://www.vagrantup.com/downloads.html) Vagrant
 * [Install](https://www.vagrantup.com/docs/getting-started/) Vagrant

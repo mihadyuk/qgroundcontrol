@@ -28,14 +28,20 @@ This file is part of the QGROUNDCONTROL project
  */
 
 import QtQuick 2.4
-import QGroundControl.Controls 1.0
+
+import QGroundControl.Controls  1.0
+import QGroundControl.Palette   1.0
 
 Item {
     id:     signalRoot
-    property real size:     50
-    property real percent:  0
     width:  size
     height: size
+
+    property real size:     50
+    property real percent:  0
+
+    QGCPalette { id: qgcPal }
+
     function getIcon() {
         if (percent < 20)
             return "/qmlimages/Signal0.svg"
@@ -45,15 +51,16 @@ Item {
             return "/qmlimages/Signal40.svg"
         if (percent < 80)
             return "/qmlimages/Signal60.svg"
-        if (percent < 100)
+        if (percent < 95)
             return "/qmlimages/Signal80.svg"
         return "/qmlimages/Signal100.svg"
     }
-    Image {
-        source:         getIcon()
-        fillMode:       Image.PreserveAspectFit
-        mipmap:         true
-        smooth:         true
-        anchors.fill:   parent
+
+    QGCColoredImage {
+        source:             getIcon()
+        fillMode:           Image.PreserveAspectFit
+        anchors.fill:       parent
+        color:              qgcPal.buttonText
+        sourceSize.height:  size
     }
 }

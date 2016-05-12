@@ -35,13 +35,10 @@ import QGroundControl.Palette               1.0
 
 Rectangle {
     id:             __mavlinkRoot
-    color:          __qgcPal.window
+    color:          qgcPal.window
     anchors.fill:   parent
 
-    QGCPalette {
-        id:                 qgcPal
-        colorGroupEnabled:  enabled
-    }
+    QGCPalette { id: qgcPal }
 
     QGCFlickable {
         clip:               true
@@ -57,8 +54,8 @@ Rectangle {
             anchors.left:       parent.left
             anchors.top:        parent.top
             QGCLabel {
-                text:   "MavLink Settings"
-                font.pixelSize: ScreenTools.mediumFontPixelSize
+                text:   qsTr("MavLink Settings")
+                font.pointSize: ScreenTools.mediumFontPointSize
             }
             Rectangle {
                 height: 1
@@ -70,7 +67,7 @@ Rectangle {
             Row {
                 spacing:    ScreenTools.defaultFontPixelWidth
                 QGCLabel {
-                    text:   "Ground Station MavLink System ID:"
+                    text:   qsTr("Ground Station MavLink System ID:")
                     anchors.verticalCenter: parent.verticalCenter
                 }
                 QGCTextField {
@@ -87,7 +84,7 @@ Rectangle {
             //-----------------------------------------------------------------
             //-- Mavlink Heartbeats
             QGCCheckBox {
-                text:       "Emit heartbeat"
+                text:       qsTr("Emit heartbeat")
                 checked:    QGroundControl.multiVehicleManager.gcsHeartBeatEnabled
                 onClicked: {
                     QGroundControl.multiVehicleManager.gcsHeartBeatEnabled = checked
@@ -96,7 +93,7 @@ Rectangle {
             //-----------------------------------------------------------------
             //-- Mavlink Multiplexing
             QGCCheckBox {
-                text:       "Enable multiplexing (forward packets to all other links)"
+                text:       qsTr("Enable multiplexing (forward packets to all other links)")
                 checked:    QGroundControl.isMultiplexingEnabled
                 onClicked: {
                     QGroundControl.isMultiplexingEnabled = checked
@@ -105,7 +102,7 @@ Rectangle {
             //-----------------------------------------------------------------
             //-- Mavlink Version Check
             QGCCheckBox {
-                text:       "Only accept MAVs with same protocol version"
+                text:       qsTr("Only accept MAVs with same protocol version")
                 checked:    QGroundControl.isVersionCheckEnabled
                 onClicked: {
                     QGroundControl.isVersionCheckEnabled = checked

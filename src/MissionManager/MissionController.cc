@@ -255,6 +255,7 @@ void MissionController::removeAllMissionItems(void)
         _visualItems = new QmlObjectListModel(this);
         _addPlannedHomePosition(_visualItems, false /* addToCenter */);
         _initAllVisualItems();
+        _visualItems->setDirty(true);
     }
 }
 
@@ -986,11 +987,18 @@ bool MissionController::_findLastAltitude(double* lastAltitude)
 
     // Don't use home position
     for (int i=1; i<_visualItems->count(); i++) {
-        VisualMissionItem* item = qobject_cast<VisualMissionItem*>(_visualItems->get(i));
+        VisualMissionItem* visualItem = qobject_cast<VisualMissionItem*>(_visualItems->get(i));
 
-        if (item->specifiesCoordinate() && !item->isStandaloneCoordinate()) {
-            foundAltitude = item->exitCoordinate().altitude();
+        if (visualItem->specifiesCoordinate() && !visualItem->isStandaloneCoordinate()) {
+            foundAltitude = visualItem->exitCoordinate().altitude();
             found = true;
+
+            if (visualItem->isSimpleItem()) {
+                SimpleMissionItem* simpleItem = qobject_cast<SimpleMissionItem*>(visualItem);
+                if ((MAV_CMD)simpleItem->command() == MAV_CMD_NAV_TAKEOFF) {
+                    found = false;
+                }
+            }
         }
     }
 

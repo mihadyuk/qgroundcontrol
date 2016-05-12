@@ -25,6 +25,7 @@
 #include "LinkManager.h"
 #include "MultiVehicleManager.h"
 #include "MissionItem.h"
+#include "SimpleMissionItem.h"
 
 #if 0
 const MissionItemTest::TestCase_t MissionItemTest::_rgTestCases[] = {
@@ -236,16 +237,10 @@ void MissionItemTest::_testFactSignals(void)
     QCOMPARE(arguments.at(0).toDouble(), 8.0);
 }
 
-void MissionItemTest::_testLoadFromStream(void)
+void MissionItemTest::_checkExpectedMissionItem(const MissionItem& missionItem)
 {
-    MissionItem missionItem;
-
-    QString testString("10\t1\t3\t80\t10\t20\t30\t40\t-10\t-20\t-30\t1\r\n");
-    QTextStream testStream(&testString, QIODevice::ReadOnly);
-
-    QVERIFY(missionItem.load(testStream));
     QCOMPARE(missionItem.sequenceNumber(), 10);
-    QCOMPARE(missionItem.isCurrentItem(), true);
+    QCOMPARE(missionItem.isCurrentItem(), false);
     QCOMPARE(missionItem.frame(), (MAV_FRAME)3);
     QCOMPARE(missionItem.command(), (MAV_CMD)80);
     QCOMPARE(missionItem.param1(), 10.0);
@@ -258,24 +253,48 @@ void MissionItemTest::_testLoadFromStream(void)
     QCOMPARE(missionItem.autoContinue(), true);
 }
 
+void MissionItemTest::_testLoadFromStream(void)
+{
+    MissionItem missionItem;
+
+    QString testString("10\t0\t3\t80\t10\t20\t30\t40\t-10\t-20\t-30\t1\r\n");
+    QTextStream testStream(&testString, QIODevice::ReadOnly);
+
+    QVERIFY(missionItem.load(testStream));
+    _checkExpectedMissionItem(missionItem);
+}
+
+void MissionItemTest::_testSimpleLoadFromStream(void)
+{
+    // We specifically test SimpleMissionItem loading as well since it has additional
+    // signalling which can affect values.
+    SimpleMissionItem simpleMissionItem(NULL);
+
+    QString testString("10\t0\t3\t80\t10\t20\t30\t40\t-10\t-20\t-30\t1\r\n");
+    QTextStream testStream(&testString, QIODevice::ReadOnly);
+
+    QVERIFY(simpleMissionItem.load(testStream));
+    _checkExpectedMissionItem(simpleMissionItem.missionItem());
+}
+
 void MissionItemTest::_testLoadFromJson(void)
 {
     MissionItem missionItem;
     QString     errorString;
-    QJsonArray  coordinateArray = { -10.0, -20.0, -30.0 };
-    QJsonObject jsonObject
-    {
-        { "autoContinue",   true },
-        { "command",        80 },
-        { "frame",          3 },
-        { "id",             10 },
-        { "param1",         10 },
-        { "param2",         20 },
-        { "param3",         30 },
-        { "param4",         40 },
-        { "type",           "missionItem" },
-        { "coordinate",     coordinateArray },
-    };
+    QJsonArray  coordinateArray;
+    coordinateArray << -10.0 << -20.0 <<-30.0;
+    QJsonObject jsonObject;
+    jsonObject.insert("autoContinue", true);
+    jsonObject.insert("command", 80);
+    jsonObject.insert("frame", 3);
+    jsonObject.insert("id", 10);
+    jsonObject.insert("param1", 10);
+    jsonObject.insert("param2", 20);
+    jsonObject.insert("param3", 30);
+    jsonObject.insert("param4", 40);
+    jsonObject.insert("type", "missionItem");
+    jsonObject.insert("coordinate", coordinateArray);
+
 
     // Test missing key detection
 
@@ -298,7 +317,8 @@ void MissionItemTest::_testLoadFromJson(void)
     QVERIFY(!errorString.isEmpty());
     qDebug() << errorString;
 
-    QJsonArray  badCoordinateArray = { -10.0, -20.0 };
+    QJsonArray  badCoordinateArray;
+    badCoordinateArray << -10.0 << -20.0 ;
     badObject = jsonObject;
     badObject.remove("coordinate");
     badObject["coordinate"] = badCoordinateArray;
@@ -306,19 +326,22 @@ void MissionItemTest::_testLoadFromJson(void)
     QVERIFY(!errorString.isEmpty());
     qDebug() << errorString;
 
-    badCoordinateArray = { -10.0, -20.0, true };
+    QJsonArray badCoordinateArray_second;
+    badCoordinateArray_second << -10.0 << -20.0 << true;
     badObject = jsonObject;
     badObject.remove("coordinate");
-    badObject["coordinate"] = badCoordinateArray;
+    badObject["coordinate"] = badCoordinateArray_second;
     QCOMPARE(missionItem.load(badObject, errorString), false);
     QVERIFY(!errorString.isEmpty());
     qDebug() << errorString;
 
-    QJsonArray  badCoordinateArray2 = { 1, 2 };
-    badCoordinateArray = { -10.0, -20.0, badCoordinateArray2 };
+    QJsonArray  badCoordinateArray2;
+    badCoordinateArray2 << 1 << 2;
+    QJsonArray badCoordinateArray_third;
+    badCoordinateArray_third << -10.0 << -20.0 << badCoordinateArray2;
     badObject = jsonObject;
     badObject.remove("coordinate");
-    badObject["coordinate"] = badCoordinateArray;
+    badObject["coordinate"] = badCoordinateArray_third;
     QCOMPARE(missionItem.load(badObject, errorString), false);
     QVERIFY(!errorString.isEmpty());
     qDebug() << errorString;
@@ -335,18 +358,33 @@ void MissionItemTest::_testLoadFromJson(void)
     // Test good load
 
     QVERIFY(missionItem.load(jsonObject, errorString));
-    QCOMPARE(missionItem.sequenceNumber(), 10);
-    QCOMPARE(missionItem.isCurrentItem(), false);
-    QCOMPARE(missionItem.frame(), (MAV_FRAME)3);
-    QCOMPARE(missionItem.command(), (MAV_CMD)80);
-    QCOMPARE(missionItem.param1(), 10.0);
-    QCOMPARE(missionItem.param2(), 20.0);
-    QCOMPARE(missionItem.param3(), 30.0);
-    QCOMPARE(missionItem.param4(), 40.0);
-    QCOMPARE(missionItem.param5(), -10.0);
-    QCOMPARE(missionItem.param6(), -20.0);
-    QCOMPARE(missionItem.param7(), -30.0);
-    QCOMPARE(missionItem.autoContinue(), true);
+    _checkExpectedMissionItem(missionItem);
+}
+
+void MissionItemTest::_testSimpleLoadFromJson(void)
+{
+    // We specifically test SimpleMissionItem loading as well since it has additional
+    // signalling which can affect values.
+
+    SimpleMissionItem simpleMissionItem(NULL);
+    QString     errorString;
+    QJsonArray  coordinateArray;
+    coordinateArray << -10.0 << -20.0 << -30.0;
+    QJsonObject jsonObject;
+    jsonObject.insert("autoContinue", true);
+    jsonObject.insert("command", 80);
+    jsonObject.insert("frame", 3);
+    jsonObject.insert("id", 10);
+    jsonObject.insert("param1", 10);
+    jsonObject.insert("param2", 20);
+    jsonObject.insert("param3", 30);
+    jsonObject.insert("param4", 40);
+    jsonObject.insert("type", "missionItem");
+    jsonObject.insert("coordinate", coordinateArray);
+
+
+    QVERIFY(simpleMissionItem.load(jsonObject, errorString));
+    _checkExpectedMissionItem(simpleMissionItem.missionItem());
 }
 
 void MissionItemTest::_testSaveToJson(void)

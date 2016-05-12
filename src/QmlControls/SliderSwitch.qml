@@ -26,7 +26,7 @@ Rectangle {
         id: label
         anchors.horizontalCenter:   parent.horizontalCenter
         anchors.verticalCenter:     parent.verticalCenter
-        text:   "Slide to " + confirmText
+        text:   qsTr("Slide to %1").arg(confirmText)
     }
 
     Rectangle {
@@ -43,6 +43,7 @@ Rectangle {
             anchors.centerIn:       parent
             width:                  parent.width  * 0.8
             height:                 parent.height * 0.8
+            sourceSize.height:      height
             fillMode:               Image.PreserveAspectFit
             smooth:                 false
             mipmap:                 false
@@ -54,7 +55,6 @@ Rectangle {
         MouseArea {
             id:             sliderDragArea
             anchors.fill:   parent
-            onClicked:      _root.accept()
             drag.target:    slider
             drag.axis:      Drag.XAxis
             drag.minimumX:  _border

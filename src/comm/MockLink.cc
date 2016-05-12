@@ -115,7 +115,6 @@ MockLink::MockLink(MockConfiguration* config)
     moveToThread(this);
 
     _loadParams();
-    QObject::connect(this, &MockLink::_incomingBytes, this, &MockLink::_handleIncomingBytes);
 }
 
 MockLink::~MockLink(void)
@@ -314,16 +313,7 @@ void MockLink::respondWithMavlinkMessage(const mavlink_message_t& msg)
 }
 
 /// @brief Called when QGC wants to write bytes to the MAV
-void MockLink::writeBytes(const char* bytes, qint64 cBytes)
-{
-    // Package up the data so we can signal it over to the right thread
-    QByteArray byteArray(bytes, cBytes);
-
-    emit _incomingBytes(byteArray);
-}
-
-/// @brief Handles bytes from QGC on the thread
-void MockLink::_handleIncomingBytes(const QByteArray bytes)
+void MockLink::_writeBytes(const QByteArray bytes)
 {
     if (_inNSH) {
         _handleIncomingNSHBytes(bytes.constData(), bytes.count());
@@ -796,16 +786,32 @@ void MockLink::_handleFTP(const mavlink_message_t& msg)
 void MockLink::_handleCommandLong(const mavlink_message_t& msg)
 {
     mavlink_command_long_t request;
+    uint8_t commandResult = MAV_RESULT_UNSUPPORTED;
 
     mavlink_msg_command_long_decode(&msg, &request);
 
-    if (request.command == MAV_CMD_COMPONENT_ARM_DISARM) {
+    switch (request.command) {
+    case MAV_CMD_COMPONENT_ARM_DISARM:
         if (request.param1 == 0.0f) {
             _mavBaseMode &= ~MAV_MODE_FLAG_SAFETY_ARMED;
         } else {
             _mavBaseMode |= MAV_MODE_FLAG_SAFETY_ARMED;
         }
+        commandResult = MAV_RESULT_ACCEPTED;
+        break;
+    case MAV_CMD_PREFLIGHT_CALIBRATION:
+    case MAV_CMD_PREFLIGHT_STORAGE:
+        commandResult = MAV_RESULT_ACCEPTED;
+        break;
     }
+
+    mavlink_message_t commandAck;
+    mavlink_msg_command_ack_pack(_vehicleSystemId,
+                                 _vehicleComponentId,
+                                 &commandAck,
+                                 request.command,
+                                 commandResult);
+    respondWithMavlinkMessage(commandAck);
 }
 
 void MockLink::setMissionItemFailureMode(MockLinkMissionItemHandler::FailureMode_t failureMode)

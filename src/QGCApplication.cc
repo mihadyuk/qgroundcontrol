@@ -36,6 +36,7 @@
 #include <QPainter>
 #include <QStyleFactory>
 #include <QAction>
+#include <QStringListModel>
 
 #ifdef QGC_ENABLE_BLUETOOTH
 #include <QBluetoothLocalDevice>
@@ -72,6 +73,7 @@
 #include "ESP8266ComponentController.h"
 #include "ScreenToolsController.h"
 #include "QGCMobileFileDialogController.h"
+#include "RCChannelMonitorController.h"
 #include "AutoPilotPlugin.h"
 #include "VehicleComponent.h"
 #include "FirmwarePluginManager.h"
@@ -100,6 +102,10 @@
 #include "LogDownloadController.h"
 #include "PX4AirframeLoader.h"
 #include "ValuesWidgetController.h"
+#include "AppMessages.h"
+#include "SimulatedPosition.h"
+#include "PositionManager.h"
+#include "FollowMe.h"
 
 #ifndef __ios__
     #include "SerialLink.h"
@@ -437,6 +443,7 @@ void QGCApplication::_initCommon(void)
     qmlRegisterUncreatableType<MissionManager>      ("QGroundControl.Vehicle",          1, 0, "MissionManager",         "Reference only");
     qmlRegisterUncreatableType<JoystickManager>     ("QGroundControl.JoystickManager",  1, 0, "JoystickManager",        "Reference only");
     qmlRegisterUncreatableType<Joystick>            ("QGroundControl.JoystickManager",  1, 0, "Joystick",               "Reference only");
+    qmlRegisterUncreatableType<QGCPositionManager>  ("QGroundControl.QGCPositionManager",  1, 0, "QGCPositionManager",  "Reference only");
 
     qmlRegisterType<ParameterEditorController>          ("QGroundControl.Controllers", 1, 0, "ParameterEditorController");
     qmlRegisterType<APMFlightModesComponentController>  ("QGroundControl.Controllers", 1, 0, "APMFlightModesComponentController");
@@ -455,6 +462,7 @@ void QGCApplication::_initCommon(void)
     qmlRegisterType<FlightDisplayViewController>        ("QGroundControl.Controllers", 1, 0, "FlightDisplayViewController");
     qmlRegisterType<ValuesWidgetController>             ("QGroundControl.Controllers", 1, 0, "ValuesWidgetController");
     qmlRegisterType<QGCMobileFileDialogController>      ("QGroundControl.Controllers", 1, 0, "QGCMobileFileDialogController");
+    qmlRegisterType<RCChannelMonitorController>         ("QGroundControl.Controllers", 1, 0, "RCChannelMonitorController");
 
 #ifndef __mobile__
     qmlRegisterType<ViewWidgetController>           ("QGroundControl.Controllers", 1, 0, "ViewWidgetController");
@@ -484,6 +492,7 @@ bool QGCApplication::_initForNormalAppBoot(void)
     _qmlAppEngine = new QQmlApplicationEngine(this);
     _qmlAppEngine->addImportPath("qrc:/qml");
     _qmlAppEngine->rootContext()->setContextProperty("joystickManager", toolbox()->joystickManager());
+    _qmlAppEngine->rootContext()->setContextProperty("debugMessageModel", AppMessages::getModel());
     _qmlAppEngine->load(QUrl(QStringLiteral("qrc:/qml/MainWindowNative.qml")));
 #else
     // Start the user interface
@@ -656,13 +665,12 @@ void QGCApplication::_loadCurrentStyle(void)
     }
 
     if (success && !_styleIsDark) {
-        qDebug() << "LOADING LIGHT";
         // Load the slave light stylesheet.
         QFile styleSheet(_lightStyleFile);
         if (styleSheet.open(QIODevice::ReadOnly | QIODevice::Text)) {
             styles += styleSheet.readAll();
         } else {
-            qDebug() << "Unable to load slave light sheet:";
+            qWarning() << "Unable to load slave light sheet:";
             success = false;
         }
     }
@@ -723,6 +731,11 @@ QObject* QGCApplication::_rootQmlObject(void)
 
 void QGCApplication::showMessage(const QString& message)
 {
+    // Special case hack for ArduPilot prearm messages. These show up in the center of the map, so no need for popup.
+    if (message.contains("PreArm:")) {
+        return;
+    }
+
     QObject* rootQmlObject = _rootQmlObject();
 
     if (rootQmlObject) {

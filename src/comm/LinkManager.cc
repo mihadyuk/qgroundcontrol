@@ -46,6 +46,10 @@ This file is part of the QGROUNDCONTROL project
 #include "BluetoothLink.h"
 #endif
 
+#ifndef __mobile__
+    #include "GPSManager.h"
+#endif
+
 QGC_LOGGING_CATEGORY(LinkManagerLog, "LinkManagerLog")
 QGC_LOGGING_CATEGORY(LinkManagerVerboseLog, "LinkManagerVerboseLog")
 
@@ -54,6 +58,7 @@ const char* LinkManager::_autoconnectUDPKey =       "AutoconnectUDP";
 const char* LinkManager::_autoconnectPixhawkKey =   "AutoconnectPixhawk";
 const char* LinkManager::_autoconnect3DRRadioKey =  "Autoconnect3DRRadio";
 const char* LinkManager::_autoconnectPX4FlowKey =   "AutoconnectPX4Flow";
+const char* LinkManager::_autoconnectRTKGPSKey =    "AutoconnectRTKGPS";
 const char* LinkManager::_defaultUPDLinkName =      "Default UDP Link";
 
 const int LinkManager::_autoconnectUpdateTimerMSecs =   1000;
@@ -69,13 +74,13 @@ LinkManager::LinkManager(QGCApplication* app)
     , _configUpdateSuspended(false)
     , _configurationsLoaded(false)
     , _connectionsSuspended(false)
-    , _mavlinkChannelsUsedBitMask(0)
+    , _mavlinkChannelsUsedBitMask(1)    // We never use channel 0 to avoid sequence numbering problems
     , _mavlinkProtocol(NULL)
     , _autoconnectUDP(true)
     , _autoconnectPixhawk(true)
     , _autoconnect3DRRadio(true)
     , _autoconnectPX4Flow(true)
-
+    , _autoconnectRTKGPS(true)
 {
     qmlRegisterUncreatableType<LinkManager>         ("QGroundControl", 1, 0, "LinkManager",         "Reference only");
     qmlRegisterUncreatableType<LinkConfiguration>   ("QGroundControl", 1, 0, "LinkConfiguration",   "Reference only");
@@ -88,6 +93,7 @@ LinkManager::LinkManager(QGCApplication* app)
     _autoconnectPixhawk =   settings.value(_autoconnectPixhawkKey, true).toBool();
     _autoconnect3DRRadio =  settings.value(_autoconnect3DRRadioKey, true).toBool();
     _autoconnectPX4Flow =   settings.value(_autoconnectPX4FlowKey, true).toBool();
+    _autoconnectRTKGPS =    settings.value(_autoconnectRTKGPSKey, true).toBool();
 
 #ifndef __ios__
     _activeLinkCheckTimer.setInterval(_activeLinkCheckTimeoutMSecs);
@@ -214,8 +220,12 @@ void LinkManager::_addLink(LinkInterface* link)
 
     _mavlinkProtocol->resetMetadataForLink(link);
 
-    connect(link, &LinkInterface::connected,    this, &LinkManager::_linkConnected);
-    connect(link, &LinkInterface::disconnected, this, &LinkManager::_linkDisconnected);
+    connect(link, &LinkInterface::connected,            this, &LinkManager::_linkConnected);
+    connect(link, &LinkInterface::disconnected,         this, &LinkManager::_linkDisconnected);
+
+    // This connection is queued since it will cloe the link. So we want the link emitter to return otherwise we would
+    // close the link our from under itself.
+    connect(link, &LinkInterface::connectionRemoved,    this, &LinkManager::_linkConnectionRemoved, Qt::QueuedConnection);
 }
 
 void LinkManager::disconnectAll(void)
@@ -239,7 +249,9 @@ bool LinkManager::connectLink(LinkInterface* link)
 
 void LinkManager::disconnectLink(LinkInterface* link)
 {
-    Q_ASSERT(link);
+    if (!link || !_links.contains(link)) {
+        return;
+    }
 
     link->_disconnect();
     LinkConfiguration* config = link->getLinkConfiguration();
@@ -304,6 +316,12 @@ void LinkManager::_linkConnected(void)
 void LinkManager::_linkDisconnected(void)
 {
     emit linkDisconnected((LinkInterface*)sender());
+}
+
+void LinkManager::_linkConnectionRemoved(LinkInterface* link)
+{
+    // Link has been removed from system, disconnect it automatically
+    disconnectLink(link);
 }
 
 void LinkManager::suspendConfigurationUpdates(bool suspend)
@@ -541,6 +559,14 @@ void LinkManager::_updateAutoConnectLinks(void)
                         pSerialConfig = new SerialConfiguration(QString("SiK Radio on %1").arg(portInfo.portName().trimmed()));
                     }
                     break;
+#ifndef __mobile__
+                case QGCSerialPortInfo::BoardTypeRTKGPS:
+                    if (_autoconnectRTKGPS && !_toolbox->gpsManager()->connected()) {
+                        qCDebug(LinkManagerLog) << "RTK GPS auto-connected";
+                        _toolbox->gpsManager()->connectGPS(portInfo.systemLocation());
+                    }
+                    break;
+#endif
                 default:
                     qWarning() << "Internal error";
                     continue;
@@ -599,59 +625,53 @@ void LinkManager::shutdown(void)
     disconnectAll();
 }
 
-void LinkManager::setAutoconnectUDP(bool autoconnect)
+bool LinkManager::_setAutoconnectWorker(bool& currentAutoconnect, bool newAutoconnect, const char* autoconnectKey)
 {
-    if (_autoconnectUDP != autoconnect) {
+    if (currentAutoconnect != newAutoconnect) {
         QSettings settings;
 
         settings.beginGroup(_settingsGroup);
-        settings.setValue(_autoconnectUDPKey, autoconnect);
+        settings.setValue(autoconnectKey, newAutoconnect);
+        currentAutoconnect = newAutoconnect;
+        return true;
+    }
 
-        _autoconnectUDP = autoconnect;
+    return false;
+}
+
+void LinkManager::setAutoconnectUDP(bool autoconnect)
+{
+    if (_setAutoconnectWorker(_autoconnectUDP, autoconnect, _autoconnectUDPKey)) {
         emit autoconnectUDPChanged(autoconnect);
     }
 }
 
 void LinkManager::setAutoconnectPixhawk(bool autoconnect)
 {
-    if (_autoconnectPixhawk != autoconnect) {
-        QSettings settings;
-
-        settings.beginGroup(_settingsGroup);
-        settings.setValue(_autoconnectPixhawkKey, autoconnect);
-
-        _autoconnectPixhawk = autoconnect;
+    if (_setAutoconnectWorker(_autoconnectPixhawk, autoconnect, _autoconnectPixhawkKey)) {
         emit autoconnectPixhawkChanged(autoconnect);
     }
-
 }
 
 void LinkManager::setAutoconnect3DRRadio(bool autoconnect)
 {
-    if (_autoconnect3DRRadio != autoconnect) {
-        QSettings settings;
-
-        settings.beginGroup(_settingsGroup);
-        settings.setValue(_autoconnect3DRRadioKey, autoconnect);
-
-        _autoconnect3DRRadio = autoconnect;
+    if (_setAutoconnectWorker(_autoconnect3DRRadio, autoconnect, _autoconnect3DRRadioKey)) {
         emit autoconnect3DRRadioChanged(autoconnect);
     }
-
 }
 
 void LinkManager::setAutoconnectPX4Flow(bool autoconnect)
 {
-    if (_autoconnectPX4Flow != autoconnect) {
-        QSettings settings;
-
-        settings.beginGroup(_settingsGroup);
-        settings.setValue(_autoconnectPX4FlowKey, autoconnect);
-
-        _autoconnectPX4Flow = autoconnect;
+    if (_setAutoconnectWorker(_autoconnectPX4Flow, autoconnect, _autoconnectPX4FlowKey)) {
         emit autoconnectPX4FlowChanged(autoconnect);
     }
+}
 
+void LinkManager::setAutoconnectRTKGPS(bool autoconnect)
+{
+    if (_setAutoconnectWorker(_autoconnectRTKGPS, autoconnect, _autoconnectRTKGPSKey)) {
+        emit autoconnectRTKGPSChanged(autoconnect);
+    }
 }
 
 QStringList LinkManager::linkTypeStrings(void) const
@@ -881,7 +901,7 @@ void LinkManager::_activeLinkCheck(void)
     if (!found && link) {
         // See if we can get an NSH prompt on this link
         bool foundNSHPrompt = false;
-        link->writeBytes("\r", 1);
+        link->writeBytesSafe("\r", 1);
         QSignalSpy spy(link, SIGNAL(bytesReceived(LinkInterface*, QByteArray)));
         if (spy.wait(100)) {
             QList<QVariant> arguments = spy.takeFirst();

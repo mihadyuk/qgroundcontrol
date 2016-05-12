@@ -39,6 +39,7 @@ FlightMap {
     id:             flightMap
     anchors.fill:   parent
     mapName:        _mapName
+    showScale:      QGroundControl.flightMapSettings.showScaleOnFlyView
 
     property alias  missionController: _missionController
     property var    flightWidgets
@@ -119,7 +120,7 @@ FlightMap {
 
         sourceItem: MissionItemIndexLabel {
             isCurrentItem:  true
-            label:          "G"
+            label:          qsTr("G", "Goto here waypoint") // second string is translator's hint.
         }
     }
 

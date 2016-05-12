@@ -42,14 +42,10 @@ import QGroundControl.FactSystem    1.0
 QGCView {
     id:             root
     viewPanel:      _panel
-    topDialogMargin: height - availableHeight
 
     QGCPalette { id: qgcPal; colorGroupEnabled: enabled }
 
-    property real availableHeight: parent.height
-    property var _activeVehicle:    QGroundControl.multiVehicleManager.activeVehicle
-
-
+    property var _activeVehicle:        QGroundControl.multiVehicleManager.activeVehicle
     property bool _mainIsMap:           _controller.hasVideo ? QGroundControl.loadBoolGlobalSetting(_mainIsMapKey,  true) : true
     property bool _isPipVisible:        _controller.hasVideo ? QGroundControl.loadBoolGlobalSetting(_PIPVisibleKey, true) : false
 
@@ -115,9 +111,9 @@ QGCView {
 
     MessageDialog {
         id:     px4JoystickSupport
-        text:   "Joystick support requires MAVLink MANUAL_CONTROL support. " +
-                "The firmware you are running does not normally support this. " +
-                "It will only work if you have modified the firmware to add MANUAL_CONTROL support."
+        text:   qsTr("Joystick support requires MAVLink MANUAL_CONTROL support. ") +
+                qsTr("The firmware you are running does not normally support this. ") +
+                qsTr("It will only work if you have modified the firmware to add MANUAL_CONTROL support.")
     }
 
     Connections {
@@ -225,14 +221,14 @@ QGCView {
 
         //-- Widgets
         Loader {
-            id:                 widgetsLoader
-            z:                  _panel.z + 4
-            anchors.right:      parent.right
-            anchors.left:       parent.left
-            anchors.bottom:     parent.bottom
-            height:             availableHeight
-            asynchronous:       true
-            visible:            status == Loader.Ready
+            id:             widgetsLoader
+            z:              _panel.z + 4
+            height:         ScreenTools.availableHeight
+            anchors.left:   parent.left
+            anchors.right:  parent.right
+            anchors.bottom: parent.bottom
+            asynchronous:   true
+            visible:        status == Loader.Ready
 
             property bool isBackgroundDark: root.isBackgroundDark
             property var qgcView: root
@@ -243,11 +239,11 @@ QGCView {
             id:                         multiTouchItem
             z:                          _panel.z + 5
             width:                      parent.width  - (_flightVideoPipControl.width / 2)
-            height:                     Math.min(parent.height * 0.25, ScreenTools.defaultFontPixelWidth * 16)
+            height:                     Math.min(ScreenTools.availableHeight * 0.25, ScreenTools.defaultFontPixelWidth * 16)
             visible:                    QGroundControl.virtualTabletJoystick
             anchors.bottom:             _flightVideoPipControl.top
             anchors.bottomMargin:       ScreenTools.defaultFontPixelHeight * 2
-            anchors.horizontalCenter:   parent.horizontalCenter
+            anchors.horizontalCenter:   widgetsLoader.horizontalCenter
             source:                     "qrc:/qml/VirtualJoystick.qml"
             active:                     QGroundControl.virtualTabletJoystick
         }

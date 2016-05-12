@@ -26,6 +26,9 @@
 #include "FirmwarePluginManager.h"
 #include "FlightMapSettings.h"
 #include "GAudioOutput.h"
+#ifndef __mobile__
+#include "GPSManager.h"
+#endif
 #include "HomePositionManager.h"
 #include "JoystickManager.h"
 #include "LinkManager.h"
@@ -35,6 +38,8 @@
 #include "QGCImageProvider.h"
 #include "UASMessageHandler.h"
 #include "QGCMapEngineManager.h"
+#include "FollowMe.h"
+#include "PositionManager.h"
 
 QGCToolbox::QGCToolbox(QGCApplication* app)
     : _audioOutput(NULL)
@@ -42,6 +47,9 @@ QGCToolbox::QGCToolbox(QGCApplication* app)
     , _factSystem(NULL)
     , _firmwarePluginManager(NULL)
     , _flightMapSettings(NULL)
+#ifndef __mobile__
+    , _gpsManager(NULL)
+#endif
     , _homePositionManager(NULL)
     , _imageProvider(NULL)
     , _joystickManager(NULL)
@@ -51,12 +59,17 @@ QGCToolbox::QGCToolbox(QGCApplication* app)
     , _multiVehicleManager(NULL)
     , _mapEngineManager(NULL)
     , _uasMessageHandler(NULL)
+    , _followMe(NULL)
+    , _qgcPositionManager(NULL)
 {
     _audioOutput =              new GAudioOutput(app);
     _autopilotPluginManager =   new AutoPilotPluginManager(app);
     _factSystem =               new FactSystem(app);
     _firmwarePluginManager =    new FirmwarePluginManager(app);
     _flightMapSettings =        new FlightMapSettings(app);
+#ifndef __mobile__
+    _gpsManager =               new GPSManager(app);
+#endif
     _homePositionManager =      new HomePositionManager(app);
     _imageProvider =            new QGCImageProvider(app);
     _joystickManager =          new JoystickManager(app);
@@ -64,14 +77,19 @@ QGCToolbox::QGCToolbox(QGCApplication* app)
     _mavlinkProtocol =          new MAVLinkProtocol(app);
     _missionCommands =          new MissionCommands(app);
     _multiVehicleManager =      new MultiVehicleManager(app);
-    _mapEngineManager =       new QGCMapEngineManager(app);
+    _mapEngineManager =         new QGCMapEngineManager(app);
     _uasMessageHandler =        new UASMessageHandler(app);
+    _qgcPositionManager =       new QGCPositionManager(app);
+    _followMe =                 new FollowMe(app);
 
     _audioOutput->setToolbox(this);
     _autopilotPluginManager->setToolbox(this);
     _factSystem->setToolbox(this);
     _firmwarePluginManager->setToolbox(this);
     _flightMapSettings->setToolbox(this);
+#ifndef __mobile__
+    _gpsManager->setToolbox(this);
+#endif
     _homePositionManager->setToolbox(this);
     _imageProvider->setToolbox(this);
     _joystickManager->setToolbox(this);
@@ -81,6 +99,8 @@ QGCToolbox::QGCToolbox(QGCApplication* app)
     _multiVehicleManager->setToolbox(this);
     _mapEngineManager->setToolbox(this);
     _uasMessageHandler->setToolbox(this);
+    _followMe->setToolbox(this);
+    _qgcPositionManager->setToolbox(this);
 }
 
 QGCToolbox::~QGCToolbox()
@@ -98,6 +118,8 @@ QGCToolbox::~QGCToolbox()
     delete _mapEngineManager;
     delete _multiVehicleManager;
     delete _uasMessageHandler;
+    delete _followMe;
+    delete _qgcPositionManager;
 }
 
 QGCTool::QGCTool(QGCApplication* app)

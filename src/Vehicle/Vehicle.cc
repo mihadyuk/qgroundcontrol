@@ -35,12 +35,15 @@
 #include "QGCApplication.h"
 #include "QGCImageProvider.h"
 #include "GAudioOutput.h"
+#include "FollowMe.h"
 
 QGC_LOGGING_CATEGORY(VehicleLog, "VehicleLog")
 
 #define UPDATE_TIMER 50
 #define DEFAULT_LAT  38.965767f
 #define DEFAULT_LON -120.083923f
+
+extern const char* guided_mode_not_supported_by_vehicle;
 
 const char* Vehicle::_settingsGroup =               "Vehicle%1";        // %1 replaced with mavlink system id
 const char* Vehicle::_joystickModeSettingsKey =     "JoystickMode";
@@ -96,8 +99,8 @@ Vehicle::Vehicle(LinkInterface*             link,
     , _navigationTargetBearing(0.0f)
     , _refreshTimer(new QTimer(this))
     , _updateCount(0)
-    , _rcRSSI(0)
-    , _rcRSSIstore(100.0)
+    , _rcRSSI(255)
+    , _rcRSSIstore(255)
     , _autoDisconnect(false)
     , _flying(false)
     , _connectionLost(false)
@@ -120,6 +123,9 @@ Vehicle::Vehicle(LinkInterface*             link,
     , _messageSeq(0)
     , _compID(0)
     , _heardFrom(false)
+    , _firmwareMajorVersion(versionNotSetValue)
+    , _firmwareMinorVersion(versionNotSetValue)
+    , _firmwarePatchVersion(versionNotSetValue)
     , _rollFact             (0, _rollFactName,              FactMetaData::valueTypeDouble)
     , _pitchFact            (0, _pitchFactName,             FactMetaData::valueTypeDouble)
     , _headingFact          (0, _headingFactName,           FactMetaData::valueTypeDouble)
@@ -143,7 +149,6 @@ Vehicle::Vehicle(LinkInterface*             link,
     connect(this, &Vehicle::_sendMessageOnLinkOnThread, this, &Vehicle::_sendMessageOnLink, Qt::QueuedConnection);
     connect(this, &Vehicle::flightModeChanged,          this, &Vehicle::_handleFlightModeChanged);
     connect(this, &Vehicle::armedChanged,               this, &Vehicle::_announceArmedChanged);
-
     _uas = new UAS(_mavlink, this, _firmwarePluginManager);
 
     setLatitude(_uas->getLatitude());
@@ -160,10 +165,18 @@ Vehicle::Vehicle(LinkInterface*             link,
     connect(_autopilotPlugin, &AutoPilotPlugin::parametersReadyChanged,     this, &Vehicle::_parametersReady);
     connect(_autopilotPlugin, &AutoPilotPlugin::missingParametersChanged,   this, &Vehicle::missingParametersChanged);
 
+    // connect this vehicle to the follow me handle manager
+    connect(this, &Vehicle::flightModeChanged,qgcApp()->toolbox()->followMe(), &FollowMe::followMeHandleManager);
+
     // Refresh timer
     connect(_refreshTimer, &QTimer::timeout, this, &Vehicle::_checkUpdate);
     _refreshTimer->setInterval(UPDATE_TIMER);
     _refreshTimer->start(UPDATE_TIMER);
+
+    // PreArm Error self-destruct timer
+    connect(&_prearmErrorTimer, &QTimer::timeout, this, &Vehicle::_prearmErrorTimeout);
+    _prearmErrorTimer.setInterval(_prearmErrorTimeoutMSecs);
+    _prearmErrorTimer.setSingleShot(true);
 
     // Connection Lost time
     _connectionLostTimer.setInterval(Vehicle::_connectionLostTimeoutMSecs);
@@ -257,8 +270,8 @@ Vehicle::Vehicle(QObject* parent)
     , _navigationTargetBearing(0.0f)
     , _refreshTimer(new QTimer(this))
     , _updateCount(0)
-    , _rcRSSI(0)
-    , _rcRSSIstore(100.0)
+    , _rcRSSI(255)
+    , _rcRSSIstore(255)
     , _autoDisconnect(false)
     , _connectionLost(false)
     , _connectionLostEnabled(true)
@@ -280,6 +293,9 @@ Vehicle::Vehicle(QObject* parent)
     , _messageSeq(0)
     , _compID(0)
     , _heardFrom(false)
+    , _firmwareMajorVersion(versionNotSetValue)
+    , _firmwareMinorVersion(versionNotSetValue)
+    , _firmwarePatchVersion(versionNotSetValue)
     , _rollFact             (0, _rollFactName,              FactMetaData::valueTypeDouble)
     , _pitchFact            (0, _pitchFactName,             FactMetaData::valueTypeDouble)
     , _headingFact          (0, _headingFactName,           FactMetaData::valueTypeDouble)
@@ -377,7 +393,9 @@ void Vehicle::_mavlinkMessageReceived(LinkInterface* link, mavlink_message_t mes
     }
 
     // Give the plugin a change to adjust the message contents
-    _firmwarePlugin->adjustIncomingMavlinkMessage(this, &message);
+    if (!_firmwarePlugin->adjustIncomingMavlinkMessage(this, &message)) {
+        return;
+    }
 
     switch (message.msgid) {
     case MAVLINK_MSG_ID_HOME_POSITION:
@@ -416,6 +434,9 @@ void Vehicle::_mavlinkMessageReceived(LinkInterface* link, mavlink_message_t mes
     case MAVLINK_MSG_ID_EXTENDED_SYS_STATE:
         _handleExtendedSysState(message);
         break;
+    case MAVLINK_MSG_ID_COMMAND_ACK:
+        _handleCommandAck(message);
+        break;
 
     // Following are ArduPilot dialect messages
 
@@ -427,6 +448,40 @@ void Vehicle::_mavlinkMessageReceived(LinkInterface* link, mavlink_message_t mes
     emit mavlinkMessageReceived(message);
 
     _uas->receiveMessage(message);
+}
+
+void Vehicle::_handleCommandAck(mavlink_message_t& message)
+{
+    mavlink_command_ack_t ack;
+    mavlink_msg_command_ack_decode(&message, &ack);
+
+    emit commandLongAck(message.compid, ack.command, ack.result);
+
+    QString commandName;
+    MavCmdInfo* cmdInfo = qgcApp()->toolbox()->missionCommands()->getMavCmdInfo((MAV_CMD)ack.command, this);
+    if (cmdInfo) {
+        commandName = cmdInfo->friendlyName();
+    } else {
+        commandName = tr("cmdid %1").arg(ack.command);
+    }
+
+    switch (ack.result) {
+    case MAV_RESULT_TEMPORARILY_REJECTED:
+        qgcApp()->showMessage(tr("%1 command temporarily rejected").arg(commandName));
+        break;
+    case MAV_RESULT_DENIED:
+        qgcApp()->showMessage(tr("%1 command denied").arg(commandName));
+        break;
+    case MAV_RESULT_UNSUPPORTED:
+        qgcApp()->showMessage(tr("%1 command not supported").arg(commandName));
+        break;
+    case MAV_RESULT_FAILED:
+        qgcApp()->showMessage(tr("%1 command failed").arg(commandName));
+        break;
+    default:
+        // Do nothing
+        break;
+    }
 }
 
 void Vehicle::_handleExtendedSysState(mavlink_message_t& message)
@@ -733,7 +788,7 @@ void Vehicle::_sendMessageOnLink(LinkInterface* link, mavlink_message_t message)
     uint8_t buffer[MAVLINK_MAX_PACKET_LEN];
     int len = mavlink_msg_to_send_buffer(buffer, &message);
 
-    link->writeBytes((const char*)buffer, len);
+    link->writeBytesSafe((const char*)buffer, len);
     _messagesSent++;
     emit messagesSentChanged();
 }
@@ -865,6 +920,11 @@ QString Vehicle::formatedMessages()
         messages += message->getFormatedText();
     }
     return messages;
+}
+
+void Vehicle::clearMessages()
+{
+    qgcApp()->toolbox()->uasMessageHandler()->clearMessages();
 }
 
 void Vehicle::_handletextMessageReceived(UASMessage* message)
@@ -1252,9 +1312,14 @@ void Vehicle::disconnectInactiveVehicle(void)
 {
     // Vehicle is no longer communicating with us, disconnect all links
 
+
     LinkManager* linkMgr = qgcApp()->toolbox()->linkManager();
     for (int i=0; i<_links.count(); i++) {
-        linkMgr->disconnectLink(_links[i]);
+        // FIXME: This linkInUse check is a hack fix for multiple vehicles on the same link.
+        // The real fix requires significant restructuring which will come later.
+        if (!qgcApp()->toolbox()->multiVehicleManager()->linkInUse(_links[i], this)) {
+            linkMgr->disconnectLink(_links[i]);
+        }
     }
 }
 
@@ -1276,6 +1341,10 @@ void Vehicle::_imageReady(UASInterface*)
 
 void Vehicle::_remoteControlRSSIChanged(uint8_t rssi)
 {
+    if (_rcRSSIstore < 0 || _rcRSSIstore > 100) {
+        _rcRSSIstore = rssi;
+    }
+
     // Low pass to git rid of jitter
     _rcRSSIstore = (_rcRSSIstore * 0.9f) + ((float)rssi * 0.1);
     uint8_t filteredRSSI = (uint8_t)ceil(_rcRSSIstore);
@@ -1360,6 +1429,40 @@ void Vehicle::_setCoordinateValid(bool coordinateValid)
     }
 }
 
+QString Vehicle::vehicleTypeName() const {
+    static QMap<int, QString> typeNames = {
+        { MAV_TYPE_GENERIC,         tr("Generic micro air vehicle" )},
+        { MAV_TYPE_FIXED_WING,      tr("Fixed wing aircraft")},
+        { MAV_TYPE_QUADROTOR,       tr("Quadrotor")},
+        { MAV_TYPE_COAXIAL,         tr("Coaxial helicopter")},
+        { MAV_TYPE_HELICOPTER,      tr("Normal helicopter with tail rotor.")},
+        { MAV_TYPE_ANTENNA_TRACKER, tr("Ground installation")},
+        { MAV_TYPE_GCS,             tr("Operator control unit / ground control station")},
+        { MAV_TYPE_AIRSHIP,         tr("Airship, controlled")},
+        { MAV_TYPE_FREE_BALLOON,    tr("Free balloon, uncontrolled")},
+        { MAV_TYPE_ROCKET,          tr("Rocket")},
+        { MAV_TYPE_GROUND_ROVER,    tr("Ground rover")},
+        { MAV_TYPE_SURFACE_BOAT,    tr("Surface vessel, boat, ship")},
+        { MAV_TYPE_SUBMARINE,       tr("Submarine")},
+        { MAV_TYPE_HEXAROTOR,       tr("Hexarotor")},
+        { MAV_TYPE_OCTOROTOR,       tr("Octorotor")},
+        { MAV_TYPE_TRICOPTER,       tr("Octorotor")},
+        { MAV_TYPE_FLAPPING_WING,   tr("Flapping wing")},
+        { MAV_TYPE_KITE,            tr("Flapping wing")},
+        { MAV_TYPE_ONBOARD_CONTROLLER, tr("Onboard companion controller")},
+        { MAV_TYPE_VTOL_DUOROTOR,   tr("Two-rotor VTOL using control surfaces in vertical operation in addition. Tailsitter")},
+        { MAV_TYPE_VTOL_QUADROTOR,  tr("Quad-rotor VTOL using a V-shaped quad config in vertical operation. Tailsitter")},
+        { MAV_TYPE_VTOL_TILTROTOR,  tr("Tiltrotor VTOL")},
+        { MAV_TYPE_VTOL_RESERVED2,  tr("VTOL reserved 2")},
+        { MAV_TYPE_VTOL_RESERVED3,  tr("VTOL reserved 3")},
+        { MAV_TYPE_VTOL_RESERVED4,  tr("VTOL reserved 4")},
+        { MAV_TYPE_VTOL_RESERVED5,  tr("VTOL reserved 5")},
+        { MAV_TYPE_GIMBAL,          tr("Onboard gimbal")},
+        { MAV_TYPE_ADSB,            tr("Onboard ADSB peripheral")},
+    };
+    return typeNames[_vehicleType];
+}
+
 /// Returns the string to speak to identify the vehicle
 QString Vehicle::_vehicleIdSpeech(void)
 {
@@ -1407,7 +1510,7 @@ bool Vehicle::pauseVehicleSupported(void) const
 void Vehicle::guidedModeRTL(void)
 {
     if (!guidedModeSupported()) {
-        qgcApp()->showMessage(QStringLiteral("Guided mode not supported by vehicle."));
+        qgcApp()->showMessage(guided_mode_not_supported_by_vehicle);
         return;
     }
     _firmwarePlugin->guidedModeRTL(this);
@@ -1416,7 +1519,7 @@ void Vehicle::guidedModeRTL(void)
 void Vehicle::guidedModeLand(void)
 {
     if (!guidedModeSupported()) {
-        qgcApp()->showMessage(QStringLiteral("Guided mode not supported by vehicle."));
+        qgcApp()->showMessage(guided_mode_not_supported_by_vehicle);
         return;
     }
     _firmwarePlugin->guidedModeLand(this);
@@ -1425,7 +1528,7 @@ void Vehicle::guidedModeLand(void)
 void Vehicle::guidedModeTakeoff(double altitudeRel)
 {
     if (!guidedModeSupported()) {
-        qgcApp()->showMessage(QStringLiteral("Guided mode not supported by vehicle."));
+        qgcApp()->showMessage(guided_mode_not_supported_by_vehicle);
         return;
     }
     setGuidedMode(true);
@@ -1435,7 +1538,7 @@ void Vehicle::guidedModeTakeoff(double altitudeRel)
 void Vehicle::guidedModeGotoLocation(const QGeoCoordinate& gotoCoord)
 {
     if (!guidedModeSupported()) {
-        qgcApp()->showMessage(QStringLiteral("Guided mode not supported by vehicle."));
+        qgcApp()->showMessage(guided_mode_not_supported_by_vehicle);
         return;
     }
     _firmwarePlugin->guidedModeGotoLocation(this, gotoCoord);
@@ -1444,7 +1547,7 @@ void Vehicle::guidedModeGotoLocation(const QGeoCoordinate& gotoCoord)
 void Vehicle::guidedModeChangeAltitude(double altitudeRel)
 {
     if (!guidedModeSupported()) {
-        qgcApp()->showMessage(QStringLiteral("Guided mode not supported by vehicle."));
+        qgcApp()->showMessage(guided_mode_not_supported_by_vehicle);
         return;
     }
     _firmwarePlugin->guidedModeChangeAltitude(this, altitudeRel);
@@ -1521,6 +1624,31 @@ void Vehicle::doCommandLong(int component, MAV_CMD command, float param1, float 
     sendMessage(msg);
 }
 
+void Vehicle::setPrearmError(const QString& prearmError)
+{
+    _prearmError = prearmError;
+    emit prearmErrorChanged(_prearmError);
+    if (!_prearmError.isEmpty()) {
+        _prearmErrorTimer.start();
+    }
+}
+
+void Vehicle::_prearmErrorTimeout(void)
+{
+    setPrearmError(QString());
+}
+
+void Vehicle::setFirmwareVersion(int majorVersion, int minorVersion, int patchVersion)
+{
+    _firmwareMajorVersion = majorVersion;
+    _firmwareMinorVersion = minorVersion;
+    _firmwarePatchVersion = patchVersion;
+}
+
+void Vehicle::rebootVehicle()
+{
+    doCommandLong(id(), MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+}
 
 const char* VehicleGPSFactGroup::_hdopFactName =                "hdop";
 const char* VehicleGPSFactGroup::_vdopFactName =                "vdop";

@@ -135,6 +135,7 @@ private:
     void _writeLocalParamCache(int uasId, int componentId);
     void _tryCacheHashLoad(int uasId, int componentId, QVariant hash_value);
     void _addMetaDataToDefaultComponent(void);
+    QString _remapParamNameToVersion(const QString& paramName);
 
     MAV_PARAM_TYPE _factTypeToMavType(FactMetaData::ValueType_t factType);
     FactMetaData::ValueType_t _mavTypeToFactType(MAV_PARAM_TYPE mavType);
@@ -163,14 +164,15 @@ private:
     int         _parameterSetMajorVersion;      ///< Version for parameter set, -1 if not known
     QObject*    _parameterMetaData;             ///< Opaque data from FirmwarePlugin::loadParameterMetaDataCall
 
-    static const int _maxInitialLoadRetry = 10;                  ///< Maximum a retries on initial index based load
-    
+    static const int _maxInitialLoadRetry = 10;                 ///< Maximum retries for initial index based load
+    static const int _maxReadWriteRetry = 5;                    ///< Maximum retries read/write
+
     QMap<int, int>                  _paramCountMap;             ///< Key: Component id, Value: count of parameters in this component
     QMap<int, QMap<int, int> >      _waitingReadParamIndexMap;  ///< Key: Component id, Value: Map { Key: parameter index still waiting for, Value: retry count }
     QMap<int, QMap<QString, int> >  _waitingReadParamNameMap;   ///< Key: Component id, Value: Map { Key: parameter name still waiting for, Value: retry count }
     QMap<int, QMap<QString, int> >  _waitingWriteParamNameMap;  ///< Key: Component id, Value: Map { Key: parameter name still waiting for, Value: retry count }
     QMap<int, QList<int> >          _failedReadParamIndexMap;   ///< Key: Component id, Value: failed parameter index
-    
+
     int _totalParamCount;   ///< Number of parameters across all components
     
     QTimer _initialRequestTimeoutTimer;

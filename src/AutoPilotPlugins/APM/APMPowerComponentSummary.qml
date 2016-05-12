@@ -42,15 +42,14 @@ FactPanel {
 
     Column {
         anchors.fill:       parent
-        anchors.margins:    8
 
         VehicleSummaryRow {
-            labelText: "Battery monitor:"
+            labelText: qsTr("Battery monitor:")
             valueText: battMonitor.enumStringValue
         }
 
         VehicleSummaryRow {
-            labelText: "Battery capacity:"
+            labelText: qsTr("Battery capacity:")
             valueText: battCapacity.valueString
         }
     }

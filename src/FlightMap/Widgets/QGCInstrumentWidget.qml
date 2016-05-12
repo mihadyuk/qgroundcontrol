@@ -34,6 +34,7 @@ import QGroundControl.Controls      1.0
 import QGroundControl.ScreenTools   1.0
 import QGroundControl.FactSystem    1.0
 import QGroundControl.FlightMap     1.0
+import QGroundControl.Palette       1.0
 
 Item {
     id:     instrumentPanel
@@ -44,7 +45,7 @@ Item {
     property alias  rollAngle:      attitudeWidget.rollAngle
     property alias  pitchAngle:     attitudeWidget.pitchAngle
     property real   size:           _defaultSize
-    property bool   isSatellite:    false
+    property bool   lightBorders:   true
     property bool   active:         false
     property var    qgcView
     property real   maxHeight
@@ -53,15 +54,17 @@ Item {
     property Fact   groundSpeedFact:    _emptyFact
     property Fact   airSpeedFact:       _emptyFact
 
-    property real   _defaultSize:   ScreenTools.defaultFontPixelSize * (9)
+    property real   _defaultSize:   ScreenTools.defaultFontPixelHeight * (9)
 
-    property color  _backgroundColor:   isSatellite ? Qt.rgba(1,1,1,0.75) : Qt.rgba(0,0,0,0.75)
-    property real   _spacing:           ScreenTools.defaultFontPixelSize * 0.33
+    property color  _backgroundColor:   qgcPal.window
+    property real   _spacing:           ScreenTools.defaultFontPixelHeight * 0.33
     property real   _topBottomMargin:   (size * 0.05) / 2
     property real   _availableValueHeight: maxHeight - (attitudeWidget.height + _spacer1.height + _spacer2.height + (_spacing * 4)) - (_showCompass ? compass.height : 0)
     property var    _activeVehicle:     QGroundControl.multiVehicleManager.activeVehicle
 
-    readonly property bool _showCompass:    !ScreenTools.isShortScreen
+    readonly property bool _showCompass:    true // !ScreenTools.isShortScreen
+
+    QGCPalette { id: qgcPal }
 
     Rectangle {
         anchors.left:   parent.left
@@ -69,6 +72,8 @@ Item {
         height:         (_showCompass ? instrumentColumn.height : attitudeWidget.height) + (_topBottomMargin * 2)
         radius:         size / 2
         color:          _backgroundColor
+        border.width:   1
+        border.color:   lightBorders ? qgcPal.mapWidgetBorderLight : qgcPal.mapWidgetBorderDark
     }
 
     MouseArea {
@@ -99,13 +104,12 @@ Item {
                 id:                 gearThingy
                 anchors.bottom:     attitudeWidget.bottom
                 anchors.right:      attitudeWidget.right
-                source:             "/res/gear.svg"
+                source:             qgcPal.globalTheme == QGCPalette.Light ? "/res/gear-black.svg" : "/res/gear-white.svg"
                 mipmap:             true
                 opacity:            0.5
                 width:              attitudeWidget.width * 0.15
+                sourceSize.width:   width
                 fillMode:           Image.PreserveAspectFit
-                visible:            _activeVehicle
-
                 MouseArea {
                     anchors.fill:   parent
                     hoverEnabled:   true
@@ -120,7 +124,7 @@ Item {
             id:                 _spacer1
             height:             1
             width:              parent.width * 0.9
-            color:              isSatellite ? Qt.rgba(0,0,0,0.25) : Qt.rgba(1,1,1,0.25)
+            color:              qgcPal.text
             anchors.horizontalCenter: parent.horizontalCenter
         }
 
@@ -139,7 +143,7 @@ Item {
                 id:                 _valuesWidget
                 width:              parent.width
                 qgcView:            instrumentPanel.qgcView
-                textColor:          isSatellite ? "black" : "white"
+                textColor:          qgcPal.text
                 backgroundColor:    _backgroundColor
                 maxHeight:          _availableValueHeight
             }
@@ -149,7 +153,7 @@ Item {
             id:                 _spacer2
             height:             1
             width:              parent.width * 0.9
-            color:              isSatellite ? Qt.rgba(0,0,0,0.25) : Qt.rgba(1,1,1,0.25)
+            color:              qgcPal.text
             visible:            _showCompass
             anchors.horizontalCenter: parent.horizontalCenter
         }

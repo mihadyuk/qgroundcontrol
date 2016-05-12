@@ -18,7 +18,7 @@
 # -------------------------------------------------
 
 exists($${OUT_PWD}/qgroundcontrol.pro) {
-    error("You must use shadow build.")
+    error("You must use shadow build (e.g. mkdir build; cd build; qmake ../qgroundcontrol.pro).")
 }
 
 message(Qt version $$[QT_VERSION])
@@ -64,7 +64,16 @@ LinuxBuild {
 
 CONFIG += qt \
     thread \
-    c++11
+    c++11 \
+
+contains(DEFINES, ENABLE_VERBOSE_OUTPUT) {
+    message("Enable verbose compiler output (manual override from command line)")
+} else:exists(user_config.pri):infile(user_config.pri, DEFINES, ENABLE_VERBOSE_OUTPUT) {
+    message("Enable verbose compiler output (manual override from user_config.pri)")
+} else {
+CONFIG += \
+    silent
+}
 
 QT += \
     concurrent \
@@ -94,7 +103,10 @@ QT += \
 
 #  testlib is needed even in release flavor for QSignalSpy support
 QT += testlib
-
+ReleaseBuild {
+    # We don't need the testlib console in release mode
+    QT.testlib.CONFIG -= console
+}
 #
 # OS Specific settings
 #
@@ -192,6 +204,8 @@ INCLUDEPATH += \
     src/FlightMap/Widgets \
     src/input \
     src/Joystick \
+    src/FollowMe \
+    src/GPS \
     src/lib/qmapcontrol \
     src/MissionEditor \
     src/MissionManager \
@@ -209,6 +223,7 @@ INCLUDEPATH += \
     src/ViewWidgets \
     src/QtLocationPlugin \
     src/QtLocationPlugin/QMLControl \
+    src/PositionManager \
 
 FORMS += \
     src/ui/MainWindow.ui \
@@ -257,6 +272,8 @@ HEADERS += \
     src/HomePositionManager.h \
     src/Joystick/Joystick.h \
     src/Joystick/JoystickManager.h \
+    src/FollowMe/FollowMe.h \
+    src/PositionManager/SimulatedPosition.h \
     src/JsonHelper.h \
     src/LogCompressor.h \
     src/MG.h \
@@ -283,9 +300,11 @@ HEADERS += \
     src/QGCQuickWidget.h \
     src/QGCTemporaryFile.h \
     src/QGCToolbox.h \
+    src/QmlControls/AppMessages.h \
     src/QmlControls/CoordinateVector.h \
     src/QmlControls/MavlinkQmlSingleton.h \
     src/QmlControls/ParameterEditorController.h \
+    src/QmlControls/RCChannelMonitorController.h \
     src/QmlControls/ScreenToolsController.h \
     src/QmlControls/QGCQGeoCoordinate.h \
     src/QmlControls/QGroundControlQmlGlobal.h \
@@ -300,6 +319,7 @@ HEADERS += \
     src/QmlControls/QGCImageProvider.h \
     src/AutoPilotPlugins/APM/APMRemoteParamsDownloader.h \
     src/QtLocationPlugin/QMLControl/QGCMapEngineManager.h \
+    src/PositionManager/PositionManager.h
 
 DebugBuild {
 HEADERS += \
@@ -311,6 +331,8 @@ HEADERS += \
 WindowsBuild {
     PRECOMPILED_HEADER += src/stable_headers.h
     HEADERS += src/stable_headers.h
+    CONFIG -= silent
+    OTHER_FILES += .appveyor.yml
 }
 
 contains(DEFINES, QGC_ENABLE_BLUETOOTH) {
@@ -366,6 +388,15 @@ HEADERS += \
     src/ui/uas/UASQuickViewItem.h \
     src/ui/uas/UASQuickViewItemSelect.h \
     src/ui/uas/UASQuickViewTextItem.h \
+    src/GPS/Drivers/src/gps_helper.h \
+    src/GPS/Drivers/src/ubx.h \
+    src/GPS/definitions.h \
+    src/GPS/vehicle_gps_position.h \
+    src/GPS/satellite_info.h \
+    src/GPS/RTCM/RTCMMavlink.h \
+    src/GPS/GPSManager.h \
+    src/GPS/GPSPositionMessage.h \
+    src/GPS/GPSProvider.h \
     src/VehicleSetup/JoystickConfigController.h \
     src/ViewWidgets/CustomCommandWidget.h \
     src/ViewWidgets/CustomCommandWidgetController.h \
@@ -400,6 +431,7 @@ SOURCES += \
     src/Joystick/Joystick.cc \
     src/Joystick/JoystickManager.cc \
     src/JsonHelper.cc \
+    src/FollowMe/FollowMe.cc \
     src/LogCompressor.cc \
     src/main.cc \
     src/MissionManager/MissionCommandList.cc \
@@ -424,8 +456,10 @@ SOURCES += \
     src/QGCTemporaryFile.cc \
     src/QGCToolbox.cc \
     src/QGCGeo.cc \
+    src/QmlControls/AppMessages.cc \
     src/QmlControls/CoordinateVector.cc \
     src/QmlControls/ParameterEditorController.cc \
+    src/QmlControls/RCChannelMonitorController.cc \
     src/QmlControls/ScreenToolsController.cc \
     src/QmlControls/QGCQGeoCoordinate.cc \
     src/QmlControls/QGroundControlQmlGlobal.cc \
@@ -439,6 +473,8 @@ SOURCES += \
     src/QmlControls/QGCImageProvider.cc \
     src/AutoPilotPlugins/APM/APMRemoteParamsDownloader.cc \
     src/QtLocationPlugin/QMLControl/QGCMapEngineManager.cc \
+    src/PositionManager/SimulatedPosition.cc \
+    src/PositionManager/PositionManager.cpp
 
 DebugBuild {
 SOURCES += \
@@ -498,12 +534,17 @@ SOURCES += \
     src/ui/uas/UASQuickViewItem.cc \
     src/ui/uas/UASQuickViewItemSelect.cc \
     src/ui/uas/UASQuickViewTextItem.cc \
+    src/GPS/Drivers/src/gps_helper.cpp \
+    src/GPS/Drivers/src/ubx.cpp \
+    src/GPS/RTCM/RTCMMavlink.cc \
+    src/GPS/GPSManager.cc \
+    src/GPS/GPSProvider.cc \
     src/VehicleSetup/JoystickConfigController.cc \
     src/ViewWidgets/CustomCommandWidget.cc \
     src/ViewWidgets/CustomCommandWidgetController.cc \
     src/ViewWidgets/LogDownload.cc \
     src/ViewWidgets/LogDownloadController.cc \
-    src/ViewWidgets/ViewWidgetController.cc \
+    src/ViewWidgets/ViewWidgetController.cc
 }
 
 #
@@ -618,6 +659,7 @@ HEADERS+= \
     src/AutoPilotPlugins/PX4/PowerComponentController.h \
     src/AutoPilotPlugins/PX4/PX4AutoPilotPlugin.h \
     src/AutoPilotPlugins/PX4/PX4RadioComponent.h \
+    src/AutoPilotPlugins/PX4/CameraComponent.h \
     src/AutoPilotPlugins/PX4/SafetyComponent.h \
     src/AutoPilotPlugins/PX4/SensorsComponent.h \
     src/AutoPilotPlugins/PX4/SensorsComponentController.h \
@@ -675,6 +717,7 @@ SOURCES += \
     src/AutoPilotPlugins/PX4/PowerComponentController.cc \
     src/AutoPilotPlugins/PX4/PX4AutoPilotPlugin.cc \
     src/AutoPilotPlugins/PX4/PX4RadioComponent.cc \
+    src/AutoPilotPlugins/PX4/CameraComponent.cc \
     src/AutoPilotPlugins/PX4/SafetyComponent.cc \
     src/AutoPilotPlugins/PX4/SensorsComponent.cc \
     src/AutoPilotPlugins/PX4/SensorsComponentController.cc \

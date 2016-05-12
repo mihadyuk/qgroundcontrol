@@ -36,8 +36,9 @@ import QGroundControl.ScreenTools           1.0
 import QGroundControl.MultiVehicleManager   1.0
 
 Rectangle {
-    color:          qgcPal.window
-    z:              QGroundControl.zOrderTopMost
+    id: setupView
+    color:  qgcPal.window
+    z:      QGroundControl.zOrderTopMost
 
     QGCPalette { id: qgcPal; colorGroupEnabled: true }
 
@@ -47,7 +48,7 @@ Rectangle {
     readonly property real      _defaultTextWidth:  ScreenTools.defaultFontPixelWidth
     readonly property real      _margin:            Math.round(_defaultTextHeight / 2)
     readonly property real      _buttonWidth:       Math.round(_defaultTextWidth * 18)
-    readonly property string    _armedVehicleText:  "This operation cannot be performed while vehicle is armed."
+    readonly property string    _armedVehicleText:  qsTr("This operation cannot be performed while vehicle is armed.")
 
     property string _messagePanelText:              "missing message panel text"
     property bool   _fullParameterVehicleAvailable: QGroundControl.multiVehicleManager.parameterReadyVehicleAvailable && !QGroundControl.multiVehicleManager.activeVehicle.missingParameters
@@ -110,6 +111,13 @@ Rectangle {
                 panelLoader.sourceComponent = messagePanelComponent
             } else {
                 panelLoader.source = vehicleComponent.setupSource
+                for(var i = 0; i < componentRepeater.count; i++) {
+                    var obj = componentRepeater.itemAt(i);
+                    if (obj.text === vehicleComponent.name) {
+                        obj.checked = true;
+                        break;
+                    }
+                }
             }
         }
     }
@@ -143,9 +151,9 @@ Rectangle {
                 verticalAlignment:      Text.AlignVCenter
                 horizontalAlignment:    Text.AlignHCenter
                 wrapMode:               Text.WordWrap
-                font.pixelSize:         ScreenTools.mediumFontPixelSize
+                font.pointSize:         ScreenTools.mediumFontPointSize
                 text:                   "QGroundControl does not currently support setup of your vehicle type. " +
-                                            "If your vehicle is already configured you can still Fly."
+                                        "If your vehicle is already configured you can still Fly."
 
                 onLinkActivated: Qt.openUrlExternally(link)
             }
@@ -164,9 +172,9 @@ Rectangle {
                 verticalAlignment:      Text.AlignVCenter
                 horizontalAlignment:    Text.AlignHCenter
                 wrapMode:               Text.WordWrap
-                font.pixelSize:         ScreenTools.largeFontPixelSize
+                font.pointSize:         ScreenTools.largeFontPointSize
                 text:                   "Connect vehicle to your device and QGroundControl will automatically detect it." +
-                                            (ScreenTools.isMobile ? "" : " Click Firmware on the left to upgrade your vehicle.")
+                                        (ScreenTools.isMobile ? "" : " Click Firmware on the left to upgrade your vehicle.")
 
                 onLinkActivated: Qt.openUrlExternally(link)
             }
@@ -184,7 +192,7 @@ Rectangle {
                 verticalAlignment:      Text.AlignVCenter
                 horizontalAlignment:    Text.AlignHCenter
                 wrapMode:               Text.WordWrap
-                font.pixelSize:         ScreenTools.mediumFontPixelSize
+                font.pointSize:         ScreenTools.mediumFontPointSize
                 text:                   "You are currently connected to a vehicle, but that vehicle did not return back the full parameter list. " +
                                         "Because of this the full set of vehicle setup options are not available."
 
@@ -203,135 +211,131 @@ Rectangle {
                 verticalAlignment:      Text.AlignVCenter
                 horizontalAlignment:    Text.AlignHCenter
                 wrapMode:               Text.WordWrap
-                font.pixelSize:         ScreenTools.mediumFontPixelSize
+                font.pointSize:         ScreenTools.mediumFontPointSize
                 text:                   _messagePanelText
             }
         }
     }
 
-    Rectangle {
-        //-- Limit height to available height (below tool bar)
-        anchors.topMargin:  _margin
-        height:             mainWindow.availableHeight
+    QGCFlickable {
+        id:                 buttonScroll
+        width:              buttonColumn.width
+        anchors.topMargin:  _defaultTextHeight / 2
+        anchors.top:        parent.top
         anchors.bottom:     parent.bottom
-        anchors.left:       parent.left
-        anchors.right:      parent.right
-        color:              qgcPal.window
+        contentHeight:      buttonColumn.height
+        flickableDirection: Flickable.VerticalFlick
+        clip:               true
 
-        QGCFlickable {
-            id:                 buttonScroll
-            width:              buttonColumn.width
-            anchors.topMargin:  _defaultTextHeight / 2
-            anchors.top:        parent.top
-            anchors.bottom:     parent.bottom
-            contentHeight:      buttonColumn.height
-            flickableDirection: Flickable.VerticalFlick
+        Column {
+            id:         buttonColumn
+            width:      _maxButtonWidth
+            spacing:    _defaultTextHeight / 2
 
-            Column {
-                id:         buttonColumn
-                width:      _maxButtonWidth
-                spacing:    _defaultTextHeight / 2
+            property real _maxButtonWidth: 0
 
-                property real _maxButtonWidth: 0
+            Component.onCompleted: reflowWidths()
 
-                Component.onCompleted: reflowWidths()
-
-                Connections {
-                    target: componentRepeater
-
-                    onModelChanged: buttonColumn.reflowWidths()
-                }
-
-                function reflowWidths() {
-                    for (var i=0; i<children.length; i++) {
-                        _maxButtonWidth = Math.max(_maxButtonWidth, children[i].width)
-                    }
-                    for (var i=0; i<children.length; i++) {
-                        children[i].width = _maxButtonWidth
-                    }
-                }
-
-                SubMenuButton {
-                    id:             summaryButton
-                    imageResource: "/qmlimages/VehicleSummaryIcon.png"
-                    setupIndicator: false
-                    checked:        true
-                    exclusiveGroup: setupButtonGroup
-                    text:           "Summary"
-
-                    onClicked: showSummaryPanel()
-                }
-
-                SubMenuButton {
-                    id:             firmwareButton
-                    imageResource:  "/qmlimages/FirmwareUpgradeIcon.png"
-                    setupIndicator: false
-                    exclusiveGroup: setupButtonGroup
-                    visible:        !ScreenTools.isMobile
-                    text:           "Firmware"
-
-                    onClicked: showFirmwarePanel()
-                }
-
-                SubMenuButton {
-                    id:             px4FlowButton
-                    exclusiveGroup: setupButtonGroup
-                    visible:        QGroundControl.multiVehicleManager.activeVehicle ? QGroundControl.multiVehicleManager.activeVehicle.genericFirmware : false
-                    setupIndicator: false
-                    text:           "PX4Flow"
-                    onClicked:      showPX4FlowPanel()
-                }
-
-                SubMenuButton {
-                    id:             joystickButton
-                    setupIndicator: true
-                    setupComplete:  joystickManager.activeJoystick ? joystickManager.activeJoystick.calibrated : false
-                    exclusiveGroup: setupButtonGroup
-                    visible:        _fullParameterVehicleAvailable && joystickManager.joysticks.length != 0
-                    text:           "Joystick"
-
-                    onClicked: showJoystickPanel()
-                }
-
-                Repeater {
-                    id:     componentRepeater
-                    model:  _fullParameterVehicleAvailable ? QGroundControl.multiVehicleManager.activeVehicle.autopilot.vehicleComponents : 0
-
-                    SubMenuButton {
-                        imageResource:  modelData.iconResource
-                        setupIndicator: modelData.requiresSetup
-                        setupComplete:  modelData.setupComplete
-                        exclusiveGroup: setupButtonGroup
-                        text:           modelData.name
-                        visible:        modelData.setupSource.toString() != ""
-
-
-                        onClicked: showVehicleComponentPanel(modelData)
-                    }
-                }
-
-                SubMenuButton {
-                    setupIndicator: false
-                    exclusiveGroup: setupButtonGroup
-                    visible:        QGroundControl.multiVehicleManager.parameterReadyVehicleAvailable
-                    text:           "Parameters"
-
-                    onClicked: showParametersPanel()
-                }
-
+            Connections {
+                target: componentRepeater
+                onModelChanged: buttonColumn.reflowWidths()
             }
-        }
 
-        Loader {
-            id:                     panelLoader
-            anchors.topMargin:      _margin
-            anchors.bottomMargin:   _margin
-            anchors.leftMargin:     _defaultTextWidth
-            anchors.rightMargin:    _defaultTextWidth
-            anchors.left:           buttonScroll.right
-            anchors.right:          parent.right
-            anchors.top:            parent.top
-            anchors.bottom:         parent.bottom
+            // I don't know why this does not work
+            Connections {
+                target: QGroundControl
+                onBaseFontPointSizeChanged: buttonColumn.reflowWidths()
+            }
+
+            function reflowWidths() {
+                buttonColumn._maxButtonWidth = 0
+                for (var i = 0; i < children.length; i++) {
+                    buttonColumn._maxButtonWidth = Math.max(buttonColumn._maxButtonWidth, children[i].width)
+                }
+                for (var j = 0; j < children.length; j++) {
+                    children[j].width = buttonColumn._maxButtonWidth
+                }
+            }
+
+            SubMenuButton {
+                id:             summaryButton
+                imageResource: "/qmlimages/VehicleSummaryIcon.png"
+                setupIndicator: false
+                checked:        true
+                exclusiveGroup: setupButtonGroup
+                text:           "Summary"
+
+                onClicked: showSummaryPanel()
+            }
+
+            SubMenuButton {
+                id:             firmwareButton
+                imageResource:  "/qmlimages/FirmwareUpgradeIcon.png"
+                setupIndicator: false
+                exclusiveGroup: setupButtonGroup
+                visible:        !ScreenTools.isMobile
+                text:           "Firmware"
+
+                onClicked: showFirmwarePanel()
+            }
+
+            SubMenuButton {
+                id:             px4FlowButton
+                exclusiveGroup: setupButtonGroup
+                visible:        QGroundControl.multiVehicleManager.activeVehicle ? QGroundControl.multiVehicleManager.activeVehicle.genericFirmware : false
+                setupIndicator: false
+                text:           "PX4Flow"
+                onClicked:      showPX4FlowPanel()
+            }
+
+            SubMenuButton {
+                id:             joystickButton
+                setupIndicator: true
+                setupComplete:  joystickManager.activeJoystick ? joystickManager.activeJoystick.calibrated : false
+                exclusiveGroup: setupButtonGroup
+                visible:        _fullParameterVehicleAvailable && joystickManager.joysticks.length != 0
+                text:           "Joystick"
+
+                onClicked: showJoystickPanel()
+            }
+
+            Repeater {
+                id:     componentRepeater
+                model:  _fullParameterVehicleAvailable ? QGroundControl.multiVehicleManager.activeVehicle.autopilot.vehicleComponents : 0
+
+                SubMenuButton {
+                    imageResource:  modelData.iconResource
+                    setupIndicator: modelData.requiresSetup
+                    setupComplete:  modelData.setupComplete
+                    exclusiveGroup: setupButtonGroup
+                    text:           modelData.name
+                    visible:        modelData.setupSource.toString() != ""
+
+                    onClicked: showVehicleComponentPanel(modelData)
+                }
+            }
+
+            SubMenuButton {
+                setupIndicator: false
+                exclusiveGroup: setupButtonGroup
+                visible:        QGroundControl.multiVehicleManager.parameterReadyVehicleAvailable
+                text:           "Parameters"
+
+                onClicked: showParametersPanel()
+            }
+
         }
+    }
+
+    Loader {
+        id:                     panelLoader
+        anchors.topMargin:      _margin
+        anchors.bottomMargin:   _margin
+        anchors.leftMargin:     _defaultTextWidth
+        anchors.rightMargin:    _defaultTextWidth
+        anchors.left:           buttonScroll.right
+        anchors.right:          parent.right
+        anchors.top:            parent.top
+        anchors.bottom:         parent.bottom
     }
 }
